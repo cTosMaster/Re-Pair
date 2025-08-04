@@ -1,0 +1,73 @@
+# Ignored help file
+HELP.md
+
+# Java artifacts
+*.class
+*.jar
+*.war
+*.ear
+
+# Build directories
+/backend/target/
+/backend/build/
+
+# Include build/target under source folders
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs
+
+## IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+## Eclipse / Spring Tool Suite (STS)
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache
+
+## NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+## VS Code
+.vscode/
+
+# Maven wrapper
+.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+# Git merge/conflict backup files
+*.orig
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+
+# Configuration and secret files
+application.yml
+application.properties
+src/main/resources/application.yml
+src/main/resources/application.properties
+application-*.yml
+application-*.properties
+.env
+.env.*
