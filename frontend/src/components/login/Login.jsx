@@ -69,8 +69,7 @@ export const Login = () => {
 
         {/* 아이디 찾기, 비밀번호 재설정 */}
         <p className="text-gray-500 text-base mb-8 text-right" style={{ width: '492px' }}>
-                <Link to="/find-id" className="hover:underline mr-2">아이디 찾기</Link>
-                |
+                
                 <Link to="/reset-password" className="hover:underline ml-2">비밀번호 재설정</Link>
         </p>
 
