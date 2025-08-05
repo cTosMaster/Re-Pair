@@ -34,22 +34,28 @@ pipeline {
         }
       }
       steps {
-        dir(FRONT_DIR) {
-          withCredentials([usernamePassword(
-            credentialsId: 'docker-user',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-          )]) {
-            sh '''
-              echo "📦 Frontend Docker Build"
-              docker build -t $REGISTRY-frontend:latest .
+        script {
+          if (fileExists(FRONT_DIR)) {
+            dir(FRONT_DIR) {
+              withCredentials([usernamePassword(
+                credentialsId: 'docker-user',
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+              )]) {
+                sh '''
+                  echo "📦 Frontend Docker Build"
+                  docker build -t $REGISTRY-frontend:latest .
 
-              echo "🔐 DockerHub 로그인"
-              echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                  echo "🔐 DockerHub 로그인"
+                  echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-              echo "📤 Docker 이미지 푸시"
-              docker push $REGISTRY-frontend:latest
-            '''
+                  echo "📤 Docker 이미지 푸시"
+                  docker push $REGISTRY-frontend:latest
+                '''
+              }
+            }
+          } else {
+            echo ⚠️ Frontend 디렉토리가 없어서 스킵함"
           }
         }
       }
@@ -62,30 +68,36 @@ pipeline {
         }
       }
       steps {
-        dir(BACK_DIR) {
-          withCredentials([usernamePassword(
-            credentialsId: 'docker-user',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-          )]) {
-            sh '''
-              echo "📦 Backend Maven 빌드"
-              ./mvnw clean package -DskipTests
+        script {
+          if (fileExists(BACK_DIR)) {
+            dir(BACK_DIR) {
+              withCredentials([usernamePassword(
+                credentialsId: 'docker-user',
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+              )]) {
+                sh '''
+                  echo "📦 Backend Maven 빌드"
+                  ./mvnw clean package -DskipTests
 
-              echo "🐳 Docker Build"
-              docker build -t $REGISTRY-backend:latest .
+                  echo "🐳 Docker Build"
+                  docker build -t $REGISTRY-backend:latest .
 
-              echo "🔐 DockerHub 로그인"
-              echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                  echo "🔐 DockerHub 로그인"
+                  echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-              echo "📤 Docker 이미지 푸시"
-              docker push $REGISTRY-backend:latest
+                  echo "📤 Docker 이미지 푸시"
+                  docker push $REGISTRY-backend:latest
 
-              echo "🚀 K3S 롤링 업데이트"
-              ssh -o StrictHostKeyChecking=no $SSH_BACKEND_USER@$SSH_BACKEND_HOST "\
-                docker pull $REGISTRY-backend:latest && \
-                kubectl rollout restart deployment repair_backend -n repair-ns"
-            '''
+                  echo "🚀 K3S 롤링 업데이트"
+                  ssh -o StrictHostKeyChecking=no $SSH_BACKEND_USER@$SSH_BACKEND_HOST "\
+                    docker pull $REGISTRY-backend:latest && \
+                    kubectl rollout restart deployment repair_backend -n repair-ns"
+                '''
+              }
+            }
+          } else {
+            echo "⚠️ Backend 디렉토리가 없어서 스킵함"
           }
         }
       }
