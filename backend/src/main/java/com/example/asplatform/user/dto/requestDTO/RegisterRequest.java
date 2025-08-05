@@ -13,6 +13,9 @@ public class RegisterRequest {
     @Email @NotBlank
     private String email;
 
+    @NotBlank(message = "인증 코드를 입력해주세요.")
+    private String code;
+
     @NotBlank @Size(min = 8)
     private String password;
 

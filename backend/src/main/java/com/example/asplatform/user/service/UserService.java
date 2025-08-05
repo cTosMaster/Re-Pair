@@ -18,11 +18,11 @@ public class UserService {
 
     @Transactional
     public void register(RegisterRequest req) {
-        // 1) 비밀번호 확인
+        // 1) 비밀번호 확인 일치 검사
         if (!req.getPassword().equals(req.getPasswordConfirm())) {
             throw new IllegalArgumentException("비밀번호와 확인이 일치하지 않습니다.");
         }
-        // 2) 이메일 중복 체크
+        // 2) 이메일 중복 검사: 이미 가입된 이메일이면 예외
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
@@ -33,8 +33,8 @@ public class UserService {
                 .name(req.getName())
                 .phone(req.getPhone())
                 .address(req.getAddress())
-                .imageUrl(req.getImageUrl())
-                .role(Role.valueOf(req.getRole()))
+                .imageUrl(req.getImageUrl()) // 프로필 이미지 URL (선택)
+                .role(Role.valueOf(req.getRole()))  // Role enum 변환 (USER, CUSTOMER 등)
                 .isActive(true)
                 .build();
         userRepository.save(u);
