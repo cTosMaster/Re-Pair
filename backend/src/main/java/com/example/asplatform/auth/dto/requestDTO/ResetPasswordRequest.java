@@ -16,9 +16,9 @@ public class ResetPasswordRequest {
     @NotBlank
     private String code;
 
-    @NotBlank @Size(min = 8)
+    @NotBlank @Size(min = 4)
     private String newPassword;
 
-    @NotBlank @Size(min = 8)
+    @NotBlank @Size(min = 4)
     private String newPasswordConfirm;
 }

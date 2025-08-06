@@ -41,8 +41,10 @@ public class SecurityConfig {
                 // 엔드포인트별 권한 설정
                 .authorizeHttpRequests(auth -> auth
 
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // 인증·회원가입 API 열어두기
-                        .requestMatchers(HttpMethod.POST, "/api/auth/**", "/api/users/register").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/users/register").permitAll()
                         // Swagger UI 문서 열어두기
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // 그 외 모든 요청은 인증 필요
