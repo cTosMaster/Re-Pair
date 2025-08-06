@@ -25,7 +25,6 @@ const RepairStepLabels = [
     "결제 대기",
     "발송 대기",
     "발송 완료",
-    "취소",
 ];
 
 export { RepairStatusMap, StepToStatusCode, RepairStepLabels };
