@@ -146,10 +146,10 @@ const SignUpPage = () => {
             </button>
           </div>
         {emailCodeStatus === "success" && (
-          <p className="text-green-600 mb-4">검증되었습니다</p>
+          <p className="text-green-600 mb-4">인증되었습니다</p>
         )}
         {emailCodeStatus === "error" && (
-          <p className="text-red-500 mb-4">잘못된 인증입니다</p>
+          <p className="text-red-500 mb-4">잘못된 인증번호입니다</p>
         )}
 
 

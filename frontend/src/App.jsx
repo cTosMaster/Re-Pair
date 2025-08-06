@@ -4,7 +4,7 @@ import Login from "./components/login/Login";
 import ResetPasswordPage from "./components/login/ResetPasswordPage";
 import SignUp from "./components/login/SignUp";
 import AgreementPage from "./components/companyregistration/AgreementPage";
-import Companyregistration from "./components/companyregistration/CompanyRegister";
+import CompanyFormContainer from "./components/companyregistration/CompanyFormContainer";
 
 function App() {
 
@@ -16,7 +16,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* 비밀번호찾기 추가 */}
         <Route path="/signup" element={<SignUp />} /> {/* 회원가입 추가 */}
         <Route path="/agreementPage" element={<AgreementPage />} /> {/* 약관동의 추가 */}
-        <Route path="/companyregistration" element={<Companyregistration />} /> {/* 업체등록 폼 추가 */}
+        <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
       </Routes>
     </BrowserRouter>
   )
