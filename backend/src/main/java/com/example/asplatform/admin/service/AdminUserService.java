@@ -61,7 +61,7 @@ public class AdminUserService {
         d.setAddress(u.getAddress());
         d.setImageUrl(u.getImageUrl());
         d.setRole(u.getRole());
-        d.setActive(u.isActive());
+        d.setActive(u.getIsActive());
         d.setCreatedAt(String.valueOf(u.getCreatedAt()));
         return d;
     }
