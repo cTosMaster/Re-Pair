@@ -47,6 +47,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/api/users/register").permitAll()
                         // Swagger UI 문서 열어두기
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        //관리자 대시보드 (ADMIN 전용)
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
