@@ -1,6 +1,7 @@
 import { useState } from "react";
 import RepairProgress from "../../components/RepairProgress";
 import FirstEstimateForm from "../../components/FirstEstimateForm";
+import AssignedEngineerInfo from "../../components/AssignedEngineerInfo";
 import { RepairStatusMap } from "../../constants/repairStatus";
 
 function WaitingForRepairPage() {
@@ -28,17 +29,18 @@ function WaitingForRepairPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-xl font-bold">수리 대기</h2>
-
       {/* ✅ Stepper는 항상 표시 */}
       <RepairProgress statusCode={statusCode} />
 
       {/* ✅ USER: 메시지만 표시 */}
       {isUser && !isBeyondWaiting ? (
-        <div className="text-center text-gray-600 mt-8">
-          현재 고객님의 물품의 1차 견적을 작성중입니다.
-          <br />
-          추가로 수리기사와 유선 상담이 있을 예정입니다.
+        <div className="text-center text-gray-600 mt-8 space-y-4">
+          <div>
+            현재 고객님의 물품의 1차 견적을 작성중입니다.
+            <br />
+            추가로 수리기사와 유선 상담이 있을 예정입니다.
+          </div>
+          <AssignedEngineerInfo name="김진수" phone="010-1234-5678" />
         </div>
       ) : (
         <>
