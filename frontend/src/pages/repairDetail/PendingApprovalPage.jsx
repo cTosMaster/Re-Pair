@@ -1,12 +1,12 @@
 import { useState } from "react";
-import RepairProgress from "../../components/repairDetail/RepairProgress";
+import RepairProgress from "../../components/RepairProgress";
 import RepairRequestForm from "../../components/RepairRequestForm";
 import RepairEngineerSelector from "../../components/RepairEngineerSelector";
 import { RepairStatusMap } from "../../constants/repairStatus";
 
 function PendingApprovalPage() {
   // 🧪 테스트용 사용자 권한 및 상태 코드
-  const role = "USER"; // "USER" | "ENGINEER" | "CUSTOMER"
+  const role = "CUSTOMER"; // "USER" | "ENGINEER" | "CUSTOMER"
   const statusCode = "PENDING_APPROVAL"; // "PENDING_APPROVAL" | "WAITING_FOR_REPAIR" | ...
 
   // 현재 스텝 (숫자)

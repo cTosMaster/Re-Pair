@@ -1,4 +1,4 @@
-import { RepairStepLabels, RepairStatusMap } from "../../constants/repairStatus.js";
+import { RepairStepLabels, RepairStatusMap } from "../constants/repairStatus.js";
 
 function RepairProgress({ statusCode }) {
   const step = RepairStatusMap[statusCode];
