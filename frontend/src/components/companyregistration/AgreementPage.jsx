@@ -11,7 +11,7 @@ const AgreementPage = () => {
   
   const handleSubmit = () => {
     if (checkedItems.slice(0, 3).every(Boolean)) {
-      navigate("/companyregistration"); // '/companyregistration' 경로로 이동
+      navigate("/companyFormContainer"); // '/companyregistration' 경로로 이동
     }
   };
 
