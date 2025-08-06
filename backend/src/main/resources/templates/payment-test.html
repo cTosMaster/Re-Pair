@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>가상계좌 발급 테스트</title>
+    <meta charset="UTF-8" />
+    <style>
+        body { max-width: 600px; margin: 20px auto; font-family: Arial, sans-serif; }
+        label { display: block; margin-top: 10px; }
+        input, button, textarea { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+        pre { background: #eee; padding: 10px; white-space: pre-wrap; word-break: break-word; }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<h2>가상계좌 발급 테스트</h2>
+
+<form th:object="${paymentRequestDto}" id="paymentForm" onsubmit="return false;">
+    <label>주문명(orderName):</label>
+    <input type="text" th:field="*{orderName}" id="orderName" required />
+
+    <label>금액(amount):</label>
+    <input type="number" th:field="*{amount}" id="amount" required />
+
+    <label>고객명(customerName):</label>
+    <input type="text" th:field="*{customerName}" id="customerName" required />
+
+    <label>은행 코드(bankCode):</label>
+    <input type="text" th:field="*{bankCode}" id="bankCode" required placeholder="예: 097" />
+
+    <label>이메일(customerEmail):</label>
+    <input type="email" th:field="*{customerEmail}" id="customerEmail" />
+
+    <label>만료일(dueDate, yyyy-MM-dd):</label>
+    <input type="date" th:field="*{dueDate}" id="dueDate" required />
+
+    <label>repairId:</label>
+    <input type="number" th:field="*{repairId}" id="repairId" required />
+
+    <label>customerId:</label>
+    <input type="number" th:field="*{customerId}" id="customerId" required />
+
+    <button id="requestBtn" type="button">가상계좌 요청</button>
+</form>
+
+<hr/>
+
+<label for="orderIdInput">주문번호 (orderId):</label>
+<input type="text" id="orderIdInput" placeholder="주문번호 입력" />
+
+<button id="statusBtn">주문 상태 조회</button>
+<button id="callbackBtn">테스트 콜백 (status= DONE)</button>
+
+<h3>응답 결과</h3>
+<pre id="responseArea">여기에 응답이 표시됩니다.</pre>
+
+<script>
+    const requestBtn = document.getElementById('requestBtn');
+    const statusBtn = document.getElementById('statusBtn');
+    const callbackBtn = document.getElementById('callbackBtn');
+    const responseArea = document.getElementById('responseArea');
+    const orderIdInput = document.getElementById('orderIdInput');
+
+    requestBtn.addEventListener('click', async () => {
+        responseArea.textContent = "가상계좌 요청 중...";
+        try {
+            const payload = {
+                orderName: document.getElementById('orderName').value,
+                amount: parseInt(document.getElementById('amount').value),
+                customerName: document.getElementById('customerName').value,
+                bankCode: document.getElementById('bankCode').value,
+                customerEmail: document.getElementById('customerEmail').value,
+                successUrl: "https://example.com/success",
+                failUrl: "https://example.com/fail",
+                dueDate: document.getElementById('dueDate').value,
+                repairId: parseInt(document.getElementById('repairId').value),
+                customerId: parseInt(document.getElementById('customerId').value)
+            };
+
+            const res = await fetch('/api/payments/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error("가상계좌 요청 실패: " + res.status);
+
+            const data = await res.json();
+            responseArea.textContent = JSON.stringify(data, null, 2);
+            orderIdInput.value = data.orderId;
+        } catch (err) {
+            responseArea.textContent = err.message;
+        }
+    });
+
+    statusBtn.addEventListener('click', async () => {
+        const orderId = orderIdInput.value.trim();
+        if (!orderId) {
+            alert("먼저 주문번호를 입력하세요");
+            return;
+        }
+        responseArea.textContent = "주문 상태 조회 중...";
+        try {
+            const res = await fetch(`/api/payments/status/${orderId}`);
+            if (!res.ok) throw new Error("주문 상태 조회 실패: " + res.status);
+
+            const data = await res.json();
+            responseArea.textContent = JSON.stringify(data, null, 2);
+        } catch (err) {
+            responseArea.textContent = err.message;
+        }
+    });
+
+    callbackBtn.addEventListener('click', async () => {
+        const orderId = orderIdInput.value.trim();
+        if (!orderId) {
+            alert("먼저 주문번호를 입력하세요");
+            return;
+        }
+
+        const callbackDto = {
+            paymentKey: "테스트결제키",
+            orderId: orderId,
+            method: "VIRTUAL_ACCOUNT",
+            status: "DONE"
+        };
+
+        responseArea.textContent = "콜백 요청 중...";
+        try {
+            const res = await fetch('/api/payments/callback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(callbackDto)
+            });
+
+            if (!res.ok) throw new Error("콜백 요청 실패: " + res.status);
+
+            responseArea.textContent = "콜백 성공!";
+        } catch (err) {
+            responseArea.textContent = err.message;
+        }
+    });
+</script>
+
+</body>
+</html>
