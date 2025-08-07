@@ -4,11 +4,11 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import com.example.asplatform.common.enums.Role;
+import com.example.asplatform.user.domain.UserAddress;
 
 @Entity
 @Table(name = "users")
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -30,9 +30,6 @@ public class User {
     @Column(length = 255)
     private String phone;
 
-    @Column(nullable = false, length = 255)
-    private String address;
-
     @Column(name = "image_url", length = 255)
     private String imageUrl;
 
@@ -48,6 +45,9 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private UserAddress address;
 
     @PrePersist
     protected void onCreate() {
