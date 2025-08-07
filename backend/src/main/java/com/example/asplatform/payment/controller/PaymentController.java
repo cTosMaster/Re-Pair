@@ -15,6 +15,7 @@ import com.example.asplatform.payment.domain.Payments;
 import com.example.asplatform.payment.dto.requestDTO.PaymentRequestDto;
 import com.example.asplatform.payment.dto.responseDTO.PaymentResponseDto;
 import com.example.asplatform.payment.dto.responseDTO.TossCallbackDto;
+import com.example.asplatform.payment.dto.responseDTO.WebhookEventDto;
 import com.example.asplatform.payment.service.PaymentService;
 
 import lombok.RequiredArgsConstructor;
@@ -38,8 +39,13 @@ public class PaymentController {
 	     * ✅ 2. Toss 콜백 수신
 	     */
 	    @PostMapping("/callback")
-	    public ResponseEntity<String> handleCallback(@RequestBody String rawJson) {
-	        System.out.println("📦 Toss 콜백 수신 원본 JSON = " + rawJson);
+	    public ResponseEntity<String> handleCallback(@RequestBody WebhookEventDto webhookDto) {
+	        System.out.println("📦 Toss 콜백 수신 원본 JSON = " + webhookDto);
+
+	        if ("PAYMENT_STATUS_CHANGED".equals(webhookDto.getEventType())) {
+	            paymentService.updatePaymentStatus(webhookDto.getData());
+	        }
+
 	        return ResponseEntity.ok("success");
 	    }
 	    

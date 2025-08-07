@@ -52,7 +52,16 @@ public class TossApiClient {
     @Value("${payment.toss.api-url}")
     private String tossApiUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    public TossApiClient() {
+        this.restTemplate = new RestTemplate();
+        // UTF-8 설정하기
+        this.restTemplate.getMessageConverters().stream()
+            .filter(converter -> converter instanceof org.springframework.http.converter.StringHttpMessageConverter)
+            .forEach(converter -> ((org.springframework.http.converter.StringHttpMessageConverter) converter)
+                .setDefaultCharset(StandardCharsets.UTF_8));
+    }
     
     
     /**
@@ -167,7 +176,7 @@ public class TossApiClient {
 
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            String url = tossApiUrl + "/payments/" + paymentKey; // ✅ 경로 중요
+            String url = tossApiUrl + "/payments/" + paymentKey; 
 
             ResponseEntity<String> response = restTemplate.exchange(
                     url,
@@ -177,6 +186,8 @@ public class TossApiClient {
             );
 
             if (response.getStatusCode().is2xxSuccessful()) {
+            	System.out.println("✅ [verifyPayment] Toss 응답 성공: " + response.getBody());
+
                 ObjectMapper objectMapper = new ObjectMapper();
                 objectMapper.registerModule(new JavaTimeModule());
                 objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -184,6 +195,7 @@ public class TossApiClient {
                 return objectMapper.readValue(response.getBody(), TossResponse.class);
             } else {
                 System.err.println("❗️[verifyPayment] Toss 응답 실패: " + response.getStatusCode());
+                System.err.println("❗️[verifyPayment] 응답 바디: " + response.getBody());            
             }
         } catch (Exception e) {
             System.err.println("❗️[verifyPayment 예외]: " + e.getMessage());

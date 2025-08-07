@@ -4,15 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.Data;
 
-/*@Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class TossCallbackDto {
-    private String paymentKey;
-    private String orderId;
-    private String status;   
-    private String method;
-}*/
-
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TossCallbackDto {

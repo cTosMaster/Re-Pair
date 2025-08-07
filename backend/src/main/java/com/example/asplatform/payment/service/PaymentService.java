@@ -16,6 +16,7 @@ import com.example.asplatform.payment.dto.requestDTO.PaymentRequestDto;
 import com.example.asplatform.payment.dto.responseDTO.PaymentResponseDto;
 import com.example.asplatform.payment.dto.responseDTO.TossCallbackDto;
 import com.example.asplatform.payment.dto.responseDTO.TossResponse;
+import com.example.asplatform.payment.dto.responseDTO.WebhookEventData;
 import com.example.asplatform.payment.repository.PaymentsRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -86,11 +87,7 @@ public class PaymentService {
      * @param dto
      */
     public void processCallback(TossCallbackDto dto) {
-        System.out.println("✅ [콜백 수신] orderId = " + dto.getOrderId());
-        System.out.println("✅ [콜백 수신] status = " + dto.getStatus());
-
-        System.out.println("✅ [콜백 수신 DTO] paymentKey = " + dto.getPaymentKey());
-        System.out.println("✅ [콜백 수신 DTO] method = " + dto.getMethod());
+      
 
         if (dto.getOrderId() == null || dto.getStatus() == null) {
             System.err.println("❗️콜백 데이터 누락");
@@ -98,6 +95,13 @@ public class PaymentService {
         }
 
         Optional<Payments> optionalPayment = paymentRepository.findByOrderId(dto.getOrderId());
+        
+        
+        if (optionalPayment.isEmpty()) {
+        	System.out.println("⚠️ 콜백으로 받은 orderId에 해당하는 결제가 DB에 없습니다. orderId: {}" + dto.getOrderId());
+            return;
+        }
+        
         if (optionalPayment.isEmpty()) {
             System.err.println("❗️[콜백] 유효하지 않은 주문번호: " + dto.getOrderId());
             return;
@@ -105,6 +109,8 @@ public class PaymentService {
 
         Payments payment = optionalPayment.get();
         String paymentKey = payment.getPaymentKey(); 
+        
+        
 
         // ✅ Toss 서버에 실제 상태 확인 (verify API 호출)
         TossResponse verifyResponse = tossApiClient.verifyPayment(payment.getPaymentKey());
@@ -114,11 +120,8 @@ public class PaymentService {
             return;
         }
 
-        String verifiedStatus = verifyResponse.getStatus().toUpperCase(); // 예: "DONE"
-        System.out.println("✅ [검증 결과] Toss status = " + verifiedStatus);
-        System.out.println("✅ verify 응답 status: " + verifyResponse.getStatus());
-        System.out.println("✅ verify 전체 응답: " + verifyResponse);
-        // 이미 payment.getPaymentKey()에 들어가 있을 가능성 높음, 그래도 한 번 더 확인용 저장
+        String verifiedStatus = verifyResponse.getStatus().toUpperCase(); 
+        
         payment.setPaymentKey(verifyResponse.getPaymentKey());
         payment.setMethod(verifyResponse.getMethod());
 
@@ -212,4 +215,21 @@ public class PaymentService {
                 payment.getStatus()
         );
     }
+    
+    public void updatePaymentStatus(WebhookEventData data) {
+        String orderId = data.getOrderId(); // ✅ 수정됨
+        String status = data.getStatus();
+
+        Payments payment = paymentRepository.findByOrderId(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 결제 건이 존재하지 않습니다: " + orderId));
+
+        if ("DONE".equals(status)) {
+            payment.setStatus(PaymentStatus.DONE);
+            payment.setApprovedAt(LocalDateTime.now()); // approvedAt 파싱해서 써도 됨
+            paymentRepository.save(payment);
+        }
+    }
+
+
+    
 }
