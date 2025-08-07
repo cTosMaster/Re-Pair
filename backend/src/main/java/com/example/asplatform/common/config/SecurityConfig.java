@@ -44,16 +44,23 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 인증·회원가입 API 열어두기 그 외 다른 API 경로도 열어두기
-                        .requestMatchers("/api/auth/**", "/api/users/register", "/api/payments/callback", "/api/payments/request").permitAll()
-                        
-                        // 인증 처리가 필요한 API ( CUSTOMER 권한을 가진 사용자만 결제 부분에 접근 가능 ) 
-                        .requestMatchers(
-                                "/api/payments/status/**",
-                                "/api/payments",
-                                "/api/payments/pending",
-                                "/api/payments/detail/**"
-                            ).hasRole("CUSTOMER")
+
+					//인증·회원가입 API 열어두기
+					.requestMatchers(
+					        "/api/auth/**",
+					        "/api/users/send-signup-code",
+					        "/api/users/register",
+					        "/api/payments/callback",
+					        "/api/payments/request"
+					).permitAll()
+					
+					// 인증 처리가 필요한 API ( CUSTOMER 권한을 가진 사용자만 결제 부분에 접근 가능 ) 
+					.requestMatchers(
+					        "/api/payments/status/**",
+					        "/api/payments",
+					        "/api/payments/pending",
+					        "/api/payments/detail/**"
+					).hasRole("CUSTOMER")
                         // Swagger UI 문서 열어두기
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // 그 외 모든 요청은 인증 필요
