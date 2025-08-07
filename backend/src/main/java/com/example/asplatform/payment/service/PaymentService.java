@@ -89,6 +89,8 @@ public class PaymentService {
     public void processCallback(TossCallbackDto dto) {
       
 
+    	System.out.println("콜백 상태: " + dto.getStatus());
+    	
         if (dto.getOrderId() == null || dto.getStatus() == null) {
             System.err.println("❗️콜백 데이터 누락");
             return;
@@ -101,12 +103,7 @@ public class PaymentService {
         	System.out.println("⚠️ 콜백으로 받은 orderId에 해당하는 결제가 DB에 없습니다. orderId: {}" + dto.getOrderId());
             return;
         }
-        
-        if (optionalPayment.isEmpty()) {
-            System.err.println("❗️[콜백] 유효하지 않은 주문번호: " + dto.getOrderId());
-            return;
-        }
-
+     
         Payments payment = optionalPayment.get();
         String paymentKey = payment.getPaymentKey(); 
         
@@ -121,16 +118,28 @@ public class PaymentService {
         }
 
         String verifiedStatus = verifyResponse.getStatus().toUpperCase(); 
-        
+        System.out.println("verify 상태: " + verifyResponse.getStatus());
+
         payment.setPaymentKey(verifyResponse.getPaymentKey());
         payment.setMethod(verifyResponse.getMethod());
 
+        System.out.println("verifiedStatus: " + verifiedStatus);
+
         switch (verifiedStatus) {
+        
+	        case "WAITING_FOR_DEPOSIT" -> {
+	            payment.setStatus(PaymentStatus.READY);  
+	          
+	        }
+	        case "IN_PROGRESS" -> {
+	            payment.setStatus(PaymentStatus.IN_PROGRESS);  
+	        }
             case "DONE" -> {
                 payment.setStatus(PaymentStatus.DONE);
                 payment.setApprovedAt(LocalDateTime.now());
             }
             case "CANCELED" -> {
+            	 System.out.println("취소 상태 처리중");
                 payment.setStatus(PaymentStatus.CANCELED);
                 payment.setCanceledAt(LocalDateTime.now());
             }
@@ -217,18 +226,47 @@ public class PaymentService {
     }
     
     public void updatePaymentStatus(WebhookEventData data) {
-        String orderId = data.getOrderId(); // ✅ 수정됨
-        String status = data.getStatus();
+        String orderId = data.getOrderId();
 
         Payments payment = paymentRepository.findByOrderId(orderId)
             .orElseThrow(() -> new IllegalArgumentException("해당 결제 건이 존재하지 않습니다: " + orderId));
 
-        if ("DONE".equals(status)) {
-            payment.setStatus(PaymentStatus.DONE);
-            payment.setApprovedAt(LocalDateTime.now()); // approvedAt 파싱해서 써도 됨
-            paymentRepository.save(payment);
+   
+        String paymentKey = payment.getPaymentKey();
+
+        // ✅ Toss API 에 실제로 verify 호출하기
+        TossResponse verifyResponse = tossApiClient.verifyPayment(paymentKey);
+
+        if (verifyResponse == null || verifyResponse.getStatus() == null) {
+            System.err.println("❗️[verify] Toss 응답 없음 또는 상태 누락");
+            return;
         }
+
+        String verifiedStatus = verifyResponse.getStatus().toUpperCase();
+
+        switch (verifiedStatus) {
+            case "WAITING_FOR_DEPOSIT" -> payment.setStatus(PaymentStatus.READY);
+            case "IN_PROGRESS" -> payment.setStatus(PaymentStatus.IN_PROGRESS);
+            case "DONE" -> {
+                payment.setStatus(PaymentStatus.DONE);
+                payment.setApprovedAt(LocalDateTime.now());
+            }
+            case "CANCELED" -> {
+                payment.setStatus(PaymentStatus.CANCELED);
+                payment.setCanceledAt(LocalDateTime.now());
+            }
+            case "FAILED" -> payment.setStatus(PaymentStatus.FAILED);
+            default -> {
+                System.out.println("🚨 Unknown verified status: " + verifiedStatus);
+                return;
+            }
+        }
+
+        paymentRepository.save(payment);
+        System.out.println("✅ 결제 상태 업데이트 완료 (verify 기반): " + payment.getStatus());
     }
+    
+ 
 
 
     
