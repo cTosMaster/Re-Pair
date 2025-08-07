@@ -34,7 +34,7 @@ public class PaymentService {
      * @param dto
      * @return
      */
-    public PaymentResponseDto requestVirtualAccount(PaymentRequestDto dto) {
+    public PaymentResponseDto requestVirtualAccount(PaymentRequestDto dto, String username) {
     	 // 유효성 검증
         if (dto.getAmount() == null || dto.getAmount() <= 0)
             throw new IllegalArgumentException("금액이 올바르지 않습니다.");
