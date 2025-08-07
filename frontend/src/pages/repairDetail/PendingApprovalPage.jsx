@@ -3,6 +3,7 @@ import RepairProgress from "../../components/repairdetail/common/RepairProgress"
 import RepairRequestPreview from "../../components/repairdetail/pendingapproval/RepairRequestPreview";
 import EngineerSelectList from "../../components/repairdetail/pendingapproval/EngineerSelectList";
 import ApprovalActions from "../../components/repairdetail/pendingapproval/ApprovalActions";
+import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
 
 
 function PendingApprovalPage() {
@@ -108,6 +109,10 @@ function PendingApprovalPage() {
     },
   ];
 
+  const reason = {
+    message: "요청 내용이 불분명하여 수리를 진행할 수 없습니다.",
+  };
+
   const { role, repair } = userData;
   const { statusCode, isCancelled } = repair;
 
@@ -127,6 +132,12 @@ function PendingApprovalPage() {
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
           <RepairRequestPreview categoryData={categoryData}/>
+        </div>
+      ) : isCancelled ? (
+        <div className="space-y-4">
+          <RepairProgress statusCode={statusCode} isCancelled={true} />
+          <RepairRequestPreview categoryData={categoryData} />
+          <RejectReasonBox reason={reason.message} />
         </div>
       ) : (
         <>
