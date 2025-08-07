@@ -28,13 +28,24 @@ public class RepairItemController {
     }
 
     /**
-     * 특정 고객사의 수리 항목 전체 조회
-     * @param customerId 고객사 ID
-     * @return List of RepairItemResponse
+     * 전체 수리 항목 조회 (모든 고객사의 수리 항목을 조회)
+     *
+     * @return 200 OK + List<RepairItemResponse>
      */
-    @GetMapping("/{customerId}")
+    @GetMapping
+    public ResponseEntity<List<RepairItemResponse>> getAllItems() {
+        return ResponseEntity.ok(repairItemService.getAllItems());
+    }
+
+    /**
+     * 특정 고객사의 수리 항목 조회
+     *
+     * @param customerId 고객사 ID
+     * @return 200 OK + List<RepairItemResponse>
+     */
+    @GetMapping("/customer/{customerId}")
     public ResponseEntity<List<RepairItemResponse>> getItemsByCustomer(@PathVariable Long customerId) {
-        return ResponseEntity.ok(repairItemService.getAllItems(customerId));
+        return ResponseEntity.ok(repairItemService.getAllItemsByCustomer(customerId));
     }
 
     /**
