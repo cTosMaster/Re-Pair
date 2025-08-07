@@ -33,13 +33,16 @@ public class AuthService {
      * 2) 입력된 비밀번호 검증
      * 3) 액세스 토큰 + 리프레시 토큰 생성 후 반환
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginResponse login(LoginRequest req) {
         User user = userRepository.findByEmail(req.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
+
+        user.setLastLogin(java.time.LocalDateTime.now());
+
         String access  = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String refresh = jwtUtil.generateRefreshToken(user.getEmail());
         return new LoginResponse(access, refresh, user.getEmail(), user.getRole().name());
