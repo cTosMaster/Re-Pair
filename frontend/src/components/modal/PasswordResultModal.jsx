@@ -1,14 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const PasswordResultModal = ({ isOpen, onClose }) => {
+const PasswordResultModal = ({ isOpen, onClose, redirectPath }) => {
     const navigate = useNavigate();
 
     if (!isOpen) return null;
     
     const handleClose = () => {
     onClose();         // 모달 상태 false로
-    navigate('/');     // 홈으로 이동
+    navigate(redirectPath);     // 홈으로 이동
   };
 
   return (
