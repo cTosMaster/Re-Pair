@@ -1,9 +1,8 @@
 import { RepairStatusMap } from "../../constants/repairStatus";
-import RepairProgress from "../../components/repairdetail/common/RepairProgress";
 
-function PendingApprovalPage() {
+function WaitingForDeliveryPage() {
   const role = "CUSTOMER"; // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
-  const statusCode = "PENDING_APPROVAL";
+  const statusCode = "WAITING_FOR_DELIVERY";
 
   const currentStep = RepairStatusMap[statusCode];
   const userStep = RepairStatusMap[statusCode];
@@ -19,35 +18,30 @@ function PendingApprovalPage() {
       {isPastStep ? (
         <div className="text-center text-gray-600 mt-8">
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
-          <RepairProgress statusCode="PENDING_APPROVAL" isCancelled={false} />
         </div>
       ) : (
         <>
           {isUser && (
             <div className="space-y-4">
               {/* USER용 컴포넌트 삽입 위치 */}
-              <RepairProgress statusCode="PENDING_APPROVAL" isCancelled={false} />
             </div>
           )}
 
           {isCustomer && (
             <div className="space-y-4">
               {/* CUSTOMER용 컴포넌트 삽입 위치 */}
-              <RepairProgress statusCode="PENDING_APPROVAL" isCancelled={false} />
             </div>
           )}
 
           {isEngineer && (
             <div className="space-y-4">
               {/* ENGINEER용 컴포넌트 삽입 위치 */}
-              <RepairProgress statusCode="PENDING_APPROVAL" isCancelled={false} />
             </div>
           )}
 
           {isAdmin && (
             <div className="space-y-4">
               {/* ADMIN용 컴포넌트 삽입 위치 */}
-              <RepairProgress statusCode="PENDING_APPROVAL" isCancelled={false} />
             </div>
           )}
         </>
@@ -56,4 +50,4 @@ function PendingApprovalPage() {
   );
 }
 
-export default PendingApprovalPage;
+export default WaitingForDeliveryPage;
