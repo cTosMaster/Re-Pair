@@ -44,7 +44,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // 인증·회원가입 API 열어두기
-                        .requestMatchers("/api/auth/**", "/api/users/register").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/users/send-signup-code","/api/users/register").permitAll()
                         // Swagger UI 문서 열어두기
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         //관리자 대시보드 (ADMIN 전용)
