@@ -1,0 +1,66 @@
+### Java ###
+*.class
+*.jar
+*.war
+*.ear
+
+### Build ###
+target/
+build/
+dist/
+dist-ssr/
+
+### Logs ###
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+### OS/System ###
+.DS_Store
+Thumbs.db
+
+### IDEs ###
+# IntelliJ
+.idea/
+*.iml
+
+# Eclipse / STS
+.classpath
+.project
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+.sts4-cache
+
+# VS Code
+.vscode/
+
+### Node ###
+node_modules/
+*.local
+
+### Maven wrapper ###
+.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+### Git conflict files ###
+*.orig
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+
+### Config / Secret ###
+.env
+.env.*
+application.yml
+application.properties
+application-*.yml
+application-*.properties
+src/main/resources/application.yml
+src/main/resources/application.properties
