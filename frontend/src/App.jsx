@@ -10,6 +10,7 @@ import ResetPasswordPage from "./components/login/ResetPasswordPage";
 import SignUp from "./components/login/SignUp";
 import AgreementPage from "./components/companyregistration/AgreementPage";
 import CompanyFormContainer from "./components/companyregistration/CompanyFormContainer";
+import UserMypage from "./mypage/UserMypage";
 
 function App() {
 
@@ -35,6 +36,7 @@ function App() {
         <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
 
         {/* ✅ 김상윤 페이지 - 아직 role 보호 없이 그냥 연결 */}
+
 
 
         {/* ✅ Not Found (선택) */}
