@@ -1,44 +1,29 @@
 package com.example.asplatform.customer.domain;
 
-import java.time.LocalDateTime;
-
 import com.example.asplatform.common.enums.CustomerStatus;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "customers")
 @Getter
-@Builder
-@NoArgsConstructor
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Builder
 public class Customer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "customer_id")
-    private Long customerId;
+    private Long id;
 
     @Column(name = "company_name", nullable = false)
     private String companyName;
 
-    @Column(name = "business_number", nullable = false, unique = true)
-    private String businessNumber;
-
-    @Column(nullable = false)
-    private String address;
+    @Column(name = "company_number", nullable = false, unique = true)
+    private String companyNumber; // 사업자등록번호
 
     @Column(name = "contact_name", nullable = false)
     private String contactName;
@@ -56,26 +41,26 @@ public class Customer {
     private String openingHours;
 
     @Column(name = "is_terms_agreed", nullable = false)
-    private Boolean isTermsAgreed;
+    private boolean isTermsAgreed;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false)
     private CustomerStatus status;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    /**
+     * 1:1 매핑된 고객사 주소 엔티티
+     */
+    @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private CustomerAddress address;
+
     @PrePersist
-    public void prePersist() {
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
-        if (this.status == null) {
-            this.status = CustomerStatus.PENDING; //기본값
-        }
-        if (this.isTermsAgreed == null) {
-            this.isTermsAgreed = false;
-        }
     }
 }
