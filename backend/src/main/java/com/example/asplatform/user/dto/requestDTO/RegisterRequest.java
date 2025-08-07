@@ -19,11 +19,11 @@ public class RegisterRequest {
     private String code;
 
     @NotBlank
-    @Size(min = 8)
+    @Size(min = 4)
     private String password;
 
     @NotBlank
-    @Size(min = 8)
+    @Size(min = 4)
     private String passwordConfirm;
 
     @NotBlank
