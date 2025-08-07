@@ -39,27 +39,7 @@ public class PaymentController {
 	        return userDetails.getUsername();
 	    }
 
-	    @PostMapping("/payments/webhook")
-	    public ResponseEntity<?> handleWebhook(@RequestBody(required = false) WebhookEventDto dto) {
-	        if (dto == null || dto.getEventType() == null || dto.getData() == null) {
-	            System.err.println("⚠️ [Webhook] 잘못된 콜백 형식 또는 빈 요청이 들어왔습니다.");
-	            return ResponseEntity.ok().build(); // 응답은 항상 200으로
-	        }
-
-	        System.out.println("📦 Toss 콜백 수신 원본 JSON = " + dto);
-
-	        if ("PAYMENT_STATUS_CHANGED".equals(dto.getEventType())) {
-	            // 🔧 서비스 레이어에서 처리하도록 위임
-	            paymentService.updatePaymentStatus(dto.getData());
-	        } else {
-	            System.out.println("📭 처리되지 않은 이벤트 타입: " + dto.getEventType());
-	        }
-
-	        return ResponseEntity.ok().build();
-	    }
-
-	    
-	    
+	       
 
 	    
 	    /**

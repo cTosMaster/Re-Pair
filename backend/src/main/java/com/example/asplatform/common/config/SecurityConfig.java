@@ -52,7 +52,7 @@ public class SecurityConfig {
 					        "/api/users/register",
 					        "/api/payments/callback",
 					        "/api/payments/request"
-					        ,"/api/payments/payments/webhook"
+		
 					).permitAll()
 					
 					// 인증 처리가 필요한 API ( CUSTOMER 권한을 가진 사용자만 결제 부분에 접근 가능 ) 
