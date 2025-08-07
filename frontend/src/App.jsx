@@ -11,6 +11,13 @@ import SignUp from "./components/login/SignUp";
 import AgreementPage from "./components/companyregistration/AgreementPage";
 import CompanyFormContainer from "./components/companyregistration/CompanyFormContainer";
 import UserMypage from "./mypage/UserMypage";
+import MyAsset_Button from "/src/components/MyAsset_Button";
+import PendingApprovalPage from "./pages/repairdetail/PendingApprovalPage";
+import WaitingForRepairPage from "./pages/repairdetail/WaitingForRepairPage";
+import InProgressPage from "./pages/repairdetail/InProgressPage";
+import WaitingForPaymentPage from "./pages/repairdetail/WaitingForPaymentPage";
+import WaitingForDeliveryPage from "./pages/repairdetail/WaitingForDeliveryPage";
+import CompletedPage from "./pages/repairdetail/CompletedPage";
 
 function App() {
 
@@ -36,8 +43,13 @@ function App() {
         <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
 
         {/* ✅ 김상윤 페이지 - 아직 role 보호 없이 그냥 연결 */}
-
-
+        <Route path="/" element={<MyAsset_Button />} />
+        <Route path="/1" element={<PendingApprovalPage />} />
+        <Route path="/2" element={<WaitingForRepairPage />} />
+        <Route path="/3" element={<InProgressPage />} />
+        <Route path="/4" element={<WaitingForPaymentPage />} />
+        <Route path="/5" element={<WaitingForDeliveryPage />} />
+        <Route path="/6" element={<CompletedPage />} />
 
         {/* ✅ Not Found (선택) */}
         <Route path="*" element={<Navigate to="/" />} />
