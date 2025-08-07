@@ -1,6 +1,5 @@
 package com.example.asplatform.repairHistory.controller;
 
-import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/repairs/{requesId}/status-history")
+@RequestMapping("/api/repairs/status-history")
 public class RepairHistoryController {
 
 

@@ -46,7 +46,7 @@ public class RepairStatusManager {
 
         // 4. 상태 변경
         repairRequest.setStatus(targetStatus);
-        repairRequestRepository.save(repairRequest);
+        // repairRequestRepository.save(repairRequest);
 
         // 4. 변경 이력 저장
         String historyMemo;
@@ -75,15 +75,13 @@ public class RepairStatusManager {
     private boolean isValidTransition(RepairStatus from, RepairStatus to, User actor) {
         Role role = actor.getRole();
 
-        // 수동 상태 변경: 관리자 또는 수리기사 → CANCELED만 허용
-        if (to == RepairStatus.CANCELED) {
-            if (role == Role.ADMIN) {
-                return from != RepairStatus.COMPLETED; // COMPLETED이후는 불가
+        // 수동 변경 허용 유효성 검사
+        if (isManualChange(to, role)) {
+            // 예외 조건: COMPLETED 이후에는 CANCELED 불가 (비즈니스 룰)
+            if (to == RepairStatus.CANCELED && from == RepairStatus.COMPLETED) {
+                return false;
             }
-            if (role == Role.ENGINEER) {
-                return from == RepairStatus.WAITING_FOR_REPAIR || from == RepairStatus.IN_PROGRESS; // 특정 상태에서만 수동 취소 가능
-            }
-            return false; // 고객등은 불가
+            return true; // 수동 변경 허용됨
         }
 
         // 자동 상태 흐름
@@ -98,16 +96,16 @@ public class RepairStatusManager {
     }
     
     private boolean isManualChange(RepairStatus to, Role role) {
-        return to == RepairStatus.CANCELED && (role == Role.ADMIN || role == Role.ENGINEER);
+    	return to.canManuallyChange(role);
     }
     
     private String getAutoMemo(RepairStatus from, RepairStatus to) {
         return switch (to) {
-            case WAITING_FOR_REPAIR -> "수리 요청이 승인되어 수리 대기 상태로 자동 전환되었습니다.";
-            case IN_PROGRESS -> "수리기사에 의해 수리가 시작되어 작업 중 상태로 전환되었습니다.";
-            case WAITING_FOR_PAYMENT -> "수리 완료 후 결제 대기 상태로 자동 전환되었습니다.";
-            case WAITING_FOR_DELIVERY -> "입금이 확인되어 배송 대기 상태로 자동 전환되었습니다.";
-            case COMPLETED -> "배송이 완료되어 수리 완료 상태로 자동 전환되었습니다.";
+            case WAITING_FOR_REPAIR -> "수리 요청이 승인되어 기사 배정 상태";
+            case IN_PROGRESS -> "수리기사 1차 견적 작성 완료되어 수리 중 상태";
+            case WAITING_FOR_PAYMENT -> "수리가 완료되어 입금 대기 상태";
+            case WAITING_FOR_DELIVERY -> "입금이 확인되어 발송 대기 상태";
+            case COMPLETED -> "배송이 완료되어 수리 완료 상태";
             default -> "시스템에 의해 상태가 자동으로 변경되었습니다.";
         };
     }

@@ -1,4 +1,4 @@
-package com.example.asplatform.repair.dto.requestDTO;
+package com.example.asplatform.repairRequest.dto.requestDTO;
 
 import com.example.asplatform.common.enums.RepairStatus;
 

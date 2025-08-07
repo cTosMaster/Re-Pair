@@ -33,7 +33,8 @@ public class RepairHistoryService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 수리 요청이 존재하지 않습니다."));
 
         // 2. 해당 요청의 상태 변경 이력 조회
-        List<RepairStatusHistoryResponseDTO> historyList = repairHistoryRepository.findByRepairRequestIdOrderByChangedAtAsc(repairRequestId)
+        List<RepairStatusHistoryResponseDTO> historyList = repairHistoryRepository
+        		.findByRepairRequestOrderByChangedAtAsc(request)
                 .stream()
                 .map(RepairStatusHistoryResponseDTO::from)
                 .toList();

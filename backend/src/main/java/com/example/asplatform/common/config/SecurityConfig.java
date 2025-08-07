@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         //관리자 대시보드 (ADMIN 전용)
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/repair-requests/**").permitAll() //실행 테스트용
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )

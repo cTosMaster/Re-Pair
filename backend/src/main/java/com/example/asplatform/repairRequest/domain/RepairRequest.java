@@ -46,7 +46,7 @@ public class RepairRequest {
 
     // 대상 제품
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "repairable_item_id", nullable = false)
+    @JoinColumn(name = "item_id", nullable = false)
     private RepairableItem repairableItem;
 
     // 배정된 수리기사 (nullable)

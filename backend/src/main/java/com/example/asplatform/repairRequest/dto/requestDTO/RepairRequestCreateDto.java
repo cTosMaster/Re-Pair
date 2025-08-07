@@ -19,4 +19,8 @@ public class RepairRequestCreateDto {
 
     @NotBlank
     private String description; // 상세 내용
+    
+    @NotBlank
+    private String contactPhone; // 연락처
+    
 }

@@ -24,7 +24,7 @@ public class CustomerCategory {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_id")
-    private Long categoryId;
+    private Long id;
 
     // 어떤 고객사 소속인지
     @Column(name = "customer_id", nullable = false)
