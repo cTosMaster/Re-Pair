@@ -3,6 +3,7 @@ import MysuriTopnav from './MysuriTopnav';
 import MysuriSidebar from './MysuriSidebar';
 import MysuriRequestList from './MysuriRequestList';
 import MysuriRequestManage from './MysuriRequestManage';
+import Surigisamanage from './Surigisamanage';
 
 const MysuriMainPage = () => {
   const [selectedMenu, setSelectedMenu] = useState("수리 요청 목록");
@@ -15,7 +16,7 @@ const MysuriMainPage = () => {
       case "수리 현황 관리":
         return <MysuriRequestManage />;
       case "수리 기사 관리":
-        return <div>수리 기사 관리 내용</div>;
+        return <Surigisamanage />;
       case "수리 물품 관리":
         return <div>수리 물품 관리 내용</div>;
       case "요금 정책(프리셋)":
