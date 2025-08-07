@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.repairRequest.domain.RepairRequest;
+import com.example.asplatform.user.domain.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -44,9 +45,13 @@ public class RepairHistory {
     @Column(name = "new_status", nullable = false, length = 50)
     private RepairStatus newStatus;
 
-    @Column(name = "changed_by", nullable = false, length = 100)
-    private String changedBy; // 사용자 이름 또는 ID
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "changed_by", nullable = false)
+    private User changedBy; // User 엔티티와 연관관계
+    
+    @Column(name = "memo", nullable = false, length = 255)
+    private String memo;
+    
     @Column(name = "changed_at", nullable = false)
     private LocalDateTime changedAt;
 
@@ -59,11 +64,13 @@ public class RepairHistory {
     public RepairHistory(RepairRequest repairRequest,
                          RepairStatus previousStatus,
                          RepairStatus newStatus,
-                         String changedBy) {
+                         User changedBy,
+                         String memo) {
         this.repairRequest = repairRequest;
         this.previousStatus = previousStatus;
         this.newStatus = newStatus;
         this.changedBy = changedBy;
+        this.memo = memo;
         this.changedAt = LocalDateTime.now();
     }
     

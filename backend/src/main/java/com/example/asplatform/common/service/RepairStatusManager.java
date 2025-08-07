@@ -12,7 +12,7 @@ import com.example.asplatform.repairHistory.domain.RepairHistory;
 import com.example.asplatform.repairHistory.repository.RepairHistoryRepository;
 import com.example.asplatform.repairRequest.domain.RepairRequest;
 import com.example.asplatform.repairRequest.repository.RepairRequestRepository;
-import com.example.asplatform.user.domain.Users;
+import com.example.asplatform.user.domain.User;
 
 @Service
 @RequiredArgsConstructor
@@ -25,52 +25,68 @@ public class RepairStatusManager {
      * 수리 상태 변경 처리 (공통 로직)
      */
     @Transactional
-    public void changeStatus(Long requestId, RepairStatus targetStatus, Users actor) {
+    public void changeStatus(Long requestId, RepairStatus targetStatus, User actor, String memo) {
         // 1. 수리 요청 조회
         RepairRequest repairRequest = repairRequestRepository.findById(requestId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 수리 요청이 존재하지 않습니다."));
 
         RepairStatus currentStatus = repairRequest.getStatus();
 
-        // 2. 상태 전이 유효성 검사
+        // 2. 수동 상태 변경 유효성 검사
         if (!isValidTransition(currentStatus, targetStatus, actor)) {
             throw new IllegalStateException(String.format(
-                "상태 전이 불가: %s → %s", currentStatus, targetStatus
+                "상태 변경 불가: %s → %s", currentStatus, targetStatus
             ));
         }
+        
+        // 3. 수동 변경일 경우 memo 필수 검사
+        if (isManualChange(targetStatus, actor.getRole()) && (memo == null || memo.isBlank())) {
+            throw new IllegalArgumentException("수동 상태 변경 시 사유(memo)를 입력해야 합니다.");
+        }
 
-        // 3. 상태 변경
+        // 4. 상태 변경
         repairRequest.setStatus(targetStatus);
         repairRequestRepository.save(repairRequest);
 
         // 4. 변경 이력 저장
+        String historyMemo;
+        
+        if (isManualChange(targetStatus, actor.getRole())) {
+            historyMemo = memo; // 수동이면 사용자가 입력한 메모
+        } else {
+            // 자동 처리용 메모 템플릿
+            historyMemo = getAutoMemo(currentStatus, targetStatus);
+        }
+        
         RepairHistory history = RepairHistory.builder()
                 .repairRequest(repairRequest)
                 .previousStatus(currentStatus)
                 .newStatus(targetStatus)
-                .changedBy(actor.getName())
+                .changedBy(actor)
+                .memo(historyMemo) // 여기에 memo 추가
                 .build();
 
         repairHistoryRepository.save(history);
     }
 
     /**
-     * 상태 전이 유효성 검사
+     * 상태 변경 유효성 검사
      */
-    private boolean isValidTransition(RepairStatus from, RepairStatus to, Users actor) {
+    private boolean isValidTransition(RepairStatus from, RepairStatus to, User actor) {
         Role role = actor.getRole();
 
-        // 관리자: 모든 상태 전이 허용 (단 COMPLETED 이후는 불가)
-        if (role == Role.ADMIN) {
-            return from != RepairStatus.COMPLETED;
+        // 수동 상태 변경: 관리자 또는 수리기사 → CANCELED만 허용
+        if (to == RepairStatus.CANCELED) {
+            if (role == Role.ADMIN) {
+                return from != RepairStatus.COMPLETED; // COMPLETED이후는 불가
+            }
+            if (role == Role.ENGINEER) {
+                return from == RepairStatus.WAITING_FOR_REPAIR || from == RepairStatus.IN_PROGRESS; // 특정 상태에서만 수동 취소 가능
+            }
+            return false; // 고객등은 불가
         }
 
-        // 수리기사: 수동 취소 가능 상태만 허용
-        if (to == RepairStatus.CANCELED && role == Role.ENGINEER) {
-            return from == RepairStatus.WAITING_FOR_REPAIR || from == RepairStatus.IN_PROGRESS;
-        }
-
-        // 일반 상태 흐름
+        // 자동 상태 흐름
         return switch (from) {
             case PENDING -> to == RepairStatus.WAITING_FOR_REPAIR;
             case WAITING_FOR_REPAIR -> to == RepairStatus.IN_PROGRESS;
@@ -78,6 +94,21 @@ public class RepairStatusManager {
             case WAITING_FOR_PAYMENT -> to == RepairStatus.WAITING_FOR_DELIVERY;
             case WAITING_FOR_DELIVERY -> to == RepairStatus.COMPLETED;
             default -> false;
+        };
+    }
+    
+    private boolean isManualChange(RepairStatus to, Role role) {
+        return to == RepairStatus.CANCELED && (role == Role.ADMIN || role == Role.ENGINEER);
+    }
+    
+    private String getAutoMemo(RepairStatus from, RepairStatus to) {
+        return switch (to) {
+            case WAITING_FOR_REPAIR -> "수리 요청이 승인되어 수리 대기 상태로 자동 전환되었습니다.";
+            case IN_PROGRESS -> "수리기사에 의해 수리가 시작되어 작업 중 상태로 전환되었습니다.";
+            case WAITING_FOR_PAYMENT -> "수리 완료 후 결제 대기 상태로 자동 전환되었습니다.";
+            case WAITING_FOR_DELIVERY -> "입금이 확인되어 배송 대기 상태로 자동 전환되었습니다.";
+            case COMPLETED -> "배송이 완료되어 수리 완료 상태로 자동 전환되었습니다.";
+            default -> "시스템에 의해 상태가 자동으로 변경되었습니다.";
         };
     }
 }

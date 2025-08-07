@@ -18,17 +18,20 @@ public class RepairStatusHistoryResponseDTO { //상태 이력 1건 (이전 상�
 
     private String newStatus;
     private String newStatusLabel;
-
-    private String changedBy;
+    
+    private Long changedByUserId;
+    private String changedByUserName;
     private LocalDateTime changedAt;
+
 
     public static RepairStatusHistoryResponseDTO from(RepairHistory history) {
         return RepairStatusHistoryResponseDTO.builder()
-                .previousStatus(history.getPreviousStatus().name())
-                .previousStatusLabel(history.getPreviousStatus().getLabel())
+                .previousStatus(history.getPreviousStatus() != null ? history.getPreviousStatus().name() : null)
+                .previousStatusLabel(history.getPreviousStatus() != null ? history.getPreviousStatus().getLabel() : null)
                 .newStatus(history.getNewStatus().name())
                 .newStatusLabel(history.getNewStatus().getLabel())
-                .changedBy(history.getChangedBy())
+                .changedByUserId(history.getChangedBy().getId())
+                .changedByUserName(history.getChangedBy().getName()) // name 또는 email 등 원하는 값 사용
                 .changedAt(history.getChangedAt())
                 .build();
     }

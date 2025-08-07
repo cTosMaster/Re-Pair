@@ -5,7 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.example.asplatform.common.enums.RepairStatus;
-import com.example.asplatform.user.domain.Users;
+import com.example.asplatform.item.domain.RepairableItem;
+import com.example.asplatform.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -41,16 +42,17 @@ public class RepairRequest {
     // 요청 고객
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    private User user;
 
-    // 대상 제품 (nullable)
-    @Column(name = "item_id")
-    private Long itemId;
+    // 대상 제품
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "repairable_item_id", nullable = false)
+    private RepairableItem repairableItem;
 
     // 배정된 수리기사 (nullable)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "engineer_id")
-    private Users engineer;
+    private User engineer;
 
     @Column(length = 255)
     private String title;
