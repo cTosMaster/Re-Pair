@@ -16,7 +16,7 @@ const Header = () => {
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row md:justify-between md:items-center">
         {/* 상단 로고 및 로그인/회원가입 */}
         <div className="flex justify-between items-center mb-2 md:mb-0">
-          <Link to="/" className="text-2xl font-bold text-blue-600">
+          <Link to="/" className="text-xl font-bold text-green-600">
             Re:Pair
           </Link>
           <div className="md:hidden ml-auto space-x-2">
