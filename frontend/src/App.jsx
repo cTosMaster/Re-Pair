@@ -17,6 +17,7 @@ import InProgressPage from "./pages/repairdetail/InProgressPage";
 import WaitingForPaymentPage from "./pages/repairdetail/WaitingForPaymentPage";
 import WaitingForDeliveryPage from "./pages/repairdetail/WaitingForDeliveryPage";
 import CompletedPage from "./pages/repairdetail/CompletedPage";
+import MysuriMainPage from "./components/mysuridashboard/MysuriMainPage";
 
 function App() {
 
@@ -40,6 +41,7 @@ function App() {
         <Route path="/signup" element={<SignUp />} /> {/* 회원가입 추가 */}
         <Route path="/agreementPage" element={<AgreementPage />} /> {/* 약관동의 추가 */}
         <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
+        <Route path="/MysuriMainPage" element={<MysuriMainPage />} /> {/* MY수리센터대쉬보드 추가 */}
 
         {/* ✅ 김상윤 페이지 - 아직 role 보호 없이 그냥 연결 */}
         <Route path="/1" element={<PendingApprovalPage />} />
