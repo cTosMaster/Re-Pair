@@ -47,7 +47,7 @@ public class SecurityConfig {
                         // 인증·회원가입 API 열어두기 그 외 다른 API 경로도 열어두기
                         .requestMatchers("/api/auth/**", "/api/users/register", "/api/payments/callback", "/api/payments/request").permitAll()
                         
-                        // 인증 처리가 필요한 API
+                        // 인증 처리가 필요한 API ( CUSTOMER 권한을 가진 사용자만 결제 부분에 접근 가능 ) 
                         .requestMatchers(
                                 "/api/payments/status/**",
                                 "/api/payments",
