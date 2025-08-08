@@ -26,8 +26,7 @@ import MysuriMainPage from "./components/mysuridashboard/MysuriMainPage";
 function App() {
   return (
     <Routes>
-      {/* ✅ 기본 공개 페이지 */}
-      <Route path="/" element={<LandingPage />} />
+      {/* ✅ 비로그인/로그인 전체 기본 공개 페이지 */}
       <Route path="/customer/home" element={<CustomerSalesPage />} />
 
       {/* ✅ 관리자 전용 */}
@@ -57,24 +56,25 @@ function App() {
 
       {/* ✅ 로그인 상태면 접근 불가 페이지 */}
       <Route element={<PublicRoute />}>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* 비밀번호찾기 추가 */}
         <Route path="/signup" element={<SignUp />} />
-        
       </Route>
 
-      {/* ✅ 공개된 기타 페이지 */}
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/agreementPage" element={<AgreementPage />} />
-      <Route path="/companyFormContainer" element={<CompanyFormContainer />} />
-      
-      {/* ✅ 김상윤 페이지 - 아직 role 보호 없이 그냥 연결 */}
-      <Route path="/1" element={<PendingApprovalPage />} />
-      <Route path="/2" element={<WaitingForRepairPage />} />
-      <Route path="/3" element={<InProgressPage />} />
-      <Route path="/4" element={<WaitingForPaymentPage />} />
-      <Route path="/5" element={<WaitingForDeliveryPage />} />
-      <Route path="/6" element={<CompletedPage />} />
+      {/* [로그인만 필요] 공통 영역 */}
+      <Route element={<ProtectedRoute />}>
+        {/* 모든 로그인 사용자가 공통으로 쓰는 라우트들 */}
+        <Route path="/register-partner" element={<CompanyFormContainer />} />
+        <Route path="/agreementPage" element={<AgreementPage />} />
+        <Route path="/companyFormContainer" element={<CompanyFormContainer />} />
+        <Route path="/1" element={<PendingApprovalPage />} />
+        <Route path="/2" element={<WaitingForRepairPage />} />
+        <Route path="/3" element={<InProgressPage />} />
+        <Route path="/4" element={<WaitingForPaymentPage />} />
+        <Route path="/5" element={<WaitingForDeliveryPage />} />
+        <Route path="/6" element={<CompletedPage />} />
+      </Route>
 
       {/* ✅ 404 */}
       <Route path="*" element={<Navigate to="/" />} />
