@@ -1,6 +1,7 @@
 import { RepairStatusMap } from "../../constants/repairStatus";
 import RepairProgress from "../../components/repairdetail/common/RepairProgress";
 import { dummyUser } from "./dummyUser";
+import FinalEstimateForm from "../../components/repairdetail/inprogress/FinalEstimateForm";
 
 function InProgressPage() {
   const userData = {
@@ -10,6 +11,28 @@ function InProgressPage() {
       isCancelled: dummyUser.repair.isCancelled,             // 취소 여부
     },
   };
+
+ const finalEstimateDummy = {
+    presets: [
+      { id: 1, name: "메인보드 교체", price: 80000 },
+      { id: 2, name: "팬 청소", price: 15000 },
+    ],
+    extraNote: "CPU 써멀 재도포 포함",
+    extraCost: 20000,
+    beforeImgs: [
+      { id: "b1", url: "https://via.placeholder.com/150?text=Before1" },
+      { id: "b2", url: "https://via.placeholder.com/150?text=Before2" },
+    ],
+    afterImgs: [
+      { id: "a1", url: "https://via.placeholder.com/150?text=After1" },
+    ],
+  };
+
+  // 프리셋 목록 (카테고리로 필터된 상태라고 가정)
+  const presetList = [
+    { id: 3, name: "전원부 수리", price: 50000 },
+    { id: 4, name: "케이블 정리", price: 10000 },
+  ];
 
   const { role, repair } = userData;
   const { statusCode, isCancelled } = repair;
@@ -48,6 +71,10 @@ function InProgressPage() {
             <div className="space-y-4">
               {/* CUSTOMER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
+              <FinalEstimateForm
+                initialEstimate={finalEstimateDummy}
+                presetList={presetList}
+              />
             </div>
           )}
 
