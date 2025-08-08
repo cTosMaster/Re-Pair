@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navigate } from "react-router-dom";
-import MainPage from './pages/public/MainPage';
 import LandingPage from "./pages/public/LandingPage";
 import CustomerSalesPage from "./pages/public/CustomerSalesPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -10,39 +9,55 @@ import ResetPasswordPage from "./components/login/ResetPasswordPage";
 import SignUp from "./components/login/SignUp";
 import AgreementPage from "./components/companyregistration/AgreementPage";
 import CompanyFormContainer from "./components/companyregistration/CompanyFormContainer";
-import UserMypage from "./mypage/UserMypage";
+import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+import PublicRoute from "./routes/PubilcRoute.jsx";
+import UserMainPage from "./pages/user/UserMainPage";
+import EngineerMainPage from "./pages/engineer/EngineerMainPage";
+import CustomerMainPage from "./pages/custormer/CustomerMainPage";
 
 function App() {
-
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* ✅ default 경로 */}
-        <Route path="/" element={<LandingPage />} />
+    <Routes>
+      {/* ✅ 기본 공개 페이지 */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/customer/home" element={<CustomerSalesPage />} />
 
-        {/* ✅ 정병수 페이지 - 아직 role 보호 없이 그냥 연결 */}
-        <Route path="/customer/home" element={<CustomerSalesPage />} />
-        {/* ✅ 관리자 전용 레이아웃 안에 중첩 페이지 */}
+      {/* ✅ 관리자 전용 */}
+      <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
         <Route path="/admin/dash" element={<DashboardLayout />}>
-          <Route index element={<AdminDashboard />} /> {/* /admin/dashboard */}
+          <Route index element={<AdminDashboard />} />
         </Route>
-        <Route path="/engineer/home" element={<MainPage />} />
+      </Route>
 
-        {/* ✅ 김송이 페이지 - 아직 role 보호 없이 그냥 연결 */}
-        <Route path="/login" element={<Login />} /> {/* 로그인 라우트 추가 */}
-        <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* 비밀번호찾기 추가 */}
-        <Route path="/signup" element={<SignUp />} /> {/* 회원가입 추가 */}
-        <Route path="/agreementPage" element={<AgreementPage />} /> {/* 약관동의 추가 */}
-        <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
+      {/* ✅ USER 전용 */}
+      <Route element={<ProtectedRoute allowedRoles={["USER"]} />}>
+        <Route path="/user/main" element={<UserMainPage />} />
+      </Route>
 
-        {/* ✅ 김상윤 페이지 - 아직 role 보호 없이 그냥 연결 */}
+      {/* ✅ ENGINEER 전용 */}
+      <Route element={<ProtectedRoute allowedRoles={["ENGINEER"]} />}>
+        <Route path="/engineer/main" element={<EngineerMainPage />} />
+      </Route>
 
+      {/* ✅ CUSTOMER 전용 */}
+      <Route element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
+        <Route path="/customer/main" element={<CustomerMainPage />} />
+      </Route>
 
+      {/* ✅ 로그인 상태면 접근 불가 페이지 */}
+      <Route element={<PublicRoute />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+      </Route>
 
-        {/* ✅ Not Found (선택) */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </BrowserRouter>
+      {/* ✅ 공개된 기타 페이지 */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/agreementPage" element={<AgreementPage />} />
+      <Route path="/companyFormContainer" element={<CompanyFormContainer />} />
+
+      {/* ✅ 404 */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
 }
 

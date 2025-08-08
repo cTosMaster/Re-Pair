@@ -8,17 +8,28 @@ const api = axios.create({
   },
 });
 
-// 토큰 자동 삽입, 에러 핸들링 등 글로벌 설정도 가능
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
+  const url = new URL(config.url || '', config.baseURL);
 
-  if (token) {
+  // 공개 엔드포인트(토큰 붙이지 않음)
+  const PUBLIC = [
+    '/auth/login',
+    '/auth/refresh',
+    '/users/send-signup-code',
+    '/users/register',
+  ];
+
+  const isPublic = PUBLIC.some(p => url.pathname.endsWith(p));
+  if (config.method?.toLowerCase() === 'options') return config; // preflight는 패스
+
+  if (token && !isPublic) {
+    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('[✅ Auth Header Attached]', config.headers.Authorization);
+    // console.log('[✅ Auth]', url.href);
   } else {
-    console.warn('[❌ No accessToken — Auth header NOT attached]');
+    // console.warn('[ℹ️ Public or no token]', url.href);
   }
-
   return config;
 });
 
