@@ -1,6 +1,7 @@
 package com.example.asplatform.engineer.service;
 
 import com.example.asplatform.customer.domain.Customer;
+import com.example.asplatform.customer.repository.CustomerRepository;
 import com.example.asplatform.engineer.domain.Engineer;
 import com.example.asplatform.engineer.dto.requestDTO.EngineerRequest;
 import com.example.asplatform.engineer.dto.responseDTO.EngineerResponse;
@@ -54,14 +55,7 @@ public class EngineerService {
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
-    // 수리기사 수정
-    public void updateEngineer(Long engineerId, EngineerRequest request) {
-        Engineer engineer = engineerRepository.findById(engineerId)
-                .orElseThrow(() -> new IllegalArgumentException("기사 없음"));
-        Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new IllegalArgumentException("고객사 없음"));
-        engineer.updateCustomer(customer); // 필요시 update 메서드 추가
-    }
+
     private EngineerResponse toResponse(Engineer engineer) {
         return EngineerResponse.builder()
                 .id(engineer.getId())
@@ -70,7 +64,7 @@ public class EngineerService {
                 .phone(engineer.getUser().getPhone())
                 .isAssigned(engineer.isAssigned())
                 .assignedAt(engineer.getAssignedAt())
-                .customerId(engineer.getCustomer().getCustomerId())
+                .customerId(engineer.getCustomer().getId())   // 고객사 id
                 .customerName(engineer.getCustomer().getCompanyName())
                 .build();
     }
@@ -79,6 +73,7 @@ public class EngineerService {
         // 1. engineerId로 배정된 repair_request 조회
         // 2. status가 있으면 필터링
         // 3. Page<RepairRequest> → Page<RepairSummaryResponse> 변환
+        return null;
     }
 
 }

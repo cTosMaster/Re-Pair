@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor
@@ -30,4 +32,16 @@ public class Engineer {
 
     @Column(name = "assigned_at")
     private java.time.LocalDateTime assignedAt;
+
+    public Engineer(User user, Customer customer) {
+        this.user = user;
+        this.customer = customer;
+    }
+
+    // (선택) 배정 상태 변경용 메서드
+    public void assignTo(Customer customer) {
+        this.customer = customer;
+        this.isAssigned = true;
+        this.assignedAt = LocalDateTime.now();
+    }
 }
