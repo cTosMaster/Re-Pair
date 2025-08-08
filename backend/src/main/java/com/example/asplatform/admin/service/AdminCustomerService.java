@@ -35,9 +35,11 @@ public class AdminCustomerService {
 
     @Transactional(readOnly = true)
     public Page<CustomerDto> getAll(Pageable pageable) {
-        return customerRepo.findAll(pageable)
+        // 승인된 고객사 목록만 반환
+        return customerRepo.findByStatus(CustomerStatus.APPROVED, pageable)
                 .map(this::toDto);
     }
+
 
     @Transactional(readOnly = true)
     public CustomerDto getOne(Long id) {
