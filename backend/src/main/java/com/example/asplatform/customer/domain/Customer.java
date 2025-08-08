@@ -46,8 +46,7 @@ public class Customer {
     @Column(name = "status", nullable = false)
     private CustomerStatus status;
 
-    @Column(name = "created_at", updatable = false,
-            columnDefinition = "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
     @Column(name = "approved_at")
