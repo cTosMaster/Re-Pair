@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import LandingPage from "./pages/public/LandingPage";
 import CustomerSalesPage from "./pages/public/CustomerSalesPage";
@@ -14,7 +14,6 @@ import PublicRoute from "./routes/PubilcRoute.jsx";
 import UserMainPage from "./pages/user/UserMainPage";
 import EngineerMainPage from "./pages/engineer/EngineerMainPage";
 import CustomerMainPage from "./pages/custormer/CustomerMainPage";
-import UserMypage from "./mypage/UserMypage";
 import PendingApprovalPage from "./pages/repairdetail/PendingApprovalPage";
 import WaitingForRepairPage from "./pages/repairdetail/WaitingForRepairPage";
 import InProgressPage from "./pages/repairdetail/InProgressPage";
