@@ -2,6 +2,8 @@ import { RepairStatusMap } from "../../constants/repairStatus";
 import RepairProgress from "../../components/repairdetail/common/RepairProgress";
 import { dummyUser } from "./dummyUser";
 import FinalEstimateForm from "../../components/repairdetail/inprogress/FinalEstimateForm";
+import FinalEstimatePreview from "../../components/repairdetail/inprogress/FinalEstimatePreview";
+import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
 
 function InProgressPage() {
   const userData = {
@@ -28,11 +30,43 @@ function InProgressPage() {
     ],
   };
 
-  // 프리셋 목록 (카테고리로 필터된 상태라고 가정)
   const presetList = [
     { id: 3, name: "전원부 수리", price: 50000 },
     { id: 4, name: "케이블 정리", price: 10000 },
   ];
+
+  const selectedEngineer = {
+    name: "김두수리",
+    email: "kimdoc@example.com",
+    phone: "010-1234-1234",
+    dateText: "2025.06.01",
+    profileImage: "", // 없으면 기본 이모지
+  };
+
+  const finalEstimateData = {
+    presets: [
+      { id: 1, name: "부품 교체", price: 50000 },
+      { id: 2, name: "청소 서비스", price: 20000 },
+    ],
+    extraNote: "추가로 내부 먼지 제거 작업 진행.\n고객 요청으로 케이스 청소 포함.",
+    totalPrice: 75000,
+    beforeImages: [
+      "https://via.placeholder.com/150",
+      "https://via.placeholder.com/150",
+      "https://via.placeholder.com/150",
+      "https://via.placeholder.com/150",
+    ],
+    afterImages: [
+      "https://via.placeholder.com/150",
+      "https://via.placeholder.com/150",
+      "https://via.placeholder.com/150",
+      "https://via.placeholder.com/150",
+    ],
+  };
+
+  const reason = {
+    message: "요청 내용이 불분명하여 수리를 진행할 수 없습니다.",
+  };
 
   const { role, repair } = userData;
   const { statusCode, isCancelled } = repair;
@@ -52,11 +86,14 @@ function InProgressPage() {
         <div className="text-center text-gray-600 mt-8">
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
+          <FinalEstimatePreview estimate={finalEstimateData} />
         </div>
       ) : isCancelled ? (
         <div className="space-y-4">
           {/* 취소 상태용 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={true} />
+          <FinalEstimatePreview estimate={finalEstimateData} />
+          <RejectReasonBox reason={reason.message} />
         </div>
       ) : (
         <>
@@ -64,6 +101,11 @@ function InProgressPage() {
             <div className="space-y-4">
               {/* USER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
+              <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
+                현재 고객님의 물품에 대한 1차 견적을 작성중입니다.<br />
+                추가로 수리기사와 유선 상담이 있을 예정입니다.
+              </div>
+              <SelectedEngineerCard engineer={selectedEngineer} />
             </div>
           )}
 
@@ -82,6 +124,10 @@ function InProgressPage() {
             <div className="space-y-4">
               {/* ENGINEER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
+              <FinalEstimateForm
+                initialEstimate={finalEstimateDummy}
+                presetList={presetList}
+              />
             </div>
           )}
 
@@ -89,6 +135,10 @@ function InProgressPage() {
             <div className="space-y-4">
               {/* ADMIN용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
+              <FinalEstimateForm
+                initialEstimate={finalEstimateDummy}
+                presetList={presetList}
+              />
             </div>
           )}
         </>
