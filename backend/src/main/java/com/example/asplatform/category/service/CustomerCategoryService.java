@@ -17,26 +17,28 @@ import java.util.stream.Collectors;
 public class CustomerCategoryService {
 
     private final CustomerCategoryRepository customerCategoryRepository;
-    private final CustomerRepository customerRepository;
 
     public void addCustomerCategory(Long customerId, CustomerCategoryRequest dto) {
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new IllegalArgumentException("고객사를 찾을 수 없습니다."));
-
         CustomerCategory category = CustomerCategory.builder()
-                .customer(customer)
+                .customerId(customerId)
                 .name(dto.getName())
                 .build();
-
         customerCategoryRepository.save(category);
     }
 
     public List<CustomerCategoryResponse> getCustomerCategories(Long customerId) {
-        Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new IllegalArgumentException("고객사를 찾을 수 없습니다."));
-
-        return customerCategoryRepository.findByCustomer(customer).stream()
+        return customerCategoryRepository.findByCustomerId(customerId).stream()
                 .map(CustomerCategoryResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    public void updateCategory(Long categoryId, CustomerCategoryRequest request) {
+        CustomerCategory category = customerCategoryRepository.findById(categoryId)
+                .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
+        category.updateName(request.getName());
+    }
+
+    public void deleteCategory(Long categoryId) {
+        customerCategoryRepository.deleteById(categoryId);
     }
 }

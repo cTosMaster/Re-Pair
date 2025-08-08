@@ -1,19 +1,22 @@
 package com.example.asplatform.engineer.dto.responseDTO;
 
+import com.example.asplatform.engineer.domain.Engineer;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
-
-@Getter
-@Builder
+@Getter @Builder
 public class EngineerResponse {
-    private Long id;
-    private String name;
-    private String email;
-    private String phone;
-    private boolean isAssigned;
-    private LocalDateTime assignedAt;
+    private Long engineerId;
+    private Long userId;
     private Long customerId;
-    private String customerName;
+    private boolean isAssigned;
+
+    public static EngineerResponse from(Engineer e) {
+        return EngineerResponse.builder()
+                .engineerId(e.getUserId())
+                .userId(e.getUserId())
+                .customerId(e.getCustomerId())
+                .isAssigned(e.isAssigned())
+                .build();
+    }
 }

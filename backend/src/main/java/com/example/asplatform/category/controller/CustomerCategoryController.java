@@ -16,17 +16,32 @@ public class CustomerCategoryController {
 
     private final CustomerCategoryService customerCategoryService;
 
-    // 고객사 카테고리 등록
+    // 카테고리 생성
     @PostMapping("/{customerId}")
-    public ResponseEntity<Void> addCategory(@PathVariable Long customerId,
-                                            @RequestBody CustomerCategoryRequest dto) {
-        customerCategoryService.addCustomerCategory(customerId, dto);
+    public ResponseEntity<Void> createCategory( @PathVariable Long customerId, @RequestBody CustomerCategoryRequest request) {
+        customerCategoryService.addCustomerCategory(customerId, request);
+        return ResponseEntity.ok().build(); // 200 OK 응답
+    }
+    // 고객사 모든 카테고리 조회
+    @GetMapping("/{customerId}")
+    public List<CustomerCategoryResponse> getCategories(@PathVariable Long customerId) {
+        return customerCategoryService.getCustomerCategories(customerId);
+    }
+
+    //카테고리 이름 수정
+    @PatchMapping("/{categoryId}")
+    public ResponseEntity<Void> updateCategory(
+            @PathVariable Long categoryId,
+            @RequestBody CustomerCategoryRequest request
+    ) {
+        customerCategoryService.updateCategory(categoryId, request);
         return ResponseEntity.ok().build();
     }
 
-    // 고객사 카테고리 목록 조회
-    @GetMapping("/{customerId}")
-    public ResponseEntity<List<CustomerCategoryResponse>> getCategories(@PathVariable Long customerId) {
-        return ResponseEntity.ok(customerCategoryService.getCustomerCategories(customerId));
+    // 카테고리 삭제
+    @DeleteMapping("/{categoryId}")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long categoryId) {
+        customerCategoryService.deleteCategory(categoryId);
+        return ResponseEntity.ok().build();
     }
 }

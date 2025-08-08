@@ -1,47 +1,43 @@
 package com.example.asplatform.engineer.domain;
 
-import com.example.asplatform.customer.domain.Customer;
-import com.example.asplatform.user.domain.User;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Getter
-@NoArgsConstructor
 @Table(name = "engineers")
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Engineer {
 
+    /** users.id 를 그대로 PK로 사용 */
     @Id
     @Column(name = "engineer_id")
-    private Long id; // users.id
+    private Long userId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "engineer_id")
-    private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    /** customers.customer_id */
+    @Column(name = "customer_id", nullable = false)
+    private Long customerId;
 
     @Column(name = "is_assigned", nullable = false)
-    private boolean isAssigned = false;
+    private boolean assigned = false;
 
     @Column(name = "assigned_at")
-    private java.time.LocalDateTime assignedAt;
+    private LocalDateTime assignedAt;
 
-    public Engineer(User user, Customer customer) {
-        this.user = user;
-        this.customer = customer;
+    /** 생성 편의용 생성자 */
+    public Engineer(Long userId, Long customerId) {
+        this.userId = userId;
+        this.customerId = customerId;
     }
 
-    // (선택) 배정 상태 변경용 메서드
-    public void assignTo(Customer customer) {
-        this.customer = customer;
-        this.isAssigned = true;
-        this.assignedAt = LocalDateTime.now();
+    /** 배정 상태 토글 메서드 */
+    public void setAssigned(boolean assigned) {
+        this.assigned = assigned;
+        this.assignedAt = assigned
+                ? LocalDateTime.now()
+                : null;
     }
 }

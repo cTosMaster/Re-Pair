@@ -7,12 +7,12 @@ import lombok.Getter;
 @Getter
 @Builder
 public class CustomerCategoryResponse{
-    private Long categoryId;
+    private Long id;
     private String name;
 
     public static CustomerCategoryResponse from(CustomerCategory category) {
         return CustomerCategoryResponse.builder()
-                .categoryId(category.getCategoryId())
+                .id(category.getId())
                 .name(category.getName())
                 .build();
     }

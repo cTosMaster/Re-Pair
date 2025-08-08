@@ -7,9 +7,9 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RepairItemRequest {
+public class RepairableItemRequest {
     private Long customerId;
-    private Long categoryId;  // 👉 customer_categories 기준
+    private Long categoryId;  //  customer_categories 기준
     private String name;
     private Integer price;
 }

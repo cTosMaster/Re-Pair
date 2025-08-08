@@ -15,14 +15,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "repairable_items")
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -60,5 +58,10 @@ public class RepairableItem {
         if (this.price == null) {
             this.price = 0;
         }
+    }
+    public void update(CustomerCategory category, String name, Integer price) {
+        this.category = category;
+        this.name = name;
+        this.price = price != null ? price : 0;
     }
 }
