@@ -128,13 +128,13 @@ function PendingApprovalPage() {
   return (
     <div className="p-6 space-y-6">
       {isPastStep ? (
-        <div className="text-center text-gray-600 mt-8">
+        <div className="text-gray-600 mt-8">
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
           <RepairRequestPreview categoryData={categoryData}/>
         </div>
       ) : isCancelled ? (
-        <div className="space-y-4">
+        <div className="space-y-4 text-gray-600 mt-8">
           <RepairProgress statusCode={statusCode} isCancelled={true} />
           <RepairRequestPreview categoryData={categoryData} />
           <RejectReasonBox reason={reason.message} />

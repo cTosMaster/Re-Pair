@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
 import ImageUploadGrid from "../common/ImageUploadGrid";
 
-/** UI 전용: 백엔드 연동/실제 제출 없음
- * props:
- *  - initialEstimate: 1차 견적서에서 넘어온 프리필 { presets:[], extraNote:"" }
- *  - presetList: 추가 선택 가능한 프리셋 목록 []
+/** 결제 전: 최종 견적서 수정 폼 (UI 전용)
+ * FinalEstimateForm과 동일 구조/스타일
+ * - initialEstimate로 넘어온 값들을 화면에 미리 채워서 렌더링
+ * - 동일하게 프리셋 선택/제거, 추가 수리 내용, 추가 금액(±), 총액 계산, 이미지 업로드(전/후) 제공
+ * - 하단 버튼은 "수정" 고정 (동작 없음)
  */
-function FinalEstimateForm({
-  initialEstimate = { presets: [], extraNote: "" },
+function FinalEstimateEditor({
+  // 이전에 작성된 최종 견적서 데이터 (프리필)
+  initialEstimate = {
+    presets: [],        // [{ id, name, price }]
+    extraNote: "",      // 추가 수리 내용
+    extraCost: "",      // 문자열로 들어와도 됨 ("20,000")
+    beforeImgs: [],     // [{ id, url, file? }]
+    afterImgs: [],      // [{ id, url, file? }]
+  },
+  // 카테고리로 필터된 프리셋 목록 (추가 선택 용도) — 작성 폼과 동일
   presetList = [],
 }) {
-  // === 1차 견적서 프리필 + 수정 가능 ===
+  // === 1차/최종 프리필 + 수정 가능 ===
   const [selectedPresets, setSelectedPresets] = useState(
     initialEstimate.presets || []
   );
@@ -18,8 +27,8 @@ function FinalEstimateForm({
 
   // === 금액 ===
   const presetTotal = selectedPresets.reduce((s, p) => s + (p.price || 0), 0);
-  const [extraCost, setExtraCost] = useState(""); // ± 추가금/할인 입력 (원하면 제거 가능)
-  const extra = parseInt((extraCost || "0").replace(/,/g, ""), 10) || 0;
+  const [extraCost, setExtraCost] = useState(initialEstimate.extraCost ?? "");
+  const extra = parseInt((String(extraCost || "0").replace(/,/g, "")), 10) || 0;
   const total = presetTotal + extra;
 
   // === 프리셋 추가/제거 ===
@@ -32,14 +41,17 @@ function FinalEstimateForm({
   const removePreset = (id) =>
     setSelectedPresets((prev) => prev.filter((p) => p.id !== id));
 
-  // === 이미지 (수리 전/후) ===
-  const [beforeImgs, setBeforeImgs] = useState([]); // [{id,url,file}]
-  const [afterImgs, setAfterImgs] = useState([]);
+  // === 이미지 (수리 전/후) — 프리필 + 수정 가능 ===
+  const [beforeImgs, setBeforeImgs] = useState(initialEstimate.beforeImgs || []); // [{id,url,file}]
+  const [afterImgs, setAfterImgs] = useState(initialEstimate.afterImgs || []);
 
-  // 프리필 갱신(옵션)
+  // initialEstimate 변경 시 다시 반영 (옵션)
   useEffect(() => {
     setSelectedPresets(initialEstimate.presets || []);
     setNote(initialEstimate.extraNote || "");
+    setExtraCost(initialEstimate.extraCost ?? "");
+    setBeforeImgs(initialEstimate.beforeImgs || []);
+    setAfterImgs(initialEstimate.afterImgs || []);
   }, [initialEstimate]);
 
   return (
@@ -48,7 +60,7 @@ function FinalEstimateForm({
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold">최종 견적서</h2>
         <span className="text-xs text-gray-500">
-          1차 견적서 내용을 자동으로 불러왔습니다. 필요한 항목은 수정하세요.
+          이전에 작성한 내용을 불러왔습니다. 필요한 항목을 수정하세요.
         </span>
       </div>
 
@@ -133,7 +145,7 @@ function FinalEstimateForm({
 
       {/* 추가 수리 내용 + 금액 요약 (동일 크기 카드 2열) */}
       <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        {/* 추가 수리 내용 카드 (리사이즈 불가, 크기 고정 감) */}
+        {/* 추가 수리 내용 카드 */}
         <div className="h-full">
           <div className="border border-gray-200 rounded-xl p-4 bg-white h-full">
             <h3 className="text-sm font-semibold text-gray-800 mb-3">
@@ -204,15 +216,15 @@ function FinalEstimateForm({
         />
       </div>
 
-      {/* 제출(hover만) */}
+      {/* 하단: 수정 버튼 (hover만) */}
       <button
         type="button"
         className="w-full py-2 rounded-md bg-[#A5CD82] text-white font-medium hover:bg-[#94bb71] transition"
       >
-        제출
+        수정
       </button>
     </div>
   );
 }
 
-export default FinalEstimateForm;
+export default FinalEstimateEditor;

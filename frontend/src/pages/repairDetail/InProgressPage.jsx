@@ -2,7 +2,7 @@ import { RepairStatusMap } from "../../constants/repairStatus";
 import RepairProgress from "../../components/repairdetail/common/RepairProgress";
 import { dummyUser } from "./dummyUser";
 import FinalEstimateForm from "../../components/repairdetail/inprogress/FinalEstimateForm";
-import FinalEstimatePreview from "../../components/repairdetail/inprogress/FinalEstimatePreview";
+import FinalEstimatePreview from "../../components/repairdetail/common/FinalEstimatePreview";
 import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
 
 function InProgressPage() {
@@ -71,7 +71,7 @@ function InProgressPage() {
   const { role, repair } = userData;
   const { statusCode, isCancelled } = repair;
 
-  const currentStep = RepairStatusMap[statusCode];
+  const currentStep = RepairStatusMap["IN_PROGRESS"];
   const userStep = RepairStatusMap[statusCode];
   const isPastStep = userStep > currentStep;
 
@@ -83,13 +83,13 @@ function InProgressPage() {
   return (
     <div className="p-6 space-y-6">
       {isPastStep ? (
-        <div className="text-center text-gray-600 mt-8">
+        <div className="text-gray-600 mt-8">
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
           <FinalEstimatePreview estimate={finalEstimateData} />
         </div>
       ) : isCancelled ? (
-        <div className="space-y-4">
+        <div className="space-y-4 text-gray-600 mt-8">
           {/* 취소 상태용 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={true} />
           <FinalEstimatePreview estimate={finalEstimateData} />

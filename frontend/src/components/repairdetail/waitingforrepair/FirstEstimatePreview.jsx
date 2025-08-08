@@ -14,9 +14,13 @@ function FirstEstimatePreview({
   return (
     <div className="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-md">
       {/* 헤더 */}
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold">1차 견적서 (읽기 전용)</h2>
-        {createdAt && <span className="text-xs text-gray-500">{createdAt}</span>}
+      <div className="mb-6 relative flex items-center justify-center">
+        <h2 className="text-xl text-gray-500 font-semibold">1차 견적서 (읽기 전용)</h2>
+        {createdAt && (
+          <span className="absolute right-0 text-xs text-gray-500">
+            {createdAt}
+          </span>
+        )}
       </div>
 
       {/* 프리셋 목록 */}
