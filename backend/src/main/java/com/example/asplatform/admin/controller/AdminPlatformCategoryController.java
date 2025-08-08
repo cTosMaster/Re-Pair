@@ -18,7 +18,14 @@ public class AdminPlatformCategoryController {
 
     /** 전체 조회 */
     @GetMapping
-    public ResponseEntity<Page<PlatformCategoryDto>> list(Pageable pageable) {
+    public ResponseEntity<Page<PlatformCategoryDto>> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "categoryId") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir
+    ) {
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
         return ResponseEntity.ok(service.findAll(pageable));
     }
 
