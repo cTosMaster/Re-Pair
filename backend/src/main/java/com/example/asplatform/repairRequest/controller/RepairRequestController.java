@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.service.RepairStatusManager;
 import com.example.asplatform.common.testutil.TestUserFactory;
 import com.example.asplatform.repairRequest.dto.requestDTO.ManualStatusChangeRequestDto;
@@ -32,9 +33,10 @@ public class RepairRequestController {
 	 * @return
 	 */
 	@PostMapping
-    public ResponseEntity<Long> createRepairRequest(@RequestBody RepairRequestCreateDto dto) {
+    public ResponseEntity<Long> createRepairRequest(@RequestBody RepairRequestCreateDto dto, @AuthenticationPrincipal CustomUserDetails principal) {
 		
-        User user = TestUserFactory.user();//나중에  @AuthenticationPrincipal 사용
+		User user = principal.getUser();
+        //User user = TestUserFactory.user();//나중에  @AuthenticationPrincipal 사용
         Long repairRequestId = repairRequestService.createRepairRequest(user, dto);
         return ResponseEntity.ok(repairRequestId);
     }
@@ -50,9 +52,11 @@ public class RepairRequestController {
 	@PostMapping("/{requestId}/status")
 	public ResponseEntity<Void> manuallyUpdateStatus(
 	        @PathVariable Long requestId,
-	        @RequestBody ManualStatusChangeRequestDto request
+	        @RequestBody ManualStatusChangeRequestDto request,
+	        @AuthenticationPrincipal CustomUserDetails principal
 	) {
-		User user = TestUserFactory.admin();//나중에  @AuthenticationPrincipal 사용
+		User user = principal.getUser();
+		//User user = TestUserFactory.admin();//나중에  @AuthenticationPrincipal 사용
 	    repairStatusManager.changeStatus(requestId, request.getTargetStatus(), user, request.getMemo());
 	    return ResponseEntity.ok().build();
 	}
