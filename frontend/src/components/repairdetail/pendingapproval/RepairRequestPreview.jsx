@@ -10,7 +10,7 @@ function RepairRequestPreview({ categoryData }) {
 
   return (
     <div className="max-w-md mx-auto mt-16 p-8 bg-white shadow-md rounded-xl">
-      <h2 className="text-xl font-semibold mb-6 text-center">수리 요청서 확인</h2>
+      <h2 className="text-xl text-gray-500 font-semibold">수리 요청서 (읽기 전용)</h2>
 
       {/* 제목 */}
       <div className="mb-4">

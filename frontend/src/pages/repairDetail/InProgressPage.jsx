@@ -1,12 +1,13 @@
 import { RepairStatusMap } from "../../constants/repairStatus";
 import RepairProgress from "../../components/repairdetail/common/RepairProgress";
+import { dummyUser } from "./dummyUser";
 
 function InProgressPage() {
   const userData = {
-    role: "CUSTOMER", // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
+    role: dummyUser.role, // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
     repair: {
-      statusCode: "IN_PROGRESS", // 수리 상태코드
-      isCancelled: false,             // 취소 여부
+      statusCode: dummyUser.repair.statusCode, // 수리 상태코드
+      isCancelled: dummyUser.repair.isCancelled,             // 취소 여부
     },
   };
 
@@ -28,6 +29,11 @@ function InProgressPage() {
         <div className="text-center text-gray-600 mt-8">
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
+        </div>
+      ) : isCancelled ? (
+        <div className="space-y-4">
+          {/* 취소 상태용 컴포넌트 삽입 위치 */}
+          <RepairProgress statusCode={statusCode} isCancelled={true} />
         </div>
       ) : (
         <>

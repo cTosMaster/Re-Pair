@@ -4,14 +4,14 @@ import RepairRequestPreview from "../../components/repairdetail/pendingapproval/
 import EngineerSelectList from "../../components/repairdetail/pendingapproval/EngineerSelectList";
 import ApprovalActions from "../../components/repairdetail/pendingapproval/ApprovalActions";
 import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
-
+import { dummyUser } from "./dummyUser";
 
 function PendingApprovalPage() {
   const userData = {
-    role: "CUSTOMER", // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
+    role: dummyUser.role, // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
     repair: {
-      statusCode: "PENDING_APPROVAL", // 수리 상태코드
-      isCancelled: false,             // 취소 여부
+      statusCode: dummyUser.repair.statusCode, // 수리 상태코드
+      isCancelled: dummyUser.repair.isCancelled,             // 취소 여부
     },
   };
 
