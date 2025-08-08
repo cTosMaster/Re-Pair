@@ -12,7 +12,7 @@ public enum RepairStatus {
 	IN_PROGRESS("수리중"),
 	WAITING_FOR_PAYMENT("결제대기"),
 	WAITING_FOR_DELIVERY("배송대기"),
-	COMPLETED("완료", Set.of(Role.CUSTOMER)),      // 고객사 관리자만 수동 가능
+	COMPLETED("완료", Set.of(Role.CUSTOMER)), // 고객사 관리자만 수동 가능
     CANCELED("취소", Set.of(Role.CUSTOMER, Role.ENGINEER)); // 고객사 관리자/기사 수동 가능
 	
 	private final String label; //한글 라벨
