@@ -29,4 +29,6 @@ public class UserDto {
     private Role role;
     private boolean isActive;
     private String createdAt;
+
+    private String lastLogin;
 }

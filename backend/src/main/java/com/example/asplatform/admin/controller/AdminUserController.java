@@ -26,6 +26,12 @@ public class AdminUserController {
         return svc.getAll(role, pageable);
     }
 
+    /* 3-1) 단일 사용자 조회 */
+    @GetMapping("/{id}")
+    public UserDto getOne(@PathVariable Long id) {
+                return svc.getOne(id);
+            }
+
     /* 4) 정보 수정 */
     @PutMapping("/{id}")
     public UserDto update(@PathVariable Long id,
@@ -40,10 +46,10 @@ public class AdminUserController {
         return ResponseEntity.noContent().build();
     }
 
-    /* 5) 소프트 delete (비활성화) */
-    @PatchMapping("/{id}")
-    public ResponseEntity<Void> softDelete(@PathVariable Long id) {
-        svc.softDelete(id);
-        return ResponseEntity.ok().build();
-    }
+    /* 5-2) 계정 비활성화 (소프트 delete) */
+    @PatchMapping("/{id}/disable")
+    public ResponseEntity<Void> disable(@PathVariable Long id) {
+                svc.softDelete(id);
+                return ResponseEntity.ok().build();
+            }
 }
