@@ -39,7 +39,7 @@ public class AdminCustomerController {
         return ResponseEntity.ok().build();
     }
 
-    /* 2) 전체 목록 */
+    /* 2) 승인된 고객사 목록 */
     @GetMapping
     public Page<CustomerDto> all(Pageable pageable) {
         return svc.getAll(pageable);
@@ -52,13 +52,19 @@ public class AdminCustomerController {
         return svc.update(id, req);
     }
 
-    /* 2) 삭제 or 등록 취소 */
+    /* 2-1) 삭제 (하드 딜리트) */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id,
-                                       @RequestParam(defaultValue = "true") boolean hard) {
-        svc.delete(id, hard);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+                svc.delete(id, true);
+                return ResponseEntity.noContent().build();
     }
+
+    /* 2-2) 등록 취소 (상태 → REJECTED) */
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancel(@PathVariable Long id) {
+                svc.changeStatus(id, CustomerStatus.REJECTED);
+                return ResponseEntity.ok().build();
+            }
 
     /* 등록폼 상세 조회 ─ 내용보기 */
     @GetMapping("/{id}")

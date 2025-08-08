@@ -1,33 +1,44 @@
 package com.example.asplatform.category.domain;
 
-import com.example.asplatform.customer.domain.Customer;
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 @Table(name = "customer_categories")
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CustomerCategory {
-
-    @Id
+	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long categoryId;
+    @Column(name = "category_id")
+    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    // 어떤 고객사 소속인지
+    @Column(name = "customer_id", nullable = false)
+    private Long customerId;
 
-    @Column(nullable = false, length = 100)
+    // 카테고리 이름 (ex: 휴대폰, UMPC)
+    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private java.time.LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
     @PrePersist
-    protected void onCreate() {
-        this.createdAt = java.time.LocalDateTime.now();
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
     }
 }
