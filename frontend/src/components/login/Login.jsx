@@ -1,11 +1,75 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { login as apiLogin } from "../../services/authAPI"; // 별칭
+import { useAuth } from "../../hooks/useAuth";
 
 export const Login = () => {
+  const navigate = useNavigate();
+  const { login: applyLogin } = useAuth(); // ✅ 컨텍스트 로그인 사용
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const roleRedirectMap = {
+    USER: "/user/main",
+    ENGINEER: "/engineer/main",
+    CUSTOMER: "/customer/main",
+    ADMIN: "/admin/dash",
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+
+    setErr(null);
+    setLoading(true);
+
+    try {
+      // 1) 로그인 요청
+      const res = await apiLogin({ email: email.trim(), password });
+
+      // 2) 토큰 추출
+      const accessToken =
+        res?.data?.accessToken ||
+        res?.data?.token ||
+        res?.data?.access_token;
+      if (!accessToken) throw new Error("로그인 응답에 토큰이 없습니다.");
+
+      // (선택) refreshToken 있으면 저장
+      if (res?.data?.refreshToken) {
+        localStorage.setItem("refreshToken", res.data.refreshToken);
+      }
+
+      // 3) 컨텍스트에 토큰 적용 + minimal user 세팅
+      const roleFromToken = await applyLogin({ accessToken });
+
+      // 4) 응답에 role이 따로 있으면 우선 사용 (ROLE_ 방어)
+      const roleFromResp = res?.data?.role
+        ? String(res.data.role).replace(/^ROLE_/, "")
+        : null;
+
+      const finalRole = roleFromResp || roleFromToken;
+
+      // 5) 즉시 리다이렉트
+      navigate(roleRedirectMap[finalRole] || "/", { replace: true });
+    } catch (error) {
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "로그인에 실패했습니다. 이메일/비밀번호를 확인해주세요.";
+      setErr(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-center w-full min-h-screen bg-white">
       <div className="relative w-full max-w-[900px] bg-white px-6 mx-auto">
-        {/* 로고 - 폼 안에 위치 */}
+        {/* 로고 */}
         <h2
           className="fixed top-4 left-16 text-[#9fc87b] font-bold text-xl md:text-2xl"
           style={{
@@ -20,94 +84,104 @@ export const Login = () => {
           Re:pair
         </h2>
 
-        {/* 제목 */}
-        <h1
-          className="text-black font-normal text-3xl mb-16 mt-16"
-          style={{ fontFamily: "Inter, Helvetica" }}
-        >
-          로그인 정보를 입력하세요
-        </h1>
-
-        {/* 아이디 라벨 */}
-        <label
-          className="block text-black font-normal text-lg mb-2"
-          style={{ fontFamily: "Inter, Helvetica" }}
-          htmlFor="userid"
-        >
-          아이디
-        </label>
-
-        {/* 아이디 입력 */}
-        <input
-          id="userid"
-          type="text"
-          placeholder="아이디를 입력하세요"
-          className="w-full h-12 mb-8 rounded-lg border border-gray-300 px-4"
-          style={{ width: "492px" }}
-        />
-
-        {/* 비밀번호 라벨 */}
-        <label
-          className="block text-black font-normal text-lg mb-2"
-          style={{ fontFamily: "Inter, Helvetica" }}
-          htmlFor="password"
-        >
-          비밀번호
-        </label>
-
-        {/* 비밀번호 입력 */}
-        <input
-          id="password"
-          type="password"
-          placeholder="비밀번호를 입력하세요"
-          className="w-full h-12 mb-4 rounded-lg border border-gray-300 px-4"
-          style={{ width: "492px" }}
-        />
-
-        {/* 아이디 찾기, 비밀번호 재설정 */}
-        <p
-          className="text-gray-500 text-base mb-8 text-right"
+        {/* 폼 */}
+        <form
+          onSubmit={handleSubmit}
+          className="mx-auto flex flex-col items-center"
           style={{ width: "492px" }}
         >
-          <Link
-            to="/reset-password"
-            state={{ from: "/login" }}  // 여기서 상태 전달
-            className="hover:underline ml-2"
-          >
-            비밀번호 재설정
-          </Link>
-        </p>
-
-        {/* 등록하기 버튼 */}
-        <button
-          className="w-full bg-[#9fc87b] rounded-lg h-12 mb-10 font-bold text-white text-lg"
-          style={{ width: "492px" }}
-        >
-          등록하기
-        </button>
-
-        {/* 회원가입 안내 텍스트 */}
-        <div
-          className="flex justify-center gap-2 text-lg "
-          style={{ width: "492px" }}
-        >
-          <span
-            className="text-[#686868]"
+          <h1
+            className="text-black font-normal text-3xl mb-16 mt-16 self-start"
             style={{ fontFamily: "Inter, Helvetica" }}
           >
-            아직 사용자가 아니신가요?
-          </span>
+            로그인 정보를 입력하세요
+          </h1>
+
+          {err && (
+            <div className="w-full mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {err}
+            </div>
+          )}
+
+          <label
+            className="block w-full text-black font-normal text-lg mb-2"
+            style={{ fontFamily: "Inter, Helvetica" }}
+            htmlFor="userid"
+          >
+            아이디
+          </label>
+          <input
+            id="userid"
+            type="email"
+            placeholder="이메일을 입력하세요"
+            className="w-full h-12 mb-8 rounded-lg border border-gray-300 px-4"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="username"
+            required
+          />
+
+          <label
+            className="block w-full text-black font-normal text-lg mb-2"
+            style={{ fontFamily: "Inter, Helvetica" }}
+            htmlFor="password"
+          >
+            비밀번호
+          </label>
+          <input
+            id="password"
+            type="password"
+            placeholder="비밀번호를 입력하세요"
+            className="w-full h-12 mb-4 rounded-lg border border-gray-300 px-4"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+
+          <p
+            className="text-gray-500 text-base mb-8 self-end"
+            style={{ width: "100%" }}
+          >
+            <Link
+              to="/reset-password"
+              state={{ from: "/login" }}
+              className="hover:underline ml-2"
+            >
+              비밀번호 재설정
+            </Link>
+          </p>
+
           <button
-            className="text-[#6a8a4d] font-normal"
-            style={{ fontFamily: "Inter, Helvetica" }}
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#9fc87b] rounded-lg h-12 mb-10 font-bold text-white text-lg disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Link to="/signup" className="hover">
+            {loading ? "로그인 중..." : "로그인"}
+          </button>
+
+          <div
+            className="flex justify-center gap-2 text-lg"
+            style={{ width: "100%" }}
+          >
+            <span
+              className="text-[#686868]"
+              style={{ fontFamily: "Inter, Helvetica" }}
+            >
+              아직 사용자가 아니신가요?
+            </span>
+            <Link
+              to="/signup"
+              className="text-[#6a8a4d] font-normal hover:underline"
+              style={{ fontFamily: "Inter, Helvetica" }}
+            >
               회원가입
             </Link>
-          </button>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
+
 export default Login;
