@@ -73,9 +73,6 @@ public class RepairRequest {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     public void setStatus(RepairStatus status) {
         this.status = status;
     }
@@ -83,12 +80,6 @@ public class RepairRequest {
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
         this.status = RepairStatus.PENDING;
-    }
-
-    @PreUpdate
-    public void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
     }
 }
