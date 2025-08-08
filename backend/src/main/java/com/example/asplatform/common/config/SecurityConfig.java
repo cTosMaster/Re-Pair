@@ -1,4 +1,3 @@
-
 package com.example.asplatform.common.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -43,15 +42,19 @@ public class SecurityConfig {
 
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                                                // 인증·회원가입 API 열어두기
-                                                .requestMatchers(
-                                                                "/api/auth/**",
-                                                                "/api/users/send-signup-code",
-                                                                "/api/users/register",
-                                                                "/api/payments/callback",
-                                                                "/api/payments/request"
 
-                                                ).permitAll()
+                        // 인증·회원가입 API 열어두기
+                        .requestMatchers("/api/auth/**", "/api/users/send-signup-code","/api/users/register").permitAll()
+                        // Swagger UI 문서 열어두기
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        //관리자 대시보드 (ADMIN 전용)
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // 그 외 모든 요청은 인증 필요
+                        .anyRequest().authenticated()
+                )
+                // 사용자 인증(로그인) 처리 (아이디/비밀번호 검증 담당)
+                .authenticationProvider(authenticationProvider)
+
 
                                                 // 인증 처리가 필요한 API ( CUSTOMER 권한을 가진 사용자만 결제 부분에 접근 가능 )
                                                 .requestMatchers(
