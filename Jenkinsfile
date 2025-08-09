@@ -1,115 +1,95 @@
 pipeline {
   agent any
+  options { timestamps(); disableConcurrentBuilds(); skipDefaultCheckout(true) }
 
   environment {
-    REGISTRY = 'ctosmaster/repair'
-    FRONT_DIR = 'frontend'
-    BACK_DIR = 'backend'
-    
-    SSH_BACKEND_USER = 'jaybee'
-    SSH_BACKEND_HOST = '192.168.45.211'
-  }
-
-  options {
-    skipDefaultCheckout true
+    REGISTRY_REPO   = 'ctosmaster'
+    FRONTEND_IMAGE  = "${REGISTRY_REPO}/repair-frontend"
+    BACKEND_IMAGE   = "${REGISTRY_REPO}/repair-backend"
+    FRONT_DIR       = 'frontend'
+    BACK_DIR        = 'backend'
+    SSH_BACKEND_USER= 'jaybee'
+    SSH_BACKEND_HOST= '192.168.45.211'
   }
 
   stages {
-    stage('조건 체크 (PR → main일 경우만 진행)') {
-      when {
-        expression {
-          return env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main'
-        }
-      }
+    stage('조건 체크 & Checkout') {
+      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' } }
       steps {
         checkout scm
-        echo "✅ 조건 통과: main 브랜치로의 PR 또는 main 브랜치 빌드"
+        script {
+          env.SHORT_SHA = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+          env.TAG = env.SHORT_SHA
+        }
+        echo "✅ main 기준 진행 (TAG=${env.TAG})"
+      }
+    }
+
+    stage('buildx 준비 (ARM64)') {
+      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' } }
+      steps {
+        sh '''
+          docker run --privileged --rm tonistiigi/binfmt --install all || true
+          docker buildx create --use --name multi || docker buildx use multi
+          docker buildx inspect --bootstrap
+        '''
+      }
+    }
+
+    stage('DockerHub 로그인') {
+      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' } }
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-user', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+        }
       }
     }
 
     stage('Frontend Build & Push') {
-      when {
-        expression {
-          return env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main'
-        }
-      }
+      when { expression { (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') && fileExists(FRONT_DIR) } }
       steps {
-        script {
-          if (fileExists(FRONT_DIR)) {
-            dir(FRONT_DIR) {
-              withCredentials([usernamePassword(
-                credentialsId: 'docker-user',
-                usernameVariable: 'DOCKER_USER',
-                passwordVariable: 'DOCKER_PASS'
-              )]) {
-                sh '''
-                  echo "📦 Frontend Docker Build"
-                  docker build -t $REGISTRY-frontend:latest .
-
-                  echo "🔐 DockerHub 로그인"
-                  echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-
-                  echo "📤 Docker 이미지 푸시"
-                  docker push $REGISTRY-frontend:latest
-                '''
-              }
-            }
-          } else {
-            echo ⚠️ Frontend 디렉토리가 없어서 스킵함"
-          }
+        dir(FRONT_DIR) {
+          sh """
+            docker buildx build --platform linux/arm64/v8 \
+              -t ${FRONTEND_IMAGE}:${TAG} -t ${FRONTEND_IMAGE}:latest \
+              -f Dockerfile . --push
+          """
         }
       }
     }
 
-    stage('Backend Build & Deploy') {
-      when {
-        expression {
-          return env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main'
+    stage('Backend Build & Push') {
+      when { expression { (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') && fileExists(BACK_DIR) } }
+      steps {
+        dir(BACK_DIR) {
+          sh """
+            ./mvnw -q -DskipTests clean package
+            docker buildx build --platform linux/arm64/v8 \
+              -t ${BACKEND_IMAGE}:${TAG} -t ${BACKEND_IMAGE}:latest \
+              -f Dockerfile . --push
+          """
         }
       }
+    }
+
+    stage('K3s 배포 (kubectl set image)') {
+      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' } }
       steps {
-        script {
-          if (fileExists(BACK_DIR)) {
-            dir(BACK_DIR) {
-              withCredentials([usernamePassword(
-                credentialsId: 'docker-user',
-                usernameVariable: 'DOCKER_USER',
-                passwordVariable: 'DOCKER_PASS'
-              )]) {
-                sh '''
-                  echo "📦 Backend Maven 빌드"
-                  ./mvnw clean package -DskipTests
-
-                  echo "🐳 Docker Build"
-                  docker build -t $REGISTRY-backend:latest .
-
-                  echo "🔐 DockerHub 로그인"
-                  echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-
-                  echo "📤 Docker 이미지 푸시"
-                  docker push $REGISTRY-backend:latest
-
-                  echo "🚀 K3S 롤링 업데이트"
-                  ssh -o StrictHostKeyChecking=no $SSH_BACKEND_USER@$SSH_BACKEND_HOST "\
-                    docker pull $REGISTRY-backend:latest && \
-                    kubectl rollout restart deployment repair_backend -n repair-ns"
-                '''
-              }
-            }
-          } else {
-            echo "⚠️ Backend 디렉토리가 없어서 스킵함"
-          }
-        }
+        // 호스트에 kubectl 컨텍스트가 세팅되어 있다는 가정으로 SSH 사용 유지
+        sh """
+          ssh -o StrictHostKeyChecking=no ${SSH_BACKEND_USER}@${SSH_BACKEND_HOST} '\
+            kubectl -n repair-ns set image deploy/repair-backend \
+              repair-backend=${BACKEND_IMAGE}:${TAG} && \
+            kubectl -n repair-ns rollout status deploy/repair-backend \
+          '
+        """
       }
     }
   }
 
   post {
-    success {
-      echo '✅ 배포 성공!'
-    }
-    failure {
-      echo '❌ 배포 실패...'
-    }
+    always { sh 'docker logout || true' }
+    success { echo '✅ 배포 성공' }
+    failure { echo '❌ 실패: 콘솔 로그 확인' }
   }
 }
