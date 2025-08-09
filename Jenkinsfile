@@ -73,7 +73,7 @@ pipeline {
     }
 
     stage('K3s 배포 (kubectl set image)') {
-      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' } }
+      when { expression { (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') && fileExists(BACK_DIR) } }
       steps {
         // 호스트에 kubectl 컨텍스트가 세팅되어 있다는 가정으로 SSH 사용 유지
         sh """
