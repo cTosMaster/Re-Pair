@@ -21,6 +21,7 @@ import WaitingForPaymentPage from "./pages/repairdetail/WaitingForPaymentPage";
 import WaitingForDeliveryPage from "./pages/repairdetail/WaitingForDeliveryPage";
 import CompletedPage from "./pages/repairdetail/CompletedPage";
 import MysuriMainPage from "./components/mysuridashboard/MysuriMainPage";
+import AdminMainPage from "./pages/admin/AmdinMainPage.jsx";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
 
       {/* ✅ 관리자 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+        <Route path="/admin/main" element={<AdminMainPage />} />
         <Route path="/admin/dash" element={<DashboardLayout />}>
           <Route index element={<AdminDashboard />} />
         </Route>
