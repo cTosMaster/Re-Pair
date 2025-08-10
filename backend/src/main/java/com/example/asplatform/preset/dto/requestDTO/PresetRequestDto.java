@@ -1,22 +1,25 @@
 package com.example.asplatform.preset.dto.requestDTO;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * ✅ 프리셋 요청 dto
- * - 카테고리 아이디
- * - 제품 아이디
- * - 프리셋 이름
- * - 프리셋 설명
- * - 요금
- */
 @Getter
 @Setter
 public class PresetRequestDto {
+    @NotNull(message = "Category ID is required.")
     private Long categoryId;
+
+    @NotNull(message = "Item ID is required.")
     private Long itemId;
+
+    @NotBlank(message = "Preset name is required.")
     private String name;
+
+    @NotBlank(message = "Description is required.")
     private String description;
+
+    @NotNull(message = "Price is required.")
     private Integer price;
 }

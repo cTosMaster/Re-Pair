@@ -15,40 +15,40 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "presets")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Preset {
-	
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long presetId;
-	
-	 @ManyToOne(fetch = FetchType.LAZY)
-	 @JoinColumn(name = "category_id")
-	 private PlatformCategory category;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "preset_id")
+    private Long presetId;
 
-	 @ManyToOne(fetch = FetchType.LAZY)
-	 @JoinColumn(name = "item_id")
-	 private RepairableItem item;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false) // 외래 키 컬럼 이름 명시
+    private PlatformCategory category;
 
-	 private String name;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_id", nullable = false) // 외래 키 컬럼 이름 명시
+    private RepairableItem item;
 
-	 
-	 @Column(columnDefinition = "TEXT")
-	 private String description;
+    @Column(name = "name", nullable = false)
+    private String name;
 
-	 private Integer price;
+    @Column(name = "description", nullable = false)
+    private String description;
 
-	 @CreationTimestamp
-	 private LocalDateTime createdAt;
-	
+    @Column(name = "price", nullable = false)
+    private Integer price;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 }

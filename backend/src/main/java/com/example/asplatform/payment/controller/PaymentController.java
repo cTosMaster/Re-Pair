@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.asplatform.payment.domain.PaymentStatus;
+import com.example.asplatform.common.enums.PaymentStatus;
 import com.example.asplatform.payment.domain.Payments;
 import com.example.asplatform.payment.dto.requestDTO.PaymentRequestDto;
 import com.example.asplatform.payment.dto.responseDTO.PaymentResponseDto;
@@ -56,13 +56,21 @@ public class PaymentController {
 	     */
 	    @PostMapping("/callback")
 	    public ResponseEntity<String> handleCallback(@RequestBody WebhookEventDto webhookDto) {
-	        System.out.println("📦 Toss 콜백 수신 원본 JSON = " + webhookDto);
+	    	System.out.println("📦 Toss 콜백 수신 원본 JSON = " + webhookDto);
+	    	
+	    	try {
+	    	        
+	    	        if ("PAYMENT_STATUS_CHANGED".equals(webhookDto.getEventType())) {
+	    	            paymentService.updatePaymentStatus(webhookDto.getData());
+	    	        }
 
-	        if ("PAYMENT_STATUS_CHANGED".equals(webhookDto.getEventType())) {
-	            paymentService.updatePaymentStatus(webhookDto.getData());
-	        }
-
-	        return ResponseEntity.ok("success");
+	    	        
+	    	        return ResponseEntity.ok("success");
+	    	    } catch (Exception e) {
+	    	       
+	    	        System.err.println("🚨 Toss 콜백 처리 중 예외 발생: " + e.getMessage());
+	    	        return ResponseEntity.ok("success"); 
+	    	    }
 	    }
 	    
 	    

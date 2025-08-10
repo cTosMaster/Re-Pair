@@ -55,13 +55,41 @@ public class SecurityConfig {
 		
 					).permitAll()
 					
+					// get 요청 CUSTOMER , ENGINEER , ADMIN 모두 허용 (프리셋)
+					/**
+					 * - 프리셋 전체 조회
+					 * - 카테고리, 제품별 프리셋 필터 조회
+					 */
+					 .requestMatchers(HttpMethod.GET, "/api/presets/**").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
+					
+					// POST - 신규 등록은 ADMIN만
+					 .requestMatchers(HttpMethod.POST, "/api/presets")
+					     .hasRole("ADMIN")
+					     
+					 /**
+					  * - 단일 프리셋 미리 보기
+					  * - 자동 금액 계산
+					  */
+					 .requestMatchers(HttpMethod.POST, "/api/presets/calculate").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
+					 .requestMatchers(HttpMethod.POST, "/api/presets/{presetId}").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
+					 
+					 //post , put , delete 는 ADMIN만 허용
+					 .requestMatchers(HttpMethod.PUT, "/api/presets/**").hasRole("ADMIN")
+					 .requestMatchers(HttpMethod.DELETE, "/api/presets/**").hasRole("ADMIN")
+
+					 
+				
 					// 인증 처리가 필요한 API ( CUSTOMER 권한을 가진 사용자만 결제 부분에 접근 가능 ) 
 					.requestMatchers(
 					        "/api/payments/status/**",
 					        "/api/payments",
 					        "/api/payments/pending",
 					        "/api/payments/detail/**"
+
+
 					).hasRole("CUSTOMER")
+					
+					
                         // Swagger UI 문서 열어두기
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // 그 외 모든 요청은 인증 필요

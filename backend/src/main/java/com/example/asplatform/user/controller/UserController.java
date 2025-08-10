@@ -33,7 +33,7 @@ public class UserController {
             @Valid @RequestBody RegisterRequest req
     ) {
     	 // 1) 이메일+코드 검증 (회원가입용 코드)      
-        if (!authService.verifySignupCode(req.getEmail(), req.getCode())) {
+       if (!authService.verifySignupCode(req.getEmail(), req.getCode())) {
             throw new IllegalArgumentException("유효하지 않거나 만료된 인증 코드입니다.");
         }
         

@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.example.asplatform.payment.domain.PaymentStatus;
+import com.example.asplatform.common.enums.PaymentStatus;
 import com.example.asplatform.payment.domain.Payments;
 
 @Repository

@@ -2,6 +2,8 @@ package com.example.asplatform.payment.domain;
 
 import java.time.LocalDateTime;
 
+import com.example.asplatform.common.enums.PaymentStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

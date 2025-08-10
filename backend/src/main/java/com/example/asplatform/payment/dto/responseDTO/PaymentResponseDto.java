@@ -2,7 +2,7 @@ package com.example.asplatform.payment.dto.responseDTO;
 
 import java.time.LocalDateTime;
 
-import com.example.asplatform.payment.domain.PaymentStatus;
+import com.example.asplatform.common.enums.PaymentStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

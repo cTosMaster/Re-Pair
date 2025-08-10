@@ -10,7 +10,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import com.example.asplatform.payment.domain.PaymentStatus;
+import com.example.asplatform.common.enums.PaymentStatus;
 import com.example.asplatform.payment.domain.Payments;
 import com.example.asplatform.payment.dto.requestDTO.PaymentRequestDto;
 import com.example.asplatform.payment.dto.responseDTO.PaymentResponseDto;
