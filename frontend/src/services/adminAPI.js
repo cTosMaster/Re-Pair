@@ -4,6 +4,10 @@ import api from './api';
 export const getPendingCustomers = (params = { page: 0, size: 10 }) =>
   api.get('/admin/customers/pending', { params });
 
+/** 최근 승인된 고객사 목록 조회 */
+export const getRecentApprovals = (size = 5) =>
+  getCustomers({ status: 'APPROVED', page: 0, size, sort: 'approvedAt,desc' });
+
 /** 고객사 가입 승인 */
 export const approveCustomer = (customerId) =>
   api.post(`/admin/customers/${encodeURIComponent(customerId)}/approve`);

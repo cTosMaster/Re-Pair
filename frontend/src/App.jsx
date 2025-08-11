@@ -22,6 +22,11 @@ import WaitingForDeliveryPage from "./pages/repairdetail/WaitingForDeliveryPage"
 import CompletedPage from "./pages/repairdetail/CompletedPage";
 import MysuriMainPage from "./components/mysuridashboard/MysuriMainPage";
 import AdminMainPage from "./pages/admin/AmdinMainPage.jsx";
+import AdminAccountManager from "./components/dashboard/admin/AdminAccountManager.jsx";
+import CenterManager from "./components/dashboard/admin/CenterManager.jsx";
+import CategoryManager from "./components/dashboard/admin/CategoryManager.jsx";
+import UserDashboard from "./pages/user/UserDashboard.jsx";
+import CompleteList from "./components/dashboard/user/CompleteList.jsx";
 
 function App() {
   return (
@@ -34,12 +39,20 @@ function App() {
         <Route path="/admin/main" element={<AdminMainPage />} />
         <Route path="/admin/dash" element={<DashboardLayout />}>
           <Route index element={<AdminDashboard />} />
+          <Route path="account" element={<AdminAccountManager />} />
+          <Route path="centers" element={<CenterManager />} />  
+          <Route path="categories" element={<CategoryManager />} />
         </Route>
       </Route>
 
       {/* ✅ USER 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["USER"]} />}>
         <Route path="/user/main" element={<UserMainPage />} />
+        <Route path="/user/dash" element={<DashboardLayout />}>
+          <Route index element={<UserDashboard />} />
+          <Route path="completed" element={<CompleteList />} />
+
+        </Route>
       </Route>
 
       {/* ✅ ENGINEER 전용 */}

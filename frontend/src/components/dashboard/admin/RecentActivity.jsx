@@ -1,4 +1,3 @@
-
 export default function RecentActivity({ activities = [] }) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
