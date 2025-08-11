@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -71,8 +70,6 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 	Page<RepairRequest> findEngineerList(@Param("engineerId") Long engineerId, @Param("status") RepairStatus status,
 			@Param("categoryId") Long categoryId, @Param("keyword") String keyword, Pageable pageable);
 
-	
-	
 	/**
 	 * 고객사에 해당하는 모든 수리 요청 목록 조회
 	 * 

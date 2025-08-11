@@ -117,7 +117,12 @@
 			<artifactId>hibernate-spatial</artifactId>
 			<version>7.0.8.Final</version>
 		</dependency>
-		
+		<dependency>
+			<!-- Hibernate Spatial (Hibernate ORM 7.x 와 매칭) -->
+  			<groupId>me.paulschwarz</groupId>
+  			<artifactId>spring-dotenv</artifactId>
+  			<version>4.0.0</version>
+		</dependency>
 		<dependency>
   		 	<groupId>org.springframework.boot</groupId>
    		  	<artifactId>spring-boot-starter-mail</artifactId>

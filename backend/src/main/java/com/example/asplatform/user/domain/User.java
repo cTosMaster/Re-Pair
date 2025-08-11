@@ -8,7 +8,8 @@ import com.example.asplatform.customer.domain.Customer;
 
 @Entity
 @Table(name = "users")
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -17,10 +18,6 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
-    private Customer customer;
 
     @Column(nullable = false, unique = true, length = 255)
     private String email;
@@ -66,4 +63,11 @@ public class User {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    // 고객사 FK 매핑 (nullable 허용)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "customer_id", // users.customer_id
+            referencedColumnName = "customer_id", // customers.customer_id (PK 컬럼명)
+            foreignKey = @ForeignKey(name = "fk_user_customer"))
+    private Customer customer;
 }
