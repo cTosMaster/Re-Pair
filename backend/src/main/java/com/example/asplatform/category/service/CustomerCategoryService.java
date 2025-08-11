@@ -8,6 +8,7 @@ import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.customer.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ public class CustomerCategoryService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public void updateCategory(Long categoryId, CustomerCategoryRequest request) {
         CustomerCategory category = customerCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
