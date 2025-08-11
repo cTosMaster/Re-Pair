@@ -29,36 +29,36 @@ import lombok.NoArgsConstructor;
 public class RepairableItem {
 
 	@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "item_id")
-    private Long itemId;
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "item_id")
+	private Long itemId;
 
-    // 고객사 연관
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+	// 고객사 연관
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "customer_id", nullable = false)
+	private Customer customer;
 
-    // 고객사 카테고리 연관
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private CustomerCategory category;
+	// 고객사 카테고리 연관
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "category_id", nullable = false)
+	private CustomerCategory category;
 
-    // 제품명 (예: 갤럭시 S7)
-    @Column(nullable = false)
-    private String name;
+	// 제품명 (예: 갤럭시 S7)
+	@Column(nullable = false)
+	private String name;
 
-    // 단가 (0 = 미정)
-    @Column(nullable = false)
-    private Integer price;
+	// 단가 (0 = 미정)
+	@Column(nullable = false)
+	private Integer price;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
 
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        if (this.price == null) {
-            this.price = 0;
-        }
-    }
+	@PrePersist
+	public void prePersist() {
+		this.createdAt = LocalDateTime.now();
+		if (this.price == null) {
+			this.price = 0;
+		}
+	}
 }

@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import com.example.asplatform.common.enums.Role;
-import com.example.asplatform.user.domain.UserAddress;
+import com.example.asplatform.customer.domain.Customer;
 
 @Entity
 @Table(name = "users")
@@ -17,6 +17,10 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
 
     @Column(nullable = false, unique = true, length = 255)
     private String email;
