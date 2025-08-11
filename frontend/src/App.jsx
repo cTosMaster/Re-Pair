@@ -50,7 +50,7 @@ function App() {
       {/* ✅ CUSTOMER 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
         <Route path="/customer/main" element={<CustomerMainPage />} />
-        <Route path="/MysuriMainPage" element={<MysuriMainPage />} /> {/* MY수리센터대쉬보드 추가 */}
+        
         <Route path="/agreementPage" element={<AgreementPage />} /> {/* 약관동의 추가 */}
         <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
       </Route>
@@ -61,6 +61,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* 비밀번호찾기 추가 */}
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/MysuriMainPage" element={<MysuriMainPage />} /> {/* MY수리센터대쉬보드 추가 */}
       </Route>
 
       {/* [로그인만 필요] 공통 영역 */}
