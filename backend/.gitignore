@@ -31,6 +31,7 @@ Thumbs.db
 *.iml
 *.iws
 *.ipr
+*.http
 
 ## Eclipse / Spring Tool Suite (STS)
 .classpath
@@ -63,11 +64,5 @@ Thumbs.db
 *.REMOTE.*
 
 # Configuration and secret files
-application.yml
-application.properties
-src/main/resources/application.yml
-src/main/resources/application.properties
-application-*.yml
-application-*.properties
 .env
 .env.*
