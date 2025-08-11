@@ -39,10 +39,10 @@ function WaitingForDeliveryPage() {
   const isEngineer = role === "ENGINEER";
   const isAdmin = role === "ADMIN";
 
-  return (
+ return (
     <div className="p-6 space-y-6">
       {isPastStep ? (
-        <div className="text-gray-600 mt-8">
+        <div className="space-y-6 text-gray-600">
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
           <p className="text-center">
@@ -51,7 +51,7 @@ function WaitingForDeliveryPage() {
           </p>
         </div>
       ) : isCancelled ? (
-        <div className="space-y-4 text-gray-600 mt-8">
+        <div className="space-y-6 text-gray-600">
           {/* 취소 상태용 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={true} />
           <p className="text-center">
@@ -63,7 +63,7 @@ function WaitingForDeliveryPage() {
       ) : (
         <>
           {isUser && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* USER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
@@ -77,7 +77,7 @@ function WaitingForDeliveryPage() {
           )}
 
           {isCustomer && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* CUSTOMER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
@@ -91,7 +91,7 @@ function WaitingForDeliveryPage() {
           )}
 
           {isEngineer && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* ENGINEER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
@@ -105,7 +105,7 @@ function WaitingForDeliveryPage() {
           )}
 
           {isAdmin && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* ADMIN용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">

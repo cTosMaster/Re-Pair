@@ -11,7 +11,7 @@ function WaitingForPaymentPage() {
     role: dummyUser.role, // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
     repair: {
       statusCode: dummyUser.repair.statusCode, // 수리 상태코드
-      isCancelled: dummyUser.repair.isCancelled,             // 취소 여부
+      isCancelled: dummyUser.repair.isCancelled, // 취소 여부
     },
   };
 
@@ -58,7 +58,6 @@ function WaitingForPaymentPage() {
   };
 
   const handlePayment = () => {
-    // 나중에 결제 로직 연결
     alert("결제 버튼 클릭됨");
   };
 
@@ -81,14 +80,12 @@ function WaitingForPaymentPage() {
   return (
     <div className="p-6 space-y-6">
       {isPastStep ? (
-        <div className="text-gray-600 mt-8">
-          {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
+        <div className="space-y-6 text-gray-600">
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
           <FinalEstimatePreview estimate={finalEstimateData} />
         </div>
       ) : isCancelled ? (
-        <div className="space-y-4 text-gray-600 mt-8">
-          {/* 취소 상태용 컴포넌트 삽입 위치 */}
+        <div className="space-y-6 text-gray-600">
           <RepairProgress statusCode={statusCode} isCancelled={true} />
           <FinalEstimatePreview estimate={finalEstimateData} />
           <RejectReasonBox reason={reason.message} />
@@ -96,8 +93,7 @@ function WaitingForPaymentPage() {
       ) : (
         <>
           {isUser && (
-            <div className="space-y-4">
-              {/* USER용 컴포넌트 삽입 위치 */}
+            <div className="space-y-6">
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <FinalEstimatePreview estimate={finalEstimateData} />
               <PaymentButton onClick={handlePayment} disabled={false} />
@@ -105,24 +101,21 @@ function WaitingForPaymentPage() {
           )}
 
           {isCustomer && (
-            <div className="space-y-4">
-              {/* CUSTOMER용 컴포넌트 삽입 위치 */}
+            <div className="space-y-6">
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <FinalEstimateEditor initialEstimate={lastSaved} presetList={presetList} />
             </div>
           )}
 
           {isEngineer && (
-            <div className="space-y-4">
-              {/* ENGINEER용 컴포넌트 삽입 위치 */}
+            <div className="space-y-6">
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <FinalEstimateEditor initialEstimate={lastSaved} presetList={presetList} />
             </div>
           )}
 
           {isAdmin && (
-            <div className="space-y-4">
-              {/* ADMIN용 컴포넌트 삽입 위치 */}
+            <div className="space-y-6">
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <FinalEstimateEditor initialEstimate={lastSaved} presetList={presetList} />
             </div>

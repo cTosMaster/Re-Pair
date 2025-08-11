@@ -1,6 +1,7 @@
 import { RepairStatusMap } from "../../constants/repairStatus";
 import RepairProgress from "../../components/repairdetail/common/RepairProgress";
 import { dummyUser } from "./dummyUser";
+import SelectedEngineerCard from "../../components/repairdetail/common/SelectedEngineerCard";
 import FinalEstimateForm from "../../components/repairdetail/inprogress/FinalEstimateForm";
 import FinalEstimatePreview from "../../components/repairdetail/common/FinalEstimatePreview";
 import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
@@ -14,7 +15,7 @@ function InProgressPage() {
     },
   };
 
- const finalEstimateDummy = {
+  const finalEstimateDummy = {
     presets: [
       { id: 1, name: "메인보드 교체", price: 80000 },
       { id: 2, name: "팬 청소", price: 15000 },
@@ -83,13 +84,13 @@ function InProgressPage() {
   return (
     <div className="p-6 space-y-6">
       {isPastStep ? (
-        <div className="text-gray-600 mt-8">
+        <div className="text-gray-600">
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
           <FinalEstimatePreview estimate={finalEstimateData} />
         </div>
       ) : isCancelled ? (
-        <div className="space-y-4 text-gray-600 mt-8">
+        <div className="space-y-6 text-gray-600">
           {/* 취소 상태용 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={true} />
           <FinalEstimatePreview estimate={finalEstimateData} />
@@ -98,19 +99,18 @@ function InProgressPage() {
       ) : (
         <>
           {isUser && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* USER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-              <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
-                현재 고객님의 물품에 대한 1차 견적을 작성중입니다.<br />
-                추가로 수리기사와 유선 상담이 있을 예정입니다.
+              <div className="flex items-center justify-center text-gray-600 text-sm text-center py-6">
+                현재 고객님의 물품에 대한 수리를 진행중입니다.<br />
               </div>
               <SelectedEngineerCard engineer={selectedEngineer} />
             </div>
           )}
 
           {isCustomer && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* CUSTOMER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <FinalEstimateForm
@@ -121,7 +121,7 @@ function InProgressPage() {
           )}
 
           {isEngineer && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* ENGINEER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <FinalEstimateForm
@@ -132,7 +132,7 @@ function InProgressPage() {
           )}
 
           {isAdmin && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* ADMIN용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <FinalEstimateForm

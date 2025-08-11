@@ -1,5 +1,5 @@
 export const dummyUser = {
-  role: "ADMIN", // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
+  role: "USER", // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
   repair: {
     statusCode: "COMPLETED",
     // PENDING_APPROVAL: 1,

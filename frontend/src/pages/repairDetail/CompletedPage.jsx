@@ -4,6 +4,7 @@ import { dummyUser } from "./dummyUser";
 import ReviewForm from "../../components/repairdetail/completed/ReviewForm";
 import SelectedCompanyCard from "../../components/repairdetail/common/SelectedCompanyCard";
 import ReviewPreview from "../../components/repairdetail/completed/ReviewPreview";
+import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
 
 function CompletedPage() {
   const userData = {
@@ -28,6 +29,10 @@ function CompletedPage() {
     dateText: "2025.08.08",
   };
 
+  const reason = {
+    message: "요청 내용이 불분명하여 수리를 진행할 수 없습니다.",
+  };
+
   const { role, repair } = userData;
   const { statusCode, isCancelled } = repair;
 
@@ -43,21 +48,22 @@ function CompletedPage() {
   return (
     <div className="p-6 space-y-6">
       {isPastStep ? (
-        <div className="text-gray-600 mt-8">
+        <div className="space-y-6 text-gray-600">
           {/* 과거 진행 요약 정보 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
           <ReviewPreview rating={null} text={null} author={null} dateText={null} /> 
         </div>
       ) : isCancelled ? (
-        <div className="space-y-4 text-gray-600 mt-8">
+        <div className="space-y-6 text-gray-600">
           {/* 취소 상태용 컴포넌트 삽입 위치 */}
           <RepairProgress statusCode={statusCode} isCancelled={true} />
           <ReviewPreview rating={null} text={null} author={null} dateText={null} />
+          <RejectReasonBox reason={reason.message} />        
         </div>
       ) : (
         <>
           {isUser && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* USER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <ReviewForm />
@@ -66,7 +72,7 @@ function CompletedPage() {
           )}
 
           {isCustomer && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* CUSTOMER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <ReviewPreview rating={null} text={null} author={null} dateText={null} />
@@ -74,7 +80,7 @@ function CompletedPage() {
           )}
 
           {isEngineer && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* ENGINEER용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <ReviewPreview rating={null} text={null} author={null} dateText={null} />
@@ -82,7 +88,7 @@ function CompletedPage() {
           )}
 
           {isAdmin && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* ADMIN용 컴포넌트 삽입 위치 */}
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
               <ReviewPreview
