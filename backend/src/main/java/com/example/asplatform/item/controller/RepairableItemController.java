@@ -16,7 +16,6 @@ import java.util.List;
 public class RepairableItemController {
 
     private final RepairableItemService repairItemService;
-    private final CustomerRepository customerRepository;
     private final RepairableItemService repairableItemService;
 
     @PostMapping
@@ -26,7 +25,12 @@ public class RepairableItemController {
         return ResponseEntity.ok("수리 항목이 등록되었습니다.");
     }
 
-
+    // 수리물품 삭제
+    @DeleteMapping("/{itemId}")
+    public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
+        repairableItemService.deleteItem(itemId);
+        return ResponseEntity.noContent().build();
+    }
 
     // 전체 항목 조회 (관리자 전용)
     @GetMapping
