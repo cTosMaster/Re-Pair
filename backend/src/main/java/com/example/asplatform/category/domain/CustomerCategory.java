@@ -44,3 +44,4 @@ public class CustomerCategory {
         this.name = name;
     }
 }
+
