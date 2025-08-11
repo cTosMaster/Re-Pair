@@ -1,30 +1,43 @@
 const steps = [
   {
-    title: "01. 수리 요청",
-    description: "간단한 정보 입력만으로 A/S 요청을 시작하세요.",
+    icon: "🧾",
+    title: "어떤 수리를 원하시나요?",
+    description: "업체 목록에서 원하시는 항목과\n수리 업체를 골라보세요.",
   },
   {
-    title: "02. 견적 비교",
-    description: "여러 수리업체의 견적을 비교하고 선택할 수 있어요.",
+    icon: "💰",
+    title: "견적은 미리 확인!",
+    description: "수리 신청을 통해\n1차 견적서를 확인하세요.",
   },
   {
-    title: "03. 수리 완료",
-    description: "수리 진행 상황을 실시간으로 확인하고 완료 후 리뷰까지!",
+    icon: "🛠️",
+    title: "수리 진행 상황은?",
+    description: "수리 상태를\n실시간으로 확인할 수 있습니다. \n My 수리견적에서 확인하세요.",
+  },
+  {
+    icon: "📦",
+    title: "수리 완료도 깔끔하게!",
+    description: "수리가 끝나면\n택배로 안전하게 전달됩니다.",
   },
 ];
 
 const StepGuide = () => {
   return (
-    <section className="bg-gray-50 py-16 px-6">
-      <h2 className="text-3xl font-bold text-center mb-12">이용 절차 안내</h2>
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        {steps.map((step, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-xl shadow-md p-6 text-center hover:shadow-lg transition"
-          >
-            <div className="text-blue-600 text-2xl font-bold mb-2">{step.title}</div>
-            <p className="text-gray-700 text-base">{step.description}</p>
+    <section className="py-12 md:py-16">
+      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 px-6">
+        {steps.map((s, i) => (
+          <div key={i} className="flex items-start">
+            <div className="text-3xl md:text-4xl mr-3 select-none" aria-hidden="true">
+              {s.icon}
+            </div>
+            <div>
+              <h3 className="text-[#6a8a4d] font-bold text-lg md:text-xl mb-1">
+                {s.title}
+              </h3>
+              <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                {s.description}
+              </p>
+            </div>
           </div>
         ))}
       </div>

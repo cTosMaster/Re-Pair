@@ -9,6 +9,7 @@ const PublicRoute = () => {
       USER: "/user/main",
       ENGINEER: "/engineer/main",
       CUSTOMER: "/customer/main",
+      ADMIN: "/admin/main",
     };
     return <Navigate to={roleRedirectMap[user.role] || "/"} replace />;
   }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MysuriTopnav from './MysuriTopnav';
+import Header from '../../layouts/Header';
 import MysuriSidebar from './MysuriSidebar';
 import MysuriRequestList from './MysuriRequestList';
 import MysuriRequestManage from './MysuriRequestManage';
@@ -35,11 +36,9 @@ const MysuriMainPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 상단 네비게이션 고정 */}
-      <div className="fixed top-0 left-0 right-0 z-50">
-        <MysuriTopnav />
-      </div>
-
+      {/* 상단 헤더 고정 (재사용) */}
+      <Header />
+      
       {/* 왼쪽 사이드바 */}
       <div className="fixed top-[80px] left-10 z-50">
         <MysuriSidebar selectedMenu={selectedMenu} setSelectedMenu={setSelectedMenu} />
