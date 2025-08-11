@@ -2,6 +2,7 @@ package com.example.asplatform.payment.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -56,20 +57,36 @@ public class PaymentController {
 	     */
 	    @PostMapping("/callback")
 	    public ResponseEntity<String> handleCallback(@RequestBody WebhookEventDto webhookDto) {
+
 	    	System.out.println("📦 Toss 콜백 수신 원본 JSON = " + webhookDto);
 	    	
+	    	 if (webhookDto == null || webhookDto.getData() == null || !"PAYMENT_STATUS_CHANGED".equals(webhookDto.getEventType())) {
+	    	        System.err.println("🚨 Toss 콜백 수신 실패: 유효하지 않은 요청 본문입니다.");
+	    	        // 유효하지 않은 요청이므로, Toss Payments에 명확한 오류를 반환합니다.
+	    	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("invalid request");
+	    	    }
+	    	 
 	    	try {
-	    	        
-	    	        if ("PAYMENT_STATUS_CHANGED".equals(webhookDto.getEventType())) {
+	    		  paymentService.updatePaymentStatus(webhookDto.getData());
+			  
+	    	       /* if ("PAYMENT_STATUS_CHANGED".equals(webhookDto.getEventType())) {
 	    	            paymentService.updatePaymentStatus(webhookDto.getData());
 	    	        }
 
-	    	        
+	    	        System.out.println("✅ Toss 콜백 처리 완료: " + webhookDto);
 	    	        return ResponseEntity.ok("success");
+	    	        */
+	    		  
+	    		  System.out.println("✅ Toss 콜백 처리 완료 (정상 응답)");
+	    		  return ResponseEntity.ok("success");
 	    	    } catch (Exception e) {
 	    	       
 	    	        System.err.println("🚨 Toss 콜백 처리 중 예외 발생: " + e.getMessage());
-	    	        return ResponseEntity.ok("success"); 
+	    	        e.printStackTrace(); 
+	    	     
+	    	       // return ResponseEntity.ok("success"); 
+	    	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("server error");
+	    	       
 	    	    }
 	    }
 	    
