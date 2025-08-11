@@ -71,6 +71,10 @@ public class AdminUserService {
     }
 
     public void hardDelete(Long id) {
+
+        // 1) 주소 선삭제
+        addrRepo.deleteByUserId(id);
+        // 2) 유저 삭제
         userRepo.deleteById(id);
     }
 
