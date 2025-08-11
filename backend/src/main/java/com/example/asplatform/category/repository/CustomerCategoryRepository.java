@@ -11,4 +11,6 @@ public interface CustomerCategoryRepository extends JpaRepository<CustomerCatego
 
     // 고객사 ID로 해당 고객사의 카테고리 목록 조회
     List<CustomerCategory> findByCustomerId(Long customerId);
+
+    void deleteByCustomerId(Long customerId);
 }

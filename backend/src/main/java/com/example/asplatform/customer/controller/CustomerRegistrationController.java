@@ -1,6 +1,7 @@
 // src/main/java/com/example/asplatform/customer/controller/CustomerRegistrationController.java
 package com.example.asplatform.customer.controller;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.customer.dto.requestDTO.CustomerRegistrationRequest;
 import com.example.asplatform.customer.dto.responseDTO.CustomerRegistrationResponse;
 import com.example.asplatform.customer.service.CustomerRegistrationService;
@@ -8,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,8 +21,9 @@ public class CustomerRegistrationController {
 
     @PostMapping
     public ResponseEntity<CustomerRegistrationResponse> register(
+            @AuthenticationPrincipal CustomUserDetails me,
             @Valid @RequestBody CustomerRegistrationRequest request) {
-        CustomerRegistrationResponse response = registrationService.registerCustomer(request);
+        CustomerRegistrationResponse response = registrationService.registerCustomer(request, me);
         return ResponseEntity.ok(response);
     }
 }
