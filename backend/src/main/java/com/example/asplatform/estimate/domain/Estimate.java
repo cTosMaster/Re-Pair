@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.example.asplatform.repair.domain.RepairRequest;
+import com.example.asplatform.repairRequest.domain.RepairRequest;
 import com.example.asplatform.user.domain.User;
 
 import jakarta.persistence.Column;

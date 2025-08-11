@@ -44,9 +44,11 @@ Thumbs.db
 node_modules/
 *.local
 
-### Maven wrapper ###
+# Maven wrapper (반드시 커밋)
 .mvn/
-!/.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/
+!mvnw
+!mvnw.cmd
 
 ### Git conflict files ###
 *.orig
@@ -64,3 +66,4 @@ application-*.yml
 application-*.properties
 src/main/resources/application.yml
 src/main/resources/application.properties
+/.metadata/

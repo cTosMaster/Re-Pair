@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.example.asplatform.category.domain.PlatformCategory;
-import com.example.asplatform.repair.domain.RepairableItem;
+import com.example.asplatform.admin.domain.PlatformCategory;
+import com.example.asplatform.item.domain.RepairableItem;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,18 +1,13 @@
 package com.example.asplatform.customer.domain;
 
 import com.example.asplatform.common.enums.CustomerStatus;
-import com.example.asplatform.repair.domain.RepairableItem;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "customers")
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -51,8 +46,7 @@ public class Customer {
     @Column(name = "status", nullable = false)
     private CustomerStatus status;
 
-    @Column(name = "created_at", updatable = false,
-            columnDefinition = "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", updatable = false, columnDefinition = "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
     @Column(name = "approved_at")
@@ -63,12 +57,6 @@ public class Customer {
      */
     @OneToOne(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private CustomerAddress address;
-
-    /**
-     * 너가 추가한: 고객이 등록한 수리 가능 항목들
-     */
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    private List<RepairableItem> repairableItems = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

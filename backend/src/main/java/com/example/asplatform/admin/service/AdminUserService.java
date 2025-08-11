@@ -37,6 +37,12 @@ public class AdminUserService {
         return page.map(this::toDto);
     }
 
+    /* 단일 사용자 조회 */
+    @Transactional(readOnly = true)
+    public UserDto getOne(Long id) {
+                return toDto(find(id));
+            }
+
     public UserDto update(Long id, UserUpdateRequest req) {
         User u = find(id);
         // 기본 필드
@@ -48,9 +54,12 @@ public class AdminUserService {
         // 주소 처리
         UserAddress addr = u.getAddress();
         if (addr == null) {
-            addr = new UserAddress();
-            addr.setUser(u);
-        }
+                    addr = new UserAddress();
+                    addr.setUser(u);
+                    // 새 주소가 User에 설정되도록 반영
+                            u.setAddress(addr);
+                }
+
         addr.setPostalCode(req.getPostalCode());
         addr.setRoadAddress(req.getRoadAddress());
         addr.setDetailAddress(req.getDetailAddress());
@@ -85,6 +94,8 @@ public class AdminUserService {
         d.setRole(u.getRole());
         d.setActive(u.getIsActive());
         d.setCreatedAt(String.valueOf(u.getCreatedAt()));
+
+        d.setLastLogin(u.getLastLogin() != null ? u.getLastLogin().toString() : null);
 
         UserAddress addr = u.getAddress();
         if (addr != null) {

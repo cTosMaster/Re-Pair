@@ -6,12 +6,13 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.example.asplatform.category.repository.PlatformCategoryRepository;
+import com.example.asplatform.admin.repository.PlatformCategoryRepository;
+import com.example.asplatform.item.repository.RepairableItemRepository;
 import com.example.asplatform.preset.domain.Preset;
 import com.example.asplatform.preset.dto.requestDTO.PresetRequestDto;
 import com.example.asplatform.preset.dto.responseDTO.PresetResponseDto;
 import com.example.asplatform.preset.repository.PresetRepository;
-import com.example.asplatform.repair.repository.RepairableItemRepository;
+
 
 import lombok.RequiredArgsConstructor;
 
