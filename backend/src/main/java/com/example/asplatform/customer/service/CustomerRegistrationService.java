@@ -1,16 +1,19 @@
 // src/main/java/com/example/asplatform/customer/service/CustomerRegistrationService.java
 package com.example.asplatform.customer.service;
 
-import com.example.asplatform.admin.repository.PlatformCategoryRepository;
+
 import com.example.asplatform.common.enums.CustomerStatus;
 import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.customer.domain.CustomerAddress;
+import com.example.asplatform.admin.repository.PlatformCategoryRepository;
 import com.example.asplatform.category.domain.CustomerCategory;
 import com.example.asplatform.customer.dto.requestDTO.CustomerRegistrationRequest;
 import com.example.asplatform.customer.dto.responseDTO.CustomerRegistrationResponse;
 import com.example.asplatform.customer.repository.CustomerRepository;
 import com.example.asplatform.customer.repository.CustomerAddressRepository;
 import com.example.asplatform.category.repository.CustomerCategoryRepository;
+
+
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;

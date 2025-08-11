@@ -42,3 +42,4 @@ public class CustomerCategory {
         this.createdAt = LocalDateTime.now();
     }
 }
+
