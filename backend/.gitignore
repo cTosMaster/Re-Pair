@@ -31,6 +31,7 @@ Thumbs.db
 *.iml
 *.iws
 *.ipr
+*.http
 
 ## Eclipse / Spring Tool Suite (STS)
 .classpath
