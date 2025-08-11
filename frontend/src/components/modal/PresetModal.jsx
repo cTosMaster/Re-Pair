@@ -13,7 +13,7 @@ const PresetModal = ({ isOpen, onClose, onSubmit, initialData }) => {
       setForm({
         category: initialData.category || "",
         name: initialData.name || "",
-        content: initialData.content || "",
+        content: initialData.desc || "",
         price: initialData.price || ""
       });
     } else {
@@ -48,63 +48,69 @@ const PresetModal = ({ isOpen, onClose, onSubmit, initialData }) => {
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
+          aria-label="Close modal"
         >
           ✕
         </button>
 
         <h1 className="text-2xl font-normal text-black mb-8">수리 상품 등록</h1>
 
-        <label className="block text-black mb-2">카테고리</label>
-        <select
-          name="category"
-          value={form.category}
-          onChange={handleChange}
-          className="w-full h-12 mb-6 border rounded-lg px-4 bg-white"
-        >
-          <option value="">카테고리를 선택하세요</option>
-          <option value="휴대폰">휴대폰</option>
-          <option value="노트북">노트북</option>
-          <option value="UMPC">UMPC</option>
-          <option value="콘솔게임기">콘솔게임기</option>
-          <option value="전자시계">전자시계</option>
-        </select>
+        <form onSubmit={handleSubmit}>
+          <label className="block text-black mb-2">카테고리</label>
+          <select
+            name="category"
+            value={form.category}
+            onChange={handleChange}
+            className="w-full h-12 mb-6 border rounded-lg px-4 bg-white"
+          >
+            <option value="">카테고리를 선택하세요</option>
+            <option value="휴대폰">휴대폰</option>
+            <option value="노트북">노트북</option>
+            <option value="UMPC">UMPC</option>
+            <option value="콘솔게임기">콘솔게임기</option>
+            <option value="전자시계">전자시계</option>
+          </select>
 
-        <label className="block text-black mb-2">프리셋명</label>
-        <input
-          name="name"
-          type="text"
-          placeholder="제품명을 입력하세요"
-          value={form.name}
-          onChange={handleChange}
-          className="w-full h-12 mb-6 border rounded-lg px-4"
-        />
+          <label className="block text-black mb-2">프리셋명</label>
+          <input
+            name="name"
+            type="text"
+            placeholder="제품명을 입력하세요"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full h-12 mb-6 border rounded-lg px-4"
+            required
+          />
 
-        <label className="block text-black mb-2">프리셋 내용</label>
-        <input
-          name="content"
-          type="text"
-          placeholder="프리셋 내용을 입력하세요"
-          value={form.content}
-          onChange={handleChange}
-          className="w-full h-12 mb-6 border rounded-lg px-4"
-        />
+          <label className="block text-black mb-2">프리셋 내용</label>
+          <input
+            name="content"
+            type="text"
+            placeholder="프리셋 내용을 입력하세요"
+            value={form.content}
+            onChange={handleChange}
+            className="w-full h-12 mb-6 border rounded-lg px-4"
+            required
+          />
 
-        <label className="block text-black mb-2">기본 단가</label>
-        <input
-          name="price"
-          type="text"
-          placeholder="기본 단가를 입력하세요"
-          value={form.price}
-          onChange={handleChange}
-          className="w-full h-12 mb-6 border rounded-lg px-4"
-        />
+          <label className="block text-black mb-2">기본 단가</label>
+          <input
+            name="price"
+            type="text"
+            placeholder="기본 단가를 입력하세요"
+            value={form.price}
+            onChange={handleChange}
+            className="w-full h-12 mb-6 border rounded-lg px-4"
+            required
+          />
 
-        <button
-          onClick={handleSubmit}
-          className="w-full h-12 bg-[#9fc87b] text-white font-bold rounded-lg"
-        >
-          등록하기
-        </button>
+          <button
+            type="submit"
+            className="w-full h-12 bg-[#9fc87b] text-white font-bold rounded-lg"
+          >
+            등록하기
+          </button>
+        </form>
       </div>
     </div>
   );
