@@ -9,17 +9,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "customer_categories")
 @Getter
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PUBLIC)
+@Builder
 public class CustomerCategory {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,6 +37,11 @@ public class CustomerCategory {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    // 카테고리 이름만 수정하고 싶을 시
+    public void updateName(String name) {
+        this.name = name;
     }
 }
 
