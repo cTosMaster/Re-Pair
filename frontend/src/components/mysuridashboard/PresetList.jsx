@@ -106,12 +106,12 @@ const PresetList = () => {
 
         {/* 테이블 헤더 */}
         <div className="grid grid-cols-8 text-gray-500 text-sm border-b pb-2 mb-2">
-  <div className="flex justify-center items-center font-semibold pl-5 col-span-1">체크박스</div>
-  <div className="font-semibold pl-5 col-span-1">프리셋명</div>
-  <div className="col-span-3 font-semibold pl-2">내용</div>
-  <div className="font-semibold col-span-1">기본단가</div>
-  <div className="font-semibold col-span-1">등록일시</div>
-</div>
+          <div className="flex justify-center items-center font-semibold pl-5 col-span-1">체크박스</div>
+          <div className="font-semibold pl-5 col-span-1">프리셋명</div>
+          <div className="col-span-3 font-semibold pl-2">내용</div>
+          <div className="font-semibold col-span-1">기본단가</div>
+          <div className="font-semibold col-span-1">등록일시</div>
+        </div>
 
 
         {/* 리스트 */}
