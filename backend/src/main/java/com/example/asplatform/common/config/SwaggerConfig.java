@@ -18,15 +18,17 @@ public class SwaggerConfig {
                         .description("A/S 플랫폼 REST API 문서")
                         .contact(new Contact().name("Re:Piar").email("support@repiar.com"))
                 )
-                //보안(인증) 스키마 요구사항 추가
+                // 전역 보안 요구사항
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                //컴포넌트(스키마) 정의: bearerAuth 라는 이름으로 JWT 인증 스킴 등록
+                // 컴포넌트에 스키마 정의
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",
                                 new SecurityScheme()
-                                        .type(SecurityScheme.Type.HTTP) // HTTP 인증
-                                        .scheme("bearer") // Bearer 방식
-                                        .bearerFormat("JWT") // JWT 토큰 포맷
+                                        .type(SecurityScheme.Type.HTTP)        // HTTP 인증 타입
+                                        .scheme("bearer")                      // Bearer 방식
+                                        .bearerFormat("JWT")                   // JWT 토큰 포맷
+                                        .in(SecurityScheme.In.HEADER)          // 헤더에 담김
+                                        .name("Authorization")                 // 헤더 이름
                         )
                 );
     }

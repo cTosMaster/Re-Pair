@@ -5,6 +5,9 @@ import com.example.asplatform.user.domain.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -16,4 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // ➕ Role 기준 페이징 조회
     Page<User> findByRole(Role role, Pageable pageable);
+
+    // 고객사 삭제 전: 해당 고객사에 속한 모든 사용자 FK NULL
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update User u set u.customer = null where u.customer.id = :customerId")
+    int clearCustomerByCustomerId(@Param("customerId") Long customerId);
 }

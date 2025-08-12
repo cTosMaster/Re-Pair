@@ -1,5 +1,6 @@
 package com.example.asplatform.repairRequest.controller;
 
+import com.example.asplatform.engineer.repository.EngineerRepository;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestSimpleResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,6 +35,7 @@ public class RepairRequestController {
 
 	private final RepairRequestService repairRequestService;
 	private final RepairStatusManager repairStatusManager;
+	private final EngineerRepository engineerRepository;
 
 	/**
 	 * 수리 요청 등록
@@ -144,24 +146,55 @@ public class RepairRequestController {
 		return ResponseEntity.ok().build();
 	}
 
-	// 수리요청 승인(관리자,수리기사용)
+	// 수리기사의 경우 engineer배정해야함. 수리기사의 경우 자동 배정
 	@PatchMapping("/{requestId}/accept")
+	@PreAuthorize("hasAnyRole('CUSTOMER','ENGINEER')")
 	public ResponseEntity<RepairRequestSimpleResponse> accept(
-			@PathVariable Long requestId,
+			@PathVariable("requestId") Long requestId,
 			@AuthenticationPrincipal CustomUserDetails me,
-			@RequestBody(required = false) Map<String, String> body
+			@RequestParam(required = false) Long engineerId,
+			@RequestParam(required = false) String memo
 	) {
-		String memo = body != null ? body.get("memo") : null;
-		return ResponseEntity.ok(repairRequestService.accept(requestId, me.getUser(), memo));
+		return ResponseEntity.ok(
+				repairRequestService.accept(requestId, me.getUser(), engineerId, memo)
+		);
 	}
 
-	// 수리요청 반려(관리자, 수리기사용)
+	// 관리자,수리기사 수리요청 거절/ reason 필요함
 	@PatchMapping("/{requestId}/reject")
+	@PreAuthorize("hasAnyRole('CUSTOMER','ENGINEER')")
 	public ResponseEntity<RepairRequestSimpleResponse> reject(
-			@PathVariable Long requestId,
+			@PathVariable("requestId") Long requestId,
 			@AuthenticationPrincipal CustomUserDetails me,
-			@RequestBody Map<String, String> body
+			@RequestBody(required = false) java.util.Map<String,String> body
 	) {
-		return ResponseEntity.ok(repairRequestService.reject(requestId, me.getUser(), body.get("reason")));
+		String reason = body != null ? body.get("reason") : null;
+		return ResponseEntity.ok(
+				repairRequestService.reject(requestId, me.getUser(), reason)
+		);
 	}
+
+	// 수리기사만 waiting_for_repair -> in_progress
+	@PatchMapping("/{requestId}/start")
+	@PreAuthorize("hasRole('ENGINEER')")
+	public ResponseEntity<RepairRequestSimpleResponse> start(
+			@PathVariable("requestId") Long requestId,
+			@AuthenticationPrincipal CustomUserDetails me
+	) {
+		return ResponseEntity.ok(repairRequestService.startWork(requestId, me.getUser()));
+	}
+
+
+
+	// RepairRequestCommandController.java
+	@PatchMapping("/{requestId}/complete-test")
+	@PreAuthorize("hasAnyAuthority('ENGINEER','CUSTOMER')") // 임시로 둘 다 허용
+	public ResponseEntity<RepairRequestSimpleResponse> completeTest(
+			@PathVariable("requestId") Long requestId,
+			@AuthenticationPrincipal CustomUserDetails me,
+			@RequestParam(required = false) String memo
+	) {
+		return ResponseEntity.ok(repairRequestService.completeForTest(requestId, me.getUser(), memo));
+	}
+
 }

@@ -5,6 +5,8 @@ import com.example.asplatform.common.enums.Role;
 import com.example.asplatform.user.domain.User;
 import com.example.asplatform.user.domain.UserAddress;
 import com.example.asplatform.user.dto.requestDTO.RegisterRequest;
+import com.example.asplatform.user.dto.requestDTO.UpdateMyProfileRequest;
+import com.example.asplatform.user.dto.responseDTO.MyProfileResponse;
 import com.example.asplatform.user.repository.UserAddressRepository;
 import com.example.asplatform.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -13,6 +15,8 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.Point;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -62,5 +66,99 @@ public class UserService {
         ua.setLocation(point);
 
         userAddressRepository.save(ua);
+    }
+
+    /* ---------- 마이페이지: 공통 유틸 ---------- */
+    private String currentEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new RuntimeException("인증 정보가 없습니다.");
+        }
+        return auth.getName();
+    }
+
+    private MyProfileResponse toMyProfileResponse(User user, UserAddress addr) {
+        Double lat = null, lng = null;
+        if (addr != null && addr.getLocation() != null) {
+            // JTS: Point.getX()=경도(lng), getY()=위도(lat)
+            lng = addr.getLocation().getX();
+            lat = addr.getLocation().getY();
+        }
+        return MyProfileResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .phone(user.getPhone())
+                .imageUrl(user.getImageUrl())
+                .role(user.getRole())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .lastLogin(user.getLastLogin())
+                .postalCode(addr != null ? addr.getPostalCode() : null)
+                .roadAddress(addr != null ? addr.getRoadAddress() : null)
+                .detailAddress(addr != null ? addr.getDetailAddress() : null)
+                .lat(lat)
+                .lng(lng)
+                .build();
+    }
+
+    /* ---------- 마이페이지: 조회 ---------- */
+    @Transactional
+    public MyProfileResponse getMyProfile() {
+        String email = currentEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        UserAddress addr = userAddressRepository.findById(user.getId()).orElse(null);
+        return toMyProfileResponse(user, addr);
+    }
+
+    /* ---------- 마이페이지: 수정 (부분 업데이트) ---------- */
+    @Transactional
+    public MyProfileResponse updateMyProfile(UpdateMyProfileRequest req) {
+        String email = currentEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 기본 정보
+        if (req.getName() != null) user.setName(req.getName());
+        if (req.getPhone() != null) user.setPhone(req.getPhone());
+        if (req.getImageUrl() != null) user.setImageUrl(req.getImageUrl());
+
+        // 주소
+        UserAddress addr = userAddressRepository.findById(user.getId()).orElse(null);
+        if (addr == null && (req.getPostalCode()!=null || req.getRoadAddress()!=null
+                || req.getDetailAddress()!=null || req.getLat()!=null || req.getLng()!=null)) {
+            addr = new UserAddress();
+            addr.setUser(user); // @MapsId - PK=FK
+        }
+        if (addr != null) {
+            if (req.getPostalCode() != null)   addr.setPostalCode(req.getPostalCode());
+            if (req.getRoadAddress() != null)  addr.setRoadAddress(req.getRoadAddress());
+            if (req.getDetailAddress() != null) addr.setDetailAddress(req.getDetailAddress());
+
+            // 좌표는 둘 다 있을 때만 갱신
+            if (req.getLat() != null && req.getLng() != null) {
+                Point p = gf.createPoint(new Coordinate(req.getLng(), req.getLat()));
+                addr.setLocation(p);
+            }
+            userAddressRepository.save(addr);
+        }
+
+        // flush는 트랜잭션 종료 시점
+        return toMyProfileResponse(user, addr);
+    }
+
+    /* ---------- 마이페이지: 소프트 탈퇴 ---------- */
+    @Transactional
+    public void deactivateMyAccount() {
+        String email = currentEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            return; // 이미 비활성화
+        }
+        user.setIsActive(false);
     }
 }
