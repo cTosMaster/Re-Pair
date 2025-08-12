@@ -28,15 +28,27 @@ const PresetList = () => {
 
   // 검색 필터링
   const filteredList = items.filter(
-    (item) => item.name.includes(search) || item.desc.includes(search)
-  );
+  (item) => item.name.includes(search) || item.desc.includes(search)
+);
+
+  // 정렬
+  const sortedList = filteredList.slice().sort((a, b) => {
+  if (sortOption === "프리셋명") {
+    return a.name.localeCompare(b.name);
+  } else if (sortOption === "등록일자") {
+    const dateA = new Date(a.date.replace(/\./g, "-"));
+    const dateB = new Date(b.date.replace(/\./g, "-"));
+    return dateB - dateA;  // 최신순: 최신 날짜가 먼저 오도록 내림차순 정렬
+  }
+  return 0;
+});
 
   // 페이지네이션
-  const totalItems = filteredList.length;
+  const totalItems = sortedList.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentItems = filteredList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  
+  const currentItems = sortedList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    
   // 목록 클릭 시
   const handleItemClick = (item) => {
     setEditingPreset(item); // 수정할 아이템 저장
@@ -98,7 +110,7 @@ const PresetList = () => {
               onChange={(e) => setSortOption(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg"
             >
-              <option>제품명</option>
+              <option>프리셋명</option>
               <option>등록일자</option>
             </select>
           </div>
