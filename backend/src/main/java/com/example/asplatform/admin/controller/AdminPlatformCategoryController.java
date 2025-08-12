@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -31,6 +32,7 @@ public class AdminPlatformCategoryController {
 
     /** 생성 */
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PlatformCategoryDto> create(
             @Valid @RequestBody PlatformCategoryCreateRequest req) {
         return ResponseEntity.ok(service.create(req));
@@ -38,6 +40,7 @@ public class AdminPlatformCategoryController {
 
     /** 수정 */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PlatformCategoryDto> update(
             @PathVariable Long id,
             @Valid @RequestBody PlatformCategoryUpdateRequest req) {
@@ -46,6 +49,7 @@ public class AdminPlatformCategoryController {
 
     /** 삭제 */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
