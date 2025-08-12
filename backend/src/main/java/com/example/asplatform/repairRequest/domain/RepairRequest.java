@@ -1,40 +1,85 @@
-// src/main/java/com/example/asplatform/repairrequest/domain/RepairRequest.java
 package com.example.asplatform.repairRequest.domain;
 
-import com.example.asplatform.common.enums.RepairStatus;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import com.example.asplatform.common.enums.RepairStatus;
+import com.example.asplatform.item.domain.RepairableItem;
+import com.example.asplatform.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 
 @Entity
 @Table(name = "repair_requests")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RepairRequest {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "request_id")
-    private Long id;
+    private Long requestId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;        // 고객(users.id)
+    // 요청 고객
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(name = "engineer_id")
-    private Long engineerId;    // 배정 엔지니어(users.id)
+    // 대상 제품
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_id", nullable = false)
+    private RepairableItem repairableItem;
+
+    // 배정된 수리기사 (nullable)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "engineer_id")
+    private User engineer;
+
+    @Column(length = 255)
+    private String title;
+
+    @Lob
+    private String description;
+
+    @Column(name = "contact_phone", length = 20)
+    private String contactPhone;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 30)
+    @Column(nullable = false, length = 50)
     private RepairStatus status;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    public void setStatus(RepairStatus status) {
+        this.status = status;
+    }
+
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.status = RepairStatus.PENDING;
+    }
 }
