@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestSimpleResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -134,14 +135,62 @@ public class RepairRequestService {
 		return new PageImpl<>(content, result.getPageable(), result.getTotalElements());
 	}
 
-	
-	
-	
-	
 	public Page<CustomerRepairRequestListDto> getCustomerRequestList(Long customerId, String keyword, Long categoryId,
 			RepairStatus status, Pageable pageable) {
 
 		return repairRequestRepository.findCustomerList(customerId, keyword, categoryId, status, pageable);
+	}
+
+	// accept
+	@Transactional
+	public RepairRequestSimpleResponse accept(Long requestId, User actor, String memo) {
+		RepairRequest rr = repairRequestRepository.findById(requestId)
+				.orElseThrow(() -> new IllegalArgumentException("수리 요청을 찾을 수 없습니다. id=" + requestId));
+
+		RepairStatus prev = rr.getStatus();
+		if (prev == RepairStatus.CANCELED || prev == RepairStatus.COMPLETED) {
+			throw new IllegalStateException("이미 종료된 요청은 접수할 수 없습니다.");
+		}
+
+		rr.setStatus(RepairStatus.WAITING_FOR_REPAIR);
+
+		repairHistoryRepository.save(RepairHistory.builder()
+				.repairRequest(rr)
+				.previousStatus(prev)
+				.newStatus(RepairStatus.WAITING_FOR_REPAIR)
+				.changedBy(actor)
+				.memo(memo)
+				.build());
+
+		return RepairRequestSimpleResponse.of(rr.getRequestId(), rr.getStatus());
+	}
+
+	// reject
+	@Transactional
+	public RepairRequestSimpleResponse reject(Long requestId, User actor, String reason) {
+		if (reason == null || reason.isBlank()) {
+			throw new IllegalArgumentException("반려 사유는 필수입니다.");
+		}
+
+		RepairRequest rr = repairRequestRepository.findById(requestId)
+				.orElseThrow(() -> new IllegalArgumentException("수리 요청을 찾을 수 없습니다. id=" + requestId));
+
+		RepairStatus prev = rr.getStatus();
+		if (prev == RepairStatus.CANCELED || prev == RepairStatus.COMPLETED) {
+			throw new IllegalStateException("이미 종료된 요청은 반려할 수 없습니다.");
+		}
+
+		rr.setStatus(RepairStatus.CANCELED);
+
+		repairHistoryRepository.save(RepairHistory.builder()
+				.repairRequest(rr)
+				.previousStatus(prev)
+				.newStatus(RepairStatus.CANCELED)
+				.changedBy(actor)
+				.memo(reason)
+				.build());
+
+		return RepairRequestSimpleResponse.of(rr.getRequestId(), rr.getStatus());
 	}
 
 }

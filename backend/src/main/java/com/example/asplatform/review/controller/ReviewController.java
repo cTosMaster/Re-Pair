@@ -44,4 +44,13 @@ public class ReviewController {
     ) {
         return ResponseEntity.ok(reviewService.getReviewsByRepairId(repairId));
     }
+
+    @DeleteMapping("/api/reviews/{reviewId}")
+    public ResponseEntity<Void> deleteReview(
+            @PathVariable Long reviewId,
+            @AuthenticationPrincipal CustomUserDetails me // 또는 Long userId
+    ) {
+        reviewService.deleteReview(reviewId, me.getId());
+        return ResponseEntity.noContent().build();
+    }
 }

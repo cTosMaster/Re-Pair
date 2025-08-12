@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 public class EngineerRequest {
     @NotNull private Long customerId;
     @NotBlank private String name;     // 표시용 이름
-    @Email @NotBlank private String email;   // 로그인 ID
+    @Email @NotBlank private String email;   // 로그인 Id
     @NotBlank private String password;
+    @NotBlank private String passwordcheck;
     @NotBlank private String phone;
 }

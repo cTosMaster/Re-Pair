@@ -1,5 +1,6 @@
 package com.example.asplatform.repairRequest.controller;
 
+import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestSimpleResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -8,13 +9,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.common.enums.StatusGroup;
@@ -28,6 +23,8 @@ import com.example.asplatform.user.domain.User;
 import lombok.extern.slf4j.Slf4j;
 
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -147,4 +144,24 @@ public class RepairRequestController {
 		return ResponseEntity.ok().build();
 	}
 
+	// 수리요청 승인(관리자,수리기사용)
+	@PatchMapping("/{requestId}/accept")
+	public ResponseEntity<RepairRequestSimpleResponse> accept(
+			@PathVariable Long requestId,
+			@AuthenticationPrincipal CustomUserDetails me,
+			@RequestBody(required = false) Map<String, String> body
+	) {
+		String memo = body != null ? body.get("memo") : null;
+		return ResponseEntity.ok(repairRequestService.accept(requestId, me.getUser(), memo));
+	}
+
+	// 수리요청 반려(관리자, 수리기사용)
+	@PatchMapping("/{requestId}/reject")
+	public ResponseEntity<RepairRequestSimpleResponse> reject(
+			@PathVariable Long requestId,
+			@AuthenticationPrincipal CustomUserDetails me,
+			@RequestBody Map<String, String> body
+	) {
+		return ResponseEntity.ok(repairRequestService.reject(requestId, me.getUser(), body.get("reason")));
+	}
 }

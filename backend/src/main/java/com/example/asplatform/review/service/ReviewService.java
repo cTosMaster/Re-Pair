@@ -9,7 +9,9 @@ import com.example.asplatform.review.repository.ReviewRepository;
 import com.example.asplatform.user.domain.User;
 import com.example.asplatform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +56,26 @@ public class ReviewService {
         return reviewRepository.findByRepair_Id(repairId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    // 관리자 혹은 자기 자신만 삭제 가능 
+    @Transactional
+    public void deleteReview(Long reviewId, Long requesterId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("리뷰 없음"));
+
+        User requester = userRepository.findById(requesterId)
+                .orElseThrow(() -> new IllegalArgumentException("요청 사용자 없음"));
+
+        boolean isOwner = review.getUser().getId().equals(requesterId);
+        boolean isAdmin = requester.getRole() != null && requester.getRole().name().equals("ADMIN");
+
+        if (!isOwner && !isAdmin) {
+            throw new AccessDeniedException("리뷰 삭제 권한이 없습니다.");
+        }
+
+        reviewRepository.delete(review); // 하드 삭제
+        // 소프트 삭제를 원하면: review.setDeleted(true); 로 대체하고 엔티티/쿼리 수정
     }
 
      // Review → ReviewResponseDTO 변환

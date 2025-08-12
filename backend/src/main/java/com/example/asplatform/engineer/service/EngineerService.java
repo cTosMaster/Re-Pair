@@ -1,5 +1,6 @@
 package com.example.asplatform.engineer.service;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.enums.Role;
 import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.customer.repository.CustomerRepository;
@@ -12,7 +13,9 @@ import com.example.asplatform.user.domain.User;
 import com.example.asplatform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +35,7 @@ public class EngineerService {
      * - 매핑/소유권 검증 없음: 요청의 customerId를 그대로 사용
      * - users(ROLE=ENGINEER) 생성 후 engineers(engineer_id=user.id, customer_id) 생성
      */
-    public EngineerResponse createEngineer(EngineerRequest req) {
+    public EngineerResponse createEngineer(EngineerRequest req, CustomUserDetails me) {
         // 0) customerId 필수 + 존재 확인
         if (req.getCustomerId() == null) {
             throw new IllegalArgumentException("customerId는 필수입니다.");
@@ -85,7 +88,6 @@ public class EngineerService {
         if (dto.getName()  != null) user.setName(dto.getName());
         if (dto.getEmail() != null) user.setEmail(dto.getEmail());
         if (dto.getPhone() != null) user.setPhone(dto.getPhone());
-        // @Transactional 더티체킹으로 자동 반영
     }
 
     /** 수리기사 삭제 (Engineer만 삭제. User 처리 정책은 선택) */
@@ -93,10 +95,6 @@ public class EngineerService {
         Engineer eng = engineerRepository.findById(engineerId)
                 .orElseThrow(() -> new IllegalArgumentException("수리기사를 찾을 수 없습니다. id=" + engineerId));
         engineerRepository.delete(eng);
-
-        // 필요 정책에 따라:
-        // userRepository.deleteById(engineerId);
-        // 또는 userRepository.findById(engineerId).ifPresent(u -> u.setIsActive(false));
     }
 
     /** 수리기사 단건 조회 */
@@ -107,9 +105,10 @@ public class EngineerService {
         return EngineerResponse.from(eng);
     }
 
-    /** 수리기사 목록 (페이징) */
+    /** 수리기사 목록 조회*/
     @Transactional(readOnly = true)
-    public Page<EngineerResponse> getEngineers(Pageable pageable) {
-        return engineerRepository.findAll(pageable).map(EngineerResponse::from);
+    public Page<EngineerResponse> list(Pageable pageable) {
+        return engineerRepository.findAll(pageable)
+                .map(EngineerResponse::from);
     }
 }
