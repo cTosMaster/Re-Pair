@@ -61,15 +61,46 @@ const RepairgoodsManagement = () => {
     }
   };
 
-  // 필터링
-  const filteredList = items.filter(
-    (item) => item.name.includes(search) || item.category.includes(search)
-  );
+  //물품등록
+  const handleAddItem = (newItem) => {
+  // 새 아이템에 id와 date 추가 (date는 오늘 날짜 예시)
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, ".");
+  const itemWithId = {
+    ...newItem,
+    id: items.length > 0 ? items[items.length - 1].id + 1 : 1,
+    date: today,
+  };
 
-  const totalItems = filteredList.length;
+  setItems((prev) => [...prev, itemWithId]);
+};
+
+
+  // 검색 필터링
+  const filteredList = items.filter(
+    (item) =>
+      item.name.includes(search) ||
+      item.category.includes(search)
+  );
+  //정렬
+  const sortedList = filteredList.slice().sort((a, b) => {
+    if (sortOption === "제품명") {
+      return a.name.localeCompare(b.name);
+    } else if (sortOption === "등록일자") {
+      // 등록일자 형식이 "YYYY.MM.DD"이므로, 비교를 위해 "-"로 바꾸거나 Date 객체로 변환
+      const dateA = new Date(a.date.replace(/\./g, "-"));
+      const dateB = new Date(b.date.replace(/\./g, "-"));
+      return dateB - dateA; // 최신순 정렬
+    } else if (sortOption === "카테고리") {
+      return a.category.localeCompare(b.category);
+    }
+    return 0;
+  });
+
+  //페이지네이션
+  const totalItems = sortedList.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentItems = filteredList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const currentItems = sortedList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div className="w-full px-10 mt-10">
@@ -93,6 +124,7 @@ const RepairgoodsManagement = () => {
             >
               <option>제품명</option>
               <option>등록일자</option>
+              <option>카테고리</option>
             </select>
           </div>
         </div>
@@ -187,6 +219,10 @@ const RepairgoodsManagement = () => {
         <RepairgoodsManagementModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          onSubmit={(data) => {
+          handleAddItem(data);
+          setIsModalOpen(false);
+        }}
         />
       )}
     </div>
