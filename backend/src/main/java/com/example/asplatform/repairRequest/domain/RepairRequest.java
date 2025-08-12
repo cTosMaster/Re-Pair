@@ -21,15 +21,13 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 
 @Entity
 @Table(name = "repair_requests")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
