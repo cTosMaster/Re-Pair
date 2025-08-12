@@ -7,7 +7,7 @@ const dummyData = [
     id: 1,
     name: "surisuri",
     phone: "010-1234-1234",
-    title: "시계",
+    title: "김시계",
     date: "2025.06.01",
   },
   // 데이터 반복
@@ -15,15 +15,15 @@ const dummyData = [
     id: 2,
     name: "surisuri",
     phone: "010-1234-1234",
-    title: "시계",
-    date: "2025.06.01",
+    title: "다시계",
+    date: "2025.07.01",
   },
   {
     id: 3,
     name: "surisuri",
     phone: "010-1234-1234",
-    title: "시계",
-    date: "2025.06.01",
+    title: "나시계",
+    date: "2025.03.01",
   },
   {
     id: 4,
@@ -44,7 +44,7 @@ const dummyData = [
     name: "user6",
     phone: "010-1111-1111",
     title: "키보드",
-    date: "2025.06.06",
+    date: "2025.03.06",
   },
   {
     id: 7,
@@ -57,7 +57,7 @@ const dummyData = [
 
 const ITEMS_PER_PAGE = 5;
 
-const MysuriRequestList = () => {
+const RequestList = () => {
   const [search, setSearch] = useState("");
   const [sortOption, setSortOption] = useState("제목");
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,9 +67,22 @@ const MysuriRequestList = () => {
     setCurrentPage(1); // 검색 시 페이지 초기화
   };
 
-  const filteredList = dummyData.filter((item) =>
+  //정렬(제목.날짜 기준)
+  const filteredList = dummyData
+  .filter((item) =>
     item.title.includes(search) || item.name.includes(search)
-  );
+  )
+  .sort((a, b) => {
+    if (sortOption === "제목") {
+      return a.title.localeCompare(b.title);
+    } else if (sortOption === "날짜") {
+      // 날짜 문자열 "YYYY.MM.DD"를 Date 객체로 변환 후 비교
+      const dateA = new Date(a.date.replace(/\./g, "-"));
+      const dateB = new Date(b.date.replace(/\./g, "-"));
+      return dateB - dateA; // 최신순 정렬
+    }
+    return 0;
+  });
 
   // 페이지네이션 적용
   const totalItems = filteredList.length;
@@ -105,11 +118,11 @@ const MysuriRequestList = () => {
     </div>
 
       {/* Table Header */}
-      <div className="grid grid-cols-4 text-[#A6A6A6] font-semibold text-sm py-2 border-b">
-        <div className="col-span-1 pl-5">고객명</div>
-        <div className="col-span-1 pl-26">제목</div>
-        <div className="col-span-1 text-center pl-20">요청날짜</div>
-        <div className="col-span-1 text-center pl-26 ">상세보기</div>
+      <div className="grid grid-cols-5 text-gray-500 font-semibold text-sm py-2 border-b">
+        <div>고객명</div>
+        <div>제목</div>
+        <div>요청 날짜</div>
+        <div className="col-span-2 text-right">상세보기</div>
       </div>
 
       {/* List Items */}
@@ -117,7 +130,7 @@ const MysuriRequestList = () => {
         {currentItems.map((item) => (
           <div
             key={item.id}
-            className="flex items-center justify-between border border-[#D9D9D9] rounded-lg p-4"
+            className="flex items-center justify-between border rounded-lg p-4"
           >
             <div className="flex items-center space-x-4 w-1/3">
               <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-sm">
@@ -129,7 +142,7 @@ const MysuriRequestList = () => {
               </div>
             </div>
             <div className="w-1/5 font-semibold">{item.title}</div>
-            <div className="w-1/5 text-gray-500 pl-12">{item.date}</div>
+            <div className="w-1/5">{item.date}</div>
             <div className="w-1/5 text-right">
               <button className="text-gray-700 font-medium border border-gray-300 px-4 py-1 rounded-md hover:bg-gray-100">
                 상세보기
@@ -150,4 +163,4 @@ const MysuriRequestList = () => {
   );
 };
 
-export default MysuriRequestList;
+export default RequestList;
