@@ -128,6 +128,7 @@ export default function CenterManager() {
                 await deleteCustomer(id);
             } catch {
                 /* ignore to continue others */
+                alert(`센터 ${id} 삭제에 실패했습니다.`);
             }
         }
         await fetchList();

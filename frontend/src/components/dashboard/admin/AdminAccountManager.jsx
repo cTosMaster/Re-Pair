@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getUsers, updateUser, patchUser } from '../../../services/adminAPI'; // 경로 조정
-import { Search, Edit3, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { getUsers, updateUser, deleteUser } from '../../../services/adminAPI'; // 경로 확인
+import { Search, Edit3, Trash2, RefreshCw } from 'lucide-react';
 
 const PAGE_SIZE = 10;
 const ROLES = ['ALL', 'ADMIN', 'CUSTOMER', 'ENGINEER', 'USER'];
@@ -13,7 +13,6 @@ export default function AdminAccountManager() {
 
   const [keyword, setKeyword] = useState('');
   const [role, setRole] = useState('ALL');
-  const [onlyActive, setOnlyActive] = useState(false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null); // { id, name, phone, role, address }
@@ -30,17 +29,14 @@ export default function AdminAccountManager() {
         page,
         size: PAGE_SIZE,
         sort: 'createdAt,desc',
-        // 서버가 어떤 키를 받든 안전하게 넘김 (없는 건 무시됨)
         role: role === 'ALL' ? undefined : role,
-        isActive: onlyActive ? true : undefined,
-        is_active: onlyActive ? true : undefined,
         q: keyword || undefined,
         keyword: keyword || undefined,
+        // 소프트 삭제 제외는 서버에서 처리한다고 가정
       };
       const res = await getUsers(params);
       const data = res?.data ?? {};
       const content = data.content ?? data.items ?? data.data ?? [];
-
       setRows(Array.isArray(content) ? content : []);
       setTotalPages(typeof data.totalPages === 'number' ? data.totalPages : null);
     } catch (e) {
@@ -50,7 +46,7 @@ export default function AdminAccountManager() {
     } finally {
       setLoading(false);
     }
-  }, [page, role, onlyActive, keyword]);
+  }, [page, role, keyword]);
 
   useEffect(() => {
     fetchList();
@@ -69,9 +65,8 @@ export default function AdminAccountManager() {
       );
     }
     if (role !== 'ALL') r = r.filter((u) => String(u.role).toUpperCase() === role);
-    if (onlyActive) r = r.filter((u) => u.is_active ?? u.isActive ?? true);
     return r;
-  }, [rows, keyword, role, onlyActive]);
+  }, [rows, keyword, role]);
 
   const onOpenEdit = (u) => {
     setEditing({
@@ -99,15 +94,13 @@ export default function AdminAccountManager() {
     }
   };
 
-  const toggleActive = async (u) => {
-    const cur = u.is_active ?? u.isActive ?? true;
-    const next = !cur;
-    if (!confirm(`이 계정을 ${next ? '활성화' : '비활성화'} 하시겠어요?`)) return;
+  const deleteAccount = async (u) => {
+    if (!confirm('정말 삭제하시겠어요? 이 작업은 되돌릴 수 없습니다.')) return;
     try {
-      await patchUser(u.id, { is_active: next });
+      await deleteUser(u.id); // DELETE /api/admin/users/{id}
       await fetchList();
     } catch {
-      alert('상태 변경에 실패했습니다.');
+      alert('삭제에 실패했습니다.');
     }
   };
 
@@ -137,7 +130,6 @@ export default function AdminAccountManager() {
               onChange={(e) => setKeyword(e.target.value)}
             />
           </div>
-
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -154,19 +146,6 @@ export default function AdminAccountManager() {
               </option>
             ))}
           </select>
-
-          <label className="inline-flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="rounded border-gray-300"
-              checked={onlyActive}
-              onChange={(e) => {
-                setPage(0);
-                setOnlyActive(e.target.checked);
-              }}
-            />
-            활성 계정만
-          </label>
         </div>
       </div>
 
@@ -186,41 +165,24 @@ export default function AdminAccountManager() {
             {loading && rows.length === 0
               ? Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="animate-pulse border-t">
-                    <td className="px-4 py-4">
-                      <div className="h-4 w-48 bg-gray-200 rounded" />
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="h-4 w-32 bg-gray-200 rounded" />
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="h-4 w-20 bg-gray-200 rounded" />
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="h-4 w-24 bg-gray-200 rounded" />
-                    </td>
-                    <td className="px-4 py-4 text-right">
-                      <div className="h-8 w-24 bg-gray-200 rounded ml-auto" />
-                    </td>
+                    <td className="px-4 py-4"><div className="h-4 w-48 bg-gray-200 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-32 bg-gray-200 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-20 bg-gray-200 rounded" /></td>
+                    <td className="px-4 py-4"><div className="h-4 w-24 bg-gray-200 rounded" /></td>
+                    <td className="px-4 py-4 text-right"><div className="h-8 w-24 bg-gray-200 rounded ml-auto" /></td>
                   </tr>
                 ))
-              : filteredRows.length === 0
-              ? (
+              : filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-gray-400">
-                      표시할 계정이 없습니다.
-                    </td>
+                    <td colSpan={5} className="px-4 py-10 text-center text-gray-400">표시할 계정이 없습니다.</td>
                   </tr>
-                )
-              : filteredRows.map((u) => {
-                  const active = u.is_active ?? u.isActive ?? true;
-                  return (
+                ) : (
+                  filteredRows.map((u) => (
                     <tr key={u.id} className="border-t hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
-                            {u.image_url ? (
-                              <img src={u.image_url} alt="" className="w-full h-full object-cover" />
-                            ) : null}
+                            {u.image_url ? <img src={u.image_url} alt="" className="w-full h-full object-cover" /> : null}
                           </div>
                           <div>
                             <div className="font-medium text-gray-900">{u.name}</div>
@@ -230,9 +192,7 @@ export default function AdminAccountManager() {
                       </td>
                       <td className="px-4 py-3 text-gray-600">{u.phone || '-'}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">
-                          {u.role}
-                        </span>
+                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">{u.role}</span>
                       </td>
                       <td className="px-4 py-3 text-gray-600">{fmtDate(u.created_at || u.createdAt)}</td>
                       <td className="px-4 py-3">
@@ -240,26 +200,24 @@ export default function AdminAccountManager() {
                           <button
                             onClick={() => onOpenEdit(u)}
                             className="px-3 py-1.5 rounded-lg border text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1"
+                            disabled={loading}
                           >
                             <Edit3 size={16} />
                             수정
                           </button>
                           <button
-                            onClick={() => toggleActive(u)}
-                            className={`px-3 py-1.5 rounded-lg inline-flex items-center gap-1 ${
-                              active
-                                ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
-                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                            }`}
+                            onClick={() => deleteAccount(u)}
+                            className="px-3 py-1.5 rounded-lg inline-flex items-center gap-1 bg-red-600 text-white hover:bg-red-700"
+                            disabled={loading}
                           >
-                            {active ? <XCircle size={16} /> : <CheckCircle2 size={16} />}
-                            {active ? '비활성화' : '활성화'}
+                            <Trash2 size={16} />
+                            삭제
                           </button>
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
+                  ))
+                )}
           </tbody>
         </table>
       </div>
@@ -294,9 +252,7 @@ export default function AdminAccountManager() {
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6">
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-lg font-semibold">계정 수정</h3>
-              <button className="text-gray-500 hover:text-gray-700" onClick={() => setEditOpen(false)}>
-                ✕
-              </button>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setEditOpen(false)}>✕</button>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
@@ -332,24 +288,15 @@ export default function AdminAccountManager() {
                   onChange={(e) => setEditing((s) => ({ ...s, role: e.target.value }))}
                 >
                   {ROLES.filter((r) => r !== 'ALL').map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
+                    <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
               </label>
             </div>
 
             <div className="mt-6 flex justify-end gap-2">
-              <button className="px-4 py-2 rounded-lg border" onClick={() => setEditOpen(false)}>
-                취소
-              </button>
-              <button
-                className="px-4 py-2 rounded-lg bg-emerald-600 text-white"
-                onClick={onSaveEdit}
-              >
-                저장
-              </button>
+              <button className="px-4 py-2 rounded-lg border" onClick={() => setEditOpen(false)}>취소</button>
+              <button className="px-4 py-2 rounded-lg bg-emerald-600 text-white" onClick={onSaveEdit}>저장</button>
             </div>
           </div>
         </div>
