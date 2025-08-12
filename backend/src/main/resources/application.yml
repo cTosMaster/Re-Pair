@@ -60,3 +60,8 @@ logging:
     org.hibernate.SQL: ${LOGGING_LEVEL_HIBERNATE_SQL:debug}
     org.springframework.security: ${LOGGING_LEVEL_SECURITY:DEBUG}
     org.hibernate.type.descriptor.sql.BasicExtractor: ${LOGGING_LEVEL_HIBERNATE_TYPE:trace}
+
+app:
+  s3:
+    bucket: ${APP_S3_BUCKET:repair6}
+    region: ${APP_S3_REGION:us-east-2}
