@@ -18,9 +18,9 @@ export default function AdminSidebar() {
           <NavLink
             key={item.path}
             to={item.path}
+            end={item.path === '/admin/dash'}   // ✅ 루트 메뉴만 정확히 일치할 때만 활성화
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg transition font-medium hover:bg-gray-100 ${
-                isActive ? 'bg-green-100 text-green-800' : 'text-gray-700'
+              `flex items-center gap-2 px-3 py-2 rounded-lg transition font-medium hover:bg-gray-100 ${isActive ? 'bg-green-100 text-green-800' : 'text-gray-700'
               }`
             }
           >

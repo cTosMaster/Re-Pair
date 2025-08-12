@@ -171,7 +171,7 @@ export const getCustomPricing = (clientId, options = {}) =>
  */
 export const submitCustomerRegistration = (data, options = {}) => {
   const isFormData = (typeof FormData !== 'undefined') && data instanceof FormData;
-  return api.post('/customers/registration', data, {
+  return api.post('/customer/registration', data, {
     headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
     signal: options.signal,
   });
