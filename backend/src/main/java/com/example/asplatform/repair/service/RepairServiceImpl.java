@@ -1,4 +1,3 @@
-// src/main/java/com/example/asplatform/repair/service/RepairServiceImpl.java
 package com.example.asplatform.repair.service;
 
 import java.time.LocalDateTime;
@@ -81,9 +80,15 @@ public class RepairServiceImpl implements RepairService {
             throw new IllegalStateException("현재 상태에서 '수리 완료' 입력이 불가합니다: " + prev);
         }
 
-        // repairs upsert
+        // -------- 업서트 (연관 기반) --------
+        // backend-dev 엔티티는 requestId 필드가 없고, 연관 RepairRequest request 를 사용
+        RepairRequest reqEntity = requestRepo.getReferenceById(requestId);
         Repair rep = repairRepo.findByRequestId(requestId)
-                .orElseGet(() -> Repair.builder().requestId(requestId).build());
+        .orElseGet(() -> Repair.builder()
+                .requestId(requestId)   // <- 연관이 아니라 PK값만 세팅
+                .build());
+        // ----------------------------------
+
         rep.setFinalPrice(finalPrice);
         rep.setDescription(description);
         rep.setCompletedAt(LocalDateTime.now());
