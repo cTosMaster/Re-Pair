@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.data.domain.Page;
@@ -131,5 +133,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			@Param("categoryId") Long categoryId, // null 가능
 			@Param("status") RepairStatus status, // null 가능
 			Pageable pageable);
+
+	boolean existsByEngineer_IdAndStatusIn(Long engineerId, Collection<RepairStatus> statuses);
 
 }

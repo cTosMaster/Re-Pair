@@ -146,17 +146,20 @@ public class RepairRequestController {
 
 	// 수리요청 승인(관리자,수리기사용)
 	@PatchMapping("/{requestId}/accept")
+	@PreAuthorize("hasAnyRole('CUSTOMER','ENGINEER')")
 	public ResponseEntity<RepairRequestSimpleResponse> accept(
 			@PathVariable Long requestId,
 			@AuthenticationPrincipal CustomUserDetails me,
-			@RequestBody(required = false) Map<String, String> body
+			@RequestParam(required = false) Long engineerId,
+			@RequestBody(required = false) Map<String,String> body // memo만
 	) {
 		String memo = body != null ? body.get("memo") : null;
-		return ResponseEntity.ok(repairRequestService.accept(requestId, me.getUser(), memo));
+		return ResponseEntity.ok(repairRequestService.accept(requestId, me.getUser(), engineerId, memo));
 	}
 
-	// 수리요청 반려(관리자, 수리기사용)
+
 	@PatchMapping("/{requestId}/reject")
+	@PreAuthorize("hasAnyRole('CUSTOMER','ENGINEER')")
 	public ResponseEntity<RepairRequestSimpleResponse> reject(
 			@PathVariable Long requestId,
 			@AuthenticationPrincipal CustomUserDetails me,
@@ -164,4 +167,5 @@ public class RepairRequestController {
 	) {
 		return ResponseEntity.ok(repairRequestService.reject(requestId, me.getUser(), body.get("reason")));
 	}
+
 }

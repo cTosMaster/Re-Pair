@@ -8,12 +8,16 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.example.asplatform.engineer.repository.EngineerRepository;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestSimpleResponse;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +48,10 @@ public class RepairRequestService {
 	private final RepairHistoryRepository repairHistoryRepository;
 	private final RepairableItemRepository repairableItemRepository;
 	private final UserAddressRepository userAddressRepository;
+	private final EngineerRepository engineerRepository;
 
+	@PersistenceContext
+	private EntityManager em;
 	/**
 	 * 수리 요청 등록
 	 * 
@@ -141,56 +148,108 @@ public class RepairRequestService {
 		return repairRequestRepository.findCustomerList(customerId, keyword, categoryId, status, pageable);
 	}
 
-	// accept
+	/** 접수: ENGINEER는 본인 자동 배정, CUSTOMER는 engineerId 필수 */
 	@Transactional
-	public RepairRequestSimpleResponse accept(Long requestId, User actor, String memo) {
+	public RepairRequestSimpleResponse accept(Long requestId, User currentUser, Long engineerId, String memo) {
 		RepairRequest rr = repairRequestRepository.findById(requestId)
-				.orElseThrow(() -> new IllegalArgumentException("수리 요청을 찾을 수 없습니다. id=" + requestId));
+				.orElseThrow(() -> new IllegalArgumentException("요청 없음: " + requestId));
 
-		RepairStatus prev = rr.getStatus();
-		if (prev == RepairStatus.CANCELED || prev == RepairStatus.COMPLETED) {
-			throw new IllegalStateException("이미 종료된 요청은 접수할 수 없습니다.");
+		if (rr.getStatus() == RepairStatus.CANCELED || rr.getStatus() == RepairStatus.COMPLETED) {
+			throw new IllegalStateException("종료된 요청은 접수 불가");
 		}
 
+		String role = currentUser.getRole().name();
+		Long prevEngineerId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
+
+		if ("ENGINEER".equals(role)) {
+			if (rr.getEngineer() == null) {
+				rr.setEngineer(em.getReference(User.class, currentUser.getId())); // EM로 배정
+			} else if (!rr.getEngineer().getId().equals(currentUser.getId())) {
+				throw new AccessDeniedException("다른 기사에게 배정된 요청은 접수 불가");
+			}
+		} else if ("CUSTOMER".equals(role)) {
+			if (engineerId == null) throw new IllegalArgumentException("engineerId는 필수입니다.");
+			if (!engineerRepository.existsById(engineerId)) {
+				throw new IllegalArgumentException("엔지니어 없음: " + engineerId);
+			}
+			rr.setEngineer(em.getReference(User.class, engineerId));          // EM로 배정
+		} else {
+			throw new AccessDeniedException("권한 없음");
+		}
+
+		RepairStatus prev = rr.getStatus();
 		rr.setStatus(RepairStatus.WAITING_FOR_REPAIR);
 
 		repairHistoryRepository.save(RepairHistory.builder()
 				.repairRequest(rr)
 				.previousStatus(prev)
 				.newStatus(RepairStatus.WAITING_FOR_REPAIR)
-				.changedBy(actor)
+				.changedBy(currentUser)
 				.memo(memo)
 				.build());
 
-		return RepairRequestSimpleResponse.of(rr.getRequestId(), rr.getStatus());
+		// 🔁 캐시 갱신(재배정 고려: 새/이전 둘 다)
+		Long newEngineerId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
+		if (newEngineerId != null) refreshEngineerAssignedFlag(newEngineerId);
+		if (prevEngineerId != null && !prevEngineerId.equals(newEngineerId)) {
+			refreshEngineerAssignedFlag(prevEngineerId);
+		}
+
+		return RepairRequestSimpleResponse.builder()
+				.requestId(rr.getRequestId())
+				.status(rr.getStatus())
+				.updatedAt(LocalDateTime.now())
+				.build();
 	}
 
-	// reject
+	/** 반려: ENGINEER는 자기 배정건만 가능, CUSTOMER는 사유만 필수 */
 	@Transactional
-	public RepairRequestSimpleResponse reject(Long requestId, User actor, String reason) {
-		if (reason == null || reason.isBlank()) {
-			throw new IllegalArgumentException("반려 사유는 필수입니다.");
-		}
+	public RepairRequestSimpleResponse reject(Long requestId, User currentUser, String reason) {
+		if (reason == null || reason.isBlank()) throw new IllegalArgumentException("반려 사유 필수");
 
 		RepairRequest rr = repairRequestRepository.findById(requestId)
-				.orElseThrow(() -> new IllegalArgumentException("수리 요청을 찾을 수 없습니다. id=" + requestId));
+				.orElseThrow(() -> new IllegalArgumentException("요청 없음: " + requestId));
 
-		RepairStatus prev = rr.getStatus();
-		if (prev == RepairStatus.CANCELED || prev == RepairStatus.COMPLETED) {
-			throw new IllegalStateException("이미 종료된 요청은 반려할 수 없습니다.");
+		String role = currentUser.getRole().name();
+		Long prevEngineerId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
+
+		if ("ENGINEER".equals(role)) {
+			if (prevEngineerId == null || !prevEngineerId.equals(currentUser.getId())) {
+				throw new AccessDeniedException("배정된 기사만 반려 가능");
+			}
+		} else if (!"CUSTOMER".equals(role)) {
+			throw new AccessDeniedException("권한 없음");
 		}
 
+		RepairStatus prev = rr.getStatus();
 		rr.setStatus(RepairStatus.CANCELED);
+		rr.setEngineer(null); // 정책: 반려 시 배정 해제
 
 		repairHistoryRepository.save(RepairHistory.builder()
 				.repairRequest(rr)
 				.previousStatus(prev)
 				.newStatus(RepairStatus.CANCELED)
-				.changedBy(actor)
+				.changedBy(currentUser)
 				.memo(reason)
 				.build());
 
-		return RepairRequestSimpleResponse.of(rr.getRequestId(), rr.getStatus());
+		// 🔁 캐시 갱신(배정 해제되었으니 이전 엔지니어만)
+		if (prevEngineerId != null) refreshEngineerAssignedFlag(prevEngineerId);
+
+		return RepairRequestSimpleResponse.builder()
+				.requestId(rr.getRequestId())
+				.status(rr.getStatus())
+				.updatedAt(LocalDateTime.now())
+				.build();
 	}
 
+	/** 엔지니어 활성 작업 캐시 갱신: WAITING_FOR_REPAIR, IN_PROGRESS 중 1개라도 있으면 true */
+	private void refreshEngineerAssignedFlag(Long engineerId) {
+		boolean hasActive = repairRequestRepository.existsByEngineer_IdAndStatusIn(
+				engineerId,
+				List.of(RepairStatus.WAITING_FOR_REPAIR, RepairStatus.IN_PROGRESS,RepairStatus.WAITING_FOR_DELIVERY,RepairStatus.WAITING_FOR_PAYMENT)
+		);
+		engineerRepository.findById(engineerId).ifPresent(e -> e.setAssigned(hasActive));
+		// 트랜잭션 커밋 시 DB 반영
+	}
 }
