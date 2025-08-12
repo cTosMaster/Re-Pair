@@ -7,8 +7,11 @@ import com.example.asplatform.engineer.dto.responseDTO.EngineerResponse;
 import com.example.asplatform.engineer.service.EngineerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,14 +30,14 @@ public class EngineerController {
 
     /** 수리기사 등록 (CUSTOMER 권한) */
     @PostMapping
-    public ResponseEntity<EngineerResponse> createEngineer(
-            @Valid @RequestBody EngineerRequest request,
-            @AuthenticationPrincipal CustomUserDetails user // 현재 요구사항상 사용 안 함 (일단 남김)
+    public ResponseEntity<EngineerResponse> registerEngineer(
+            @Valid @RequestBody EngineerRequest req,
+            @AuthenticationPrincipal CustomUserDetails me
     ) {
-        EngineerResponse created = engineerService.createEngineer(request);
-        return ResponseEntity
-                .created(URI.create("/api/engineers/" + created.getEngineerId()))
-                .body(created);
+        // 고객사 관리자라면 자신의 customerId만 허용
+        EngineerResponse res = engineerService.createEngineer(req, me);
+        URI location = URI.create("/api/engineers/" + res.getEngineerId());
+        return ResponseEntity.created(location).body(res);
     }
 
     /** 수리기사 정보 수정 (이름/이메일/전화) */
@@ -69,9 +72,13 @@ public class EngineerController {
 
     /** 수리기사 목록 (페이징) **/
     @GetMapping
-    public ResponseEntity<Page<EngineerResponse>> getEngineers(
-            @PageableDefault(sort = "userId") Pageable pageable
-    ) {
-        return ResponseEntity.ok(engineerService.getEngineers(pageable));
+    public Page<EngineerResponse> list(@ParameterObject Pageable pageable) {
+        // 정렬 무시 (Unsorted)
+        Pageable p = PageRequest.of(
+                Math.max(0, pageable.getPageNumber()),
+                pageable.getPageSize() > 0 ? pageable.getPageSize() : 20
+        );
+        return engineerService.list(p);
     }
+
 }
