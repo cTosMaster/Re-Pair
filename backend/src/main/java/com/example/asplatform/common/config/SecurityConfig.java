@@ -88,6 +88,9 @@ public class SecurityConfig {
 
 					).hasRole("CUSTOMER")
 
+					// 파일 업로드	api
+					.requestMatchers("/api/files/initiate", "/api/files/complete").permitAll()
+
                     // Swagger UI 문서 열어두기
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
