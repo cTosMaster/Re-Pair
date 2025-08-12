@@ -27,6 +27,7 @@ import CenterManager from "./components/dashboard/admin/CenterManager.jsx";
 import CategoryManager from "./components/dashboard/admin/CategoryManager.jsx";
 import UserDashboard from "./pages/user/UserDashboard.jsx";
 import CompleteList from "./components/dashboard/user/CompleteList.jsx";
+import RepairRequestForm from "./components/repairdetail/common/RepairRequestForm.jsx";
 
 function App() {
   return (
@@ -89,6 +90,7 @@ function App() {
         <Route path="/4" element={<WaitingForPaymentPage />} />
         <Route path="/5" element={<WaitingForDeliveryPage />} />
         <Route path="/6" element={<CompletedPage />} />
+        <Route path="/7" element={<RepairRequestForm />} />
       </Route>
 
       {/* ✅ 404 */}
