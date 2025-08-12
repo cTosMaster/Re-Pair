@@ -1,19 +1,12 @@
 import api from './api';
 
 /**
- * 고객 수리 요청 등록
+ * 수리요청 생성
  * POST /api/repair-requests
- * @param {Object|FormData} data - 파일 포함 시 FormData 사용
- * @param {{ signal?: AbortSignal }} [options]
+ * body: { categoryId, repairableItemId, title, description, contactPhone }
  */
-export const submitRepairRequest = (data, options = {}) => {
-    const isFormData =
-        typeof FormData !== 'undefined' && data instanceof FormData;
-
-    return api.post('/repair-requests', data, {
-        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
-        signal: options.signal,
-    });
+export const createRepairRequest = (payload, options = {}) => {
+  return api.post('/repair-requests', payload, { signal: options.signal });
 };
 
 /**

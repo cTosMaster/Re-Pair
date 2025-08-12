@@ -32,7 +32,8 @@ function App() {
   return (
     <Routes>
       {/* ✅ 비로그인/로그인 전체 기본 공개 페이지 */}
-      <Route path="/customer/home" element={<CustomerSalesPage />} />
+      {/* ✅ 공개: 고객사 세일즈 상세 */}
+      <Route path="/customers/:customerId" element={<CustomerSalesPage />} />
 
       {/* ✅ 관리자 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
@@ -40,7 +41,7 @@ function App() {
         <Route path="/admin/dash" element={<DashboardLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="account" element={<AdminAccountManager />} />
-          <Route path="centers" element={<CenterManager />} />  
+          <Route path="centers" element={<CenterManager />} />
           <Route path="categories" element={<CategoryManager />} />
         </Route>
       </Route>
@@ -63,7 +64,7 @@ function App() {
       {/* ✅ CUSTOMER 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
         <Route path="/customer/main" element={<CustomerMainPage />} />
-        
+
         <Route path="/agreementPage" element={<AgreementPage />} /> {/* 약관동의 추가 */}
         <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
       </Route>
