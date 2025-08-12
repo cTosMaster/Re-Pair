@@ -64,5 +64,5 @@ Thumbs.db
 *.REMOTE.*
 
 # Configuration and secret files
-.env
+../.env
 .env.*

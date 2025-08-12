@@ -22,6 +22,6 @@ yarn-error.log*
 .cache
 
 # ----- 환경 파일(레포에 없어야 하지만 안전망) -----
-.env
+../.env
 .env.*
 *.local
