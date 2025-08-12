@@ -80,25 +80,38 @@ const Surigisamanage = () => {
 
   // 신규 추가 또는 수정 저장
   const handleSaveSurigisa = (newItem) => {
-    if (editingSurigisa) {
-      // 수정
-      setData((prev) =>
-        prev.map((item) =>
-          item.id === editingSurigisa.id ? { ...item, ...newItem } : item
-        )
-      );
-    } else {
-      // 신규 추가
-      const newId = Math.max(...data.map((i) => i.id)) + 1;
-      setData((prev) => [...prev, { id: newId, ...newItem }]);
-    }
-    setEditingSurigisa(null);
-    setIsModalOpen(false);
-  };
+  if (editingSurigisa) {
+    // 수정 시에는 기존 id 유지, date도 수정 안함 (필요시 수정 가능)
+    setData((prev) =>
+      prev.map((item) =>
+        item.id === editingSurigisa.id ? { ...item, ...newItem } : item
+      )
+    );
+  } else {
+    // 신규 추가 시 오늘 날짜 자동 등록
+    const newId = Math.max(...data.map((i) => i.id)) + 1;
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
 
-  const filteredList = data.filter(
-    (item) => item.name.includes(search) || item.email.includes(search)
-  );
+    setData((prev) => [...prev, { id: newId, date: formattedDate, ...newItem }]);
+  }
+  setEditingSurigisa(null);
+  setIsModalOpen(false);
+};
+
+
+  const filteredList = data
+  .filter((item) => item.name.includes(search) || item.email.includes(search))
+  .sort((a, b) => {
+    if (sortOption === "이름") {
+      return a.name.localeCompare(b.name);
+    } else if (sortOption === "날짜") {
+      const dateA = new Date(a.date.replace(/\./g, "-"));
+      const dateB = new Date(b.date.replace(/\./g, "-"));
+      return dateB - dateA; // 최신순
+    }
+    return 0;
+  });
 
   const totalItems = filteredList.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
@@ -125,7 +138,7 @@ const Surigisamanage = () => {
               onChange={(e) => setSortOption(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg"
             >
-              <option>제목</option>
+              <option>이름</option>
               <option>날짜</option>
             </select>
           </div>
@@ -144,6 +157,10 @@ const Surigisamanage = () => {
             <div
               key={item.id}
               className="flex items-center justify-between border rounded-lg p-4"
+              onClick={() => {
+                setEditingSurigisa(item); // 클릭한 기사 데이터 셋팅
+                setIsModalOpen(true); // 모달 열기
+              }}
             >
               <div className="flex items-center space-x-4 w-1/3">
                 <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-sm">
