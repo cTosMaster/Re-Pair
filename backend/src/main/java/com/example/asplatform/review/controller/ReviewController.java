@@ -45,7 +45,8 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getReviewsByRepairId(repairId));
     }
 
-    @DeleteMapping("/api/reviews/{reviewId}")
+    // 리뷰 삭제
+    @DeleteMapping("/{reviewId}")
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long reviewId,
             @AuthenticationPrincipal CustomUserDetails me // 또는 Long userId

@@ -45,6 +45,7 @@ public class ReviewService {
     }
 
     // 유저(개인) 후기 조회
+    @Transactional(readOnly = true)
     public List<ReviewResponse> getReviewsByUser(Long userId) {
         return reviewRepository.findByUserId(userId).stream()
                 .map(this::toResponse)
@@ -52,13 +53,14 @@ public class ReviewService {
     }
 
     // 수리건 기준 조회
+    @Transactional(readOnly = true)
     public List<ReviewResponse> getReviewsByRepairId(Long repairId) {
         return reviewRepository.findByRepair_Id(repairId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
-    // 관리자 혹은 자기 자신만 삭제 가능 
+    // 관리자 혹은 자기 자신만 삭제 가능
     @Transactional
     public void deleteReview(Long reviewId, Long requesterId) {
         Review review = reviewRepository.findById(reviewId)
@@ -81,7 +83,6 @@ public class ReviewService {
      // Review → ReviewResponseDTO 변환
     private ReviewResponse toResponse(Review review) {
         return ReviewResponse.builder()
-                .reviewId(review.getReviewId())
                 .repairId(review.getRepair().getId())  // ⚠️ 필드명이 repairId가 아닌 id일 경우
                 .username(review.getUser().getName())
                 .rating(review.getRating())
