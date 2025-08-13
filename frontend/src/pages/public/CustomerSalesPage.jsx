@@ -137,7 +137,7 @@ export default function CustomerSalesPage() {
             <img
               src={company.imageUrl || centerImg}
               alt="Company"
-              className="w-full h-56 object-cover opacity-80"
+              className="w-full h-160 object-cover opacity-80"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-white/70 via-white/40 to-transparent p-6 flex flex-col justify-end">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">{company.name || "고객사"}</h2>
