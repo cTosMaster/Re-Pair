@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { getCustomerCategories } from '../../services/centerAPI';
 import { listRepairItems } from '../../services/customerAPI';
 import { createRepairRequest } from '../../services/userAPI';
@@ -24,13 +24,28 @@ export default function RepairRequestModal({
     contactPhone: defaultPhone || '',
   });
 
-  const disabled = loading || !form.categoryId || !form.repairableItemId || !form.title || !form.description || !form.contactPhone;
+  const disabled =
+    loading ||
+    !form.categoryId ||
+    !form.repairableItemId ||
+    !form.title ||
+    !form.description ||
+    !form.contactPhone;
 
   const change = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
+  // ✅ customerId가 객체로 넘어와도 안전하게 ID만 뽑도록 정규화
+  const cid = useMemo(() => {
+    if (customerId == null) return null;
+    if (typeof customerId === 'string' || typeof customerId === 'number') return customerId;
+    if (typeof customerId === 'object') return customerId.customerId ?? customerId.id ?? customerId.value ?? null;
+    return null;
+  }, [customerId]);
+
   // 카테고리 로드
   const loadCategories = useCallback(async () => {
-    const res = await getCustomerCategories(customerId);
+    if (!cid) return;
+    const res = await getCustomerCategories(cid); // ✅ 정규화된 ID 사용
     const arr = Array.isArray(res?.data) ? res.data : [];
     const mapped = arr
       .map(x => ({ id: x?.id, name: x?.name }))
@@ -40,29 +55,39 @@ export default function RepairRequestModal({
     if (!form.categoryId && mapped.length) {
       setForm((p) => ({ ...p, categoryId: String(mapped[0].id) }));
     }
-  }, [customerId]);
+  }, [cid, form.categoryId]);
 
   // 항목 로드(카테고리 변경시)
   const loadItems = useCallback(async (categoryId) => {
+    if (!cid) { setItems([]); return; }
     try {
-      const resp = await listRepairItems({ page: 0, size: 100, customerId, categoryId });
-      // 백엔드가 customerId 필터를 안받아도 content/전체에서 카테고리로 필터
-      const raw = resp?.data?.content ?? resp?.data ?? [];
+      // ⛔ 예전: listRepairItems({ page: 0, size: 100, customerId, categoryId })
+      // ✅ 변경: 고객사 전용 비페이징 API로 전체를 불러온 뒤 프론트에서 카테고리 필터
+      const resp = await listRepairItems(cid);
+      const raw = resp?.data ?? [];
+
       const mapped = raw.map(it => ({
-        id: it?.id,
+        id: it?.id ?? it?.itemId ?? null,
         name: it?.name || it?.title || '항목',
         price: it?.price ?? it?.amount ?? 0,
-        categoryId: it?.categoryId || it?.category?.id,
+        categoryId: it?.categoryId || it?.category?.id || null,
       })).filter(x => x.id);
-      setItems(mapped);
+
+      const filtered = categoryId
+        ? mapped.filter(x => String(x.categoryId) === String(categoryId))
+        : mapped;
+
+      setItems(filtered);
+
       // 기본 선택 없으면 첫 항목 자동 선택
-      if (!form.repairableItemId && mapped.length) {
-        setForm((p) => ({ ...p, repairableItemId: String(mapped[0].id) }));
+      if (!form.repairableItemId && filtered.length) {
+        setForm((p) => ({ ...p, repairableItemId: String(filtered[0].id) }));
       }
-    } catch {
+    } catch (e) {
+      console.warn('listRepairItems (modal) failed', e?.response?.status, e?.response?.data);
       setItems([]);
     }
-  }, [customerId, form.repairableItemId]);
+  }, [cid, form.repairableItemId]);
 
   useEffect(() => {
     if (!open) return;

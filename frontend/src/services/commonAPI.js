@@ -1,18 +1,32 @@
 import api from './api';
 
 /**
- * 처리 이력 추적
- * GET /api/stats/history/{requestId}
- * @param {string|number} requestId
- * @param {{ signal?: AbortSignal, params?: Record<string, any> }} [options]
+ * 수리 상태 이력 조회
+ * 실제 백엔드 경로에 맞춰 변경: 예) /repair-requests/{id}/history
  */
-export const getRequestHistory = (requestId, options = {}) => {
-  const id = String(requestId ?? '').trim();
-  if (!id) throw new Error('requestId는 필수입니다.');
-  return api.get(`/stats/history/${encodeURIComponent(id)}`, {
+export const getRequestHistory = async (requestId, options = {}) => {
+  const id = String(requestId ?? "").trim();
+  if (!id) throw new Error("requestId는 필수입니다.");
+
+  const { data } = await api.get(`/repairs/status-history/${encodeURIComponent(id)}`, {
     signal: options.signal,
-    params: options.params, // 추후 page/size/dateRange 같은 필터 확장용
+    params: options.params,
   });
+
+  // 다양한 DTO 대응: items | history | 배열
+  const raw = Array.isArray(data?.items)
+    ? data.items
+    : Array.isArray(data)
+    ? data
+    : data?.history ?? [];
+
+  // 그대로 반환 (페이지에서 toUiStatus 적용/도출)
+  return raw.map((r) => ({
+    previousStatus: r.previousStatus ?? null,
+    newStatus: r.newStatus ?? null,        // NOTE: 여기선 백엔드 표기 그대로(CANCELED 등)
+    changedAt: r.changedAt ?? r.changed_at ?? null,
+    memo: r.memo ?? r.reason ?? null,
+  }));
 };
 
 /**

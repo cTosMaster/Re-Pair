@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import { getCustomerById, getCustomerCategories } from "../../services/centerAPI";
+import { getCustomerById } from "../../services/centerAPI";
 import { listRepairItems, getReviewsByCustomer } from "../../services/customerAPI";
 import { getCustomerAverageRating } from "../../services/statsAPI";
 
@@ -20,7 +20,7 @@ export default function CustomerSalesPage() {
     openingHours: pre.openingHours || "",
     contactName: "",
     contactPhone: "",
-    imageUrl: "", // 필요시 회사 로고/대표이미지 연결
+    imageUrl: "",
   });
   const [categories, setCategories] = useState(pre.categories || []);
   const [items, setItems] = useState([]);
@@ -30,7 +30,7 @@ export default function CustomerSalesPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
-  // ✅ 추가: 수리신청 모달 열기/닫기
+  // ✅ 수리신청 모달
   const [openModal, setOpenModal] = useState(false);
 
   const load = useCallback(async () => {
@@ -54,30 +54,28 @@ export default function CustomerSalesPage() {
         contactPhone: d.contactPhone || "",
       }));
 
-      // 2) 카테고리 태그
+      // 2) 수리 가능 항목(가격) — 고객사 기준 (비페이징)
+      let mapped = [];
       try {
-        const cats = await getCustomerCategories(customerId);
-        const names = Array.isArray(cats?.data)
-          ? cats.data.map((x) => x?.name).filter(Boolean)
-          : [];
-        if (names.length) setCategories(names);
-      } catch { /* ignore */ }
-
-      // 3) 수리 가능 항목(가격)
-      try {
-        // 백엔드가 customerId 필터를 받으면 사용됨. 아니면 무시.
-        const ir = await listRepairItems({ page: 0, size: 12, customerId });
-        const arr = ir?.data?.content ?? ir?.data ?? [];
-        const mapped = arr.map((it) => ({
-          id: it.id,
+        const ir = await listRepairItems(customerId); // ✅ 단순 URL 호출
+        const arr = ir?.data ?? [];
+        mapped = arr.map((it) => ({
+          id: it.id ?? it.itemId,
           name: it.name,
           category: it?.categoryName || it?.category?.name || "-",
           price: it.price ?? 0,
         }));
         setItems(mapped);
-      } catch { setItems([]); }
 
-      // 4) 고객 후기
+        // ✅ 아이템에서 카테고리 추출(중복 제거)
+        const catList = [...new Set(mapped.map((it) => it.category).filter(Boolean))];
+        setCategories(catList);
+      } catch {
+        setItems([]);
+        setCategories([]);
+      }
+
+      // 3) 고객 후기
       let reviewsArr = [];
       try {
         const rv = await getReviewsByCustomer(customerId, { page: 0, size: 10 });
@@ -90,9 +88,11 @@ export default function CustomerSalesPage() {
           createdAt: r.createdAt?.slice?.(0, 10) || ""
         }));
         setReviews(reviewsArr);
-      } catch { setReviews([]); }
+      } catch {
+        setReviews([]);
+      }
 
-      // 5) 평균 평점 (실패 시 방금 불러온 후기 평균으로 폴백)
+      // 4) 평균 평점 (실패 시 방금 불러온 후기 평균으로 폴백)
       try {
         const ar = await getCustomerAverageRating(customerId);
         const val = typeof ar?.data === "number" ? ar.data : undefined;
@@ -123,17 +123,12 @@ export default function CustomerSalesPage() {
     <div className="relative pb-40">
       <div className="p-6 max-w-6xl mx-auto space-y-12">
         {/* 상태 */}
-        {loading && (
-          <div className="text-center text-gray-500 py-8">불러오는 중...</div>
-        )}
-        {err && (
-          <div className="text-center text-red-600 py-6">{err}</div>
-        )}
+        {loading && <div className="text-center text-gray-500 py-8">불러오는 중...</div>}
+        {err && <div className="text-center text-red-600 py-6">{err}</div>}
 
         {/* 🔷 고객사 프로필 카드 */}
         {!loading && !err && (
           <div className="relative bg-gradient-to-br from-indigo-100 to-white rounded-3xl shadow-xl overflow-hidden">
-            {/* ✅ 대표 이미지 없으면 디폴트 이미지(centerImg) 사용 */}
             <img
               src={company.imageUrl || centerImg}
               alt="Company"
@@ -224,7 +219,6 @@ export default function CustomerSalesPage() {
         open={openModal}
         onClose={() => setOpenModal(false)}
         customerId={customerId}
-        // onSuccess={() => toast.success("신청이 접수되었습니다.")} // 토스트 쓰면 연결
         defaultCategoryId={undefined}
         defaultItemId={undefined}
         defaultPhone={""}
