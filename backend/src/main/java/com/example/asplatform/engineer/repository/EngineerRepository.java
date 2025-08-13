@@ -7,9 +7,4 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EngineerRepository extends JpaRepository<Engineer, Long> {
-    // userId 필드로 조회
-    Optional<Engineer> findByUserId(Long userId);
-
-    // customerId 필드로 조회
-    List<Engineer> findByCustomerId(Long customerId);
 }

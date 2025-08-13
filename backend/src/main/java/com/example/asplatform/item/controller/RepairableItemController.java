@@ -6,6 +6,7 @@ import com.example.asplatform.item.dto.responseDTO.RepairableItemResponse;
 import com.example.asplatform.item.service.RepairableItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +33,8 @@ public class RepairableItemController {
         return ResponseEntity.noContent().build();
     }
 
-    // 전체 항목 조회 (관리자 전용)
+    // 전체 항목 조회 (고객사 전용)
+    @Transactional(readOnly = true)
     @GetMapping
     public ResponseEntity<List<RepairableItemResponse>> getAllItems() {
         return ResponseEntity.ok(repairItemService.getAllItems());

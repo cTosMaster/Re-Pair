@@ -34,7 +34,9 @@ public class EngineerService {
      * 수리기사 등록
      * - 매핑/소유권 검증 없음: 요청의 customerId를 그대로 사용
      * - users(ROLE=ENGINEER) 생성 후 engineers(engineer_id=user.id, customer_id) 생성
+     * - 추후에 LAZY 회피 고려해볼 것
      */
+    @Transactional
     public EngineerResponse createEngineer(EngineerRequest req, CustomUserDetails me) {
         // 0) customerId 필수 + 존재 확인
         if (req.getCustomerId() == null) {

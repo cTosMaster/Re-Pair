@@ -268,25 +268,6 @@ public class RepairRequestService {
 				.build();
 	}
 
-	/** 엔지니어 활성 작업 캐시 갱신 */
-	private void refreshEngineerAssignedFlag(Long engineerId) {
-		boolean hasActive = repairRequestRepository.existsByEngineer_IdAndStatusIn(
-				engineerId,
-				List.of(
-						RepairStatus.WAITING_FOR_REPAIR,
-						RepairStatus.IN_PROGRESS,
-						RepairStatus.WAITING_FOR_PAYMENT,
-						RepairStatus.WAITING_FOR_DELIVERY
-				)
-		);
-		engineerRepository.findById(engineerId).ifPresent(e -> e.setAssigned(hasActive));
-	}
-
-
-
-
-
-
 	// RepairRequestService.java
 	@Transactional
 	public RepairRequestSimpleResponse completeForTest(Long requestId, User currentUser, String memo) {
@@ -320,6 +301,18 @@ public class RepairRequestService {
 				.engineerId(engId)
 				.build();
 	}
-
+	/** 엔지니어 활성 작업 캐시 갱신 */
+	private void refreshEngineerAssignedFlag(Long engineerId) {
+		boolean hasActive = repairRequestRepository.existsByEngineer_IdAndStatusIn(
+				engineerId,
+				List.of(
+						RepairStatus.WAITING_FOR_REPAIR,
+						RepairStatus.IN_PROGRESS,
+						RepairStatus.WAITING_FOR_PAYMENT,
+						RepairStatus.WAITING_FOR_DELIVERY
+				)
+		);
+		engineerRepository.findById(engineerId).ifPresent(e -> e.setAssigned(hasActive));
+	}
 }
 
