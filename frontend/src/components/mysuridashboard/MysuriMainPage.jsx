@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import MysuriTopnav from './MysuriTopnav';
+import { useState } from 'react';
 import Header from '../../layouts/Header';
 import MysuriSidebar from './MysuriSidebar';
 import MysuriRequestList from './MysuriRequestList';
@@ -36,17 +35,24 @@ const MysuriMainPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 상단 헤더 고정 (재사용) */}
       <Header />
-      
-      {/* 왼쪽 사이드바 */}
-      <div className="fixed top-[80px] left-10 z-50">
-        <MysuriSidebar selectedMenu={selectedMenu} setSelectedMenu={setSelectedMenu} />
-      </div>
+      {/* 헤더 높이만큼 패딩 */}
+      <div className="pt-[80px]">
+        {/* 본문 레이아웃 */}
+        <div className="mx-auto max-w-screen-2xl px-6 flex items-start gap-6">
+          {/* 사이드바: 고정너비 + sticky */}
+          <aside className="w-72 shrink-0 sticky top-[80px] py-4">
+            <MysuriSidebar
+              selectedMenu={selectedMenu}
+              setSelectedMenu={setSelectedMenu}
+            />
+          </aside>
 
-      {/* 본문 콘텐츠 */}
-      <div className="pt-[64px] ml-[420px] min-h-screen bg-gray-50 p-8">
-        {renderContent()}
+          {/* 본문 */}
+          <main className="flex-1 min-h-[calc(100vh-80px)] bg-white rounded-xl shadow-sm p-8">
+            {renderContent()}
+          </main>
+        </div>
       </div>
     </div>
   );

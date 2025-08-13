@@ -1,6 +1,3 @@
-
-import React from "react";
-
 const MysuriSidebar = ({ selectedMenu, setSelectedMenu }) => {
   const menus = [
     "수리 요청 관리", //RequestList + RequestCard

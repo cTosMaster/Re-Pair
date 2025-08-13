@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import MysuriPagination from "./MysuriPagination";
 import PresetModal from "../modal/PresetModal";
 

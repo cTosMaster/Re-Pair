@@ -1,6 +1,3 @@
-
-import React from 'react';
-
 const MysuriTopnav = () => {
   return (
     <header className="bg-white shadow h-16 flex items-center px-6">

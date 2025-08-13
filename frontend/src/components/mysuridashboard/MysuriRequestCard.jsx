@@ -1,5 +1,3 @@
-import React from 'react';
-
 const MysuriRequestCard = ({ request }) => {
   return (
     <div className="bg-white p-4 shadow rounded border flex justify-between items-center">
