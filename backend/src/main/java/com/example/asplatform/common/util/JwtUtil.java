@@ -29,14 +29,20 @@ public class JwtUtil {
     /**
      * 액세스 토큰 생성
      */
-    public String generateAccessToken(String subject, String role) {
-        return Jwts.builder()
+    public String generateAccessToken(String subject, String role, Long customerId) {
+        JwtBuilder builder = Jwts.builder()
                 .setSubject(subject)
                 .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + accessExpireMs))
-                .signWith(secretKey, SignatureAlgorithm.HS256)
-                .compact();
+                .signWith(secretKey, SignatureAlgorithm.HS256);
+
+        // 필요할 때만 customer_id 추가
+        if (customerId != null) {
+            builder.claim("customer_id", customerId); // snake_case로 저장
+        }
+
+        return builder.compact();
     }
 
     /**

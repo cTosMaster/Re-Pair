@@ -24,4 +24,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update User u set u.customer = null where u.customer.id = :customerId")
     int clearCustomerByCustomerId(@Param("customerId") Long customerId);
+
+    // ✅ 고객사까지 한 번에 로드
+    @Query("select u from User u left join fetch u.customer where u.email = :email")
+    Optional<User> findWithCustomerByEmail(@Param("email") String email);
 }
