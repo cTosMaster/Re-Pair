@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ import com.example.asplatform.payment.dto.responseDTO.TossCallbackDto;
 import com.example.asplatform.payment.dto.responseDTO.TossResponse;
 import com.example.asplatform.payment.dto.responseDTO.WebhookEventData;
 import com.example.asplatform.payment.repository.PaymentsRepository;
+import com.example.asplatform.preset.domain.Preset;
 import com.example.asplatform.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
@@ -175,11 +179,12 @@ public class PaymentService {
      * ✅ 4. 전체 결제 내역 조회하기 (자신의 고객사 결제 내역만 볼 수 있음 )
      * @return
      */
-    public List<PaymentResponseDto> getAllPayments() {
-    	Long customerId = getCurrentCustomerId();
-        return paymentRepository.findByCustomerId(customerId).stream()
-        		.map(this::toResponseDto)
-        		.toList();
+    public Page<PaymentResponseDto> getAllPayments(int page) {
+        Long customerId = getCurrentCustomerId();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), 10);
+
+        Page<Payments> paymentsPage = paymentRepository.findByCustomerId(customerId, pageable);
+        return paymentsPage.map(this::toResponseDto);
     }
     
     /**
@@ -187,11 +192,12 @@ public class PaymentService {
      * @param status
      * @return
      */
-    public List<PaymentResponseDto> getPaymentsByStatus(PaymentStatus status) {
-    	Long customerId = getCurrentCustomerId();
-    	return paymentRepository.findByCustomerIdAndStatus(customerId, status).stream()
-    			.map(this::toResponseDto)
-    			.toList();
+    public Page<PaymentResponseDto> getPaymentsByStatus(PaymentStatus status , int page) {
+        Long customerId = getCurrentCustomerId();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), 10);
+	    
+        Page<Payments> paymentsPage = paymentRepository.findByCustomerIdAndStatus(customerId, status, pageable);
+        return paymentsPage.map(this::toResponseDto);
     }
     
     /**
