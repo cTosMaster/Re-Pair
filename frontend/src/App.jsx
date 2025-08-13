@@ -28,6 +28,7 @@ import CategoryManager from "./components/dashboard/admin/CategoryManager.jsx";
 import UserDashboard from "./pages/user/UserDashboard.jsx";
 import CompleteList from "./components/dashboard/user/CompleteList.jsx";
 import RepairRequestForm from "./components/repairdetail/common/RepairRequestForm.jsx";
+import AuthDebugPage from "./context/AuthDebugPage.jsx";
 
 function App() {
   return (
@@ -92,6 +93,7 @@ function App() {
         <Route path="/5" element={<WaitingForDeliveryPage />} />
         <Route path="/6" element={<CompletedPage />} />
         <Route path="/7" element={<RepairRequestForm />} />
+        <Route path="/authdebug" element={<AuthDebugPage />} />
       </Route>
 
       {/* ✅ 404 */}

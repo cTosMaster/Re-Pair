@@ -63,16 +63,16 @@ const RepairgoodsManagement = () => {
 
   //물품등록
   const handleAddItem = (newItem) => {
-  // 새 아이템에 id와 date 추가 (date는 오늘 날짜 예시)
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, ".");
-  const itemWithId = {
-    ...newItem,
-    id: items.length > 0 ? items[items.length - 1].id + 1 : 1,
-    date: today,
-  };
+    // 새 아이템에 id와 date 추가 (date는 오늘 날짜 예시)
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, ".");
+    const itemWithId = {
+      ...newItem,
+      id: items.length > 0 ? items[items.length - 1].id + 1 : 1,
+      date: today,
+    };
 
-  setItems((prev) => [...prev, itemWithId]);
-};
+    setItems((prev) => [...prev, itemWithId]);
+  };
 
 
   // 검색 필터링
@@ -177,11 +177,10 @@ const RepairgoodsManagement = () => {
 
           {/* 삭제 토글 버튼 */}
           <button
-            className={`flex items-center gap-2 px-5 py-2 rounded-full font-medium text-sm ${
-              isDeleteMode
+            className={`flex items-center gap-2 px-5 py-2 rounded-full font-medium text-sm ${isDeleteMode
                 ? "bg-red-100 text-red-700 hover:bg-red-200"
                 : "bg-green-100 text-green-700 hover:bg-green-200"
-            }`}
+              }`}
             onClick={() => {
               // 삭제 모드 중이면 선택 초기화 하고 끔
               if (isDeleteMode) {
@@ -220,9 +219,9 @@ const RepairgoodsManagement = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSubmit={(data) => {
-          handleAddItem(data);
-          setIsModalOpen(false);
-        }}
+            handleAddItem(data);
+            setIsModalOpen(false);
+          }}
         />
       )}
     </div>

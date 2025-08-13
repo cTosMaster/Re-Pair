@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login as apiLogin } from "../../services/authAPI"; // 별칭
+import { login as apiLogin } from "../../services/authAPI";
 import { useAuth } from "../../hooks/useAuth";
 
 export const Login = () => {
   const navigate = useNavigate();
-  const { login: applyLogin } = useAuth(); // ✅ 컨텍스트 로그인 사용
+  const { login: applyLogin } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,31 +28,26 @@ export const Login = () => {
 
     try {
       // 1) 로그인 요청
-      const res = await apiLogin({ email: email.trim(), password });
+      const { data } = await apiLogin({ email: email.trim(), password });
 
-      // 2) 토큰 추출
-      const accessToken =
-        res?.data?.accessToken ||
-        res?.data?.token ||
-        res?.data?.access_token;
+      // 2) 토큰 꺼내기
+      const accessToken = data?.accessToken || data?.token || data?.access_token;
       if (!accessToken) throw new Error("로그인 응답에 토큰이 없습니다.");
 
-      // (선택) refreshToken 있으면 저장
-      if (res?.data?.refreshToken) {
-        localStorage.setItem("refreshToken", res.data.refreshToken);
-      }
-
-      // 3) 컨텍스트에 토큰 적용 + minimal user 세팅
-      const roleFromToken = await applyLogin({ accessToken });
-
-      // 4) 응답에 role이 따로 있으면 우선 사용 (ROLE_ 방어)
-      const roleFromResp = res?.data?.role
-        ? String(res.data.role).replace(/^ROLE_/, "")
-        : null;
+      // 3) 컨텍스트에 토큰/핵심값 적용 (AuthProvider가 저장/정규화)
+      const roleFromResp = data?.role ? String(data.role).replace(/^ROLE_/, "") : null;
+      const roleFromToken = await applyLogin({
+        accessToken,
+        refreshToken: data?.refreshToken,          // AuthProvider에서 저장
+        email: data?.email,
+        role: roleFromResp || undefined,
+        userId: data?.userId ?? data?.id,
+        customerId: data?.customerId ?? data?.customer_id,  // CUSTOMER만 올 수 있음
+      });
 
       const finalRole = roleFromResp || roleFromToken;
 
-      // 5) 즉시 리다이렉트
+      // 4) 리다이렉트
       navigate(roleRedirectMap[finalRole] || "/", { replace: true });
     } catch (error) {
       const msg =
@@ -69,7 +64,6 @@ export const Login = () => {
   return (
     <div className="flex items-center justify-center w-full min-h-screen bg-white">
       <div className="relative w-full max-w-[900px] bg-white px-6 mx-auto">
-        {/* 로고 */}
         <h2
           className="fixed top-4 left-16 text-[#9fc87b] font-bold text-xl md:text-2xl"
           style={{
@@ -84,16 +78,8 @@ export const Login = () => {
           Re:pair
         </h2>
 
-        {/* 폼 */}
-        <form
-          onSubmit={handleSubmit}
-          className="mx-auto flex flex-col items-center"
-          style={{ width: "492px" }}
-        >
-          <h1
-            className="text-black font-normal text-3xl mb-16 mt-16 self-start"
-            style={{ fontFamily: "Inter, Helvetica" }}
-          >
+        <form onSubmit={handleSubmit} className="mx-auto flex flex-col items-center" style={{ width: "492px" }}>
+          <h1 className="text-black font-normal text-3xl mb-16 mt-16 self-start" style={{ fontFamily: "Inter, Helvetica" }}>
             로그인 정보를 입력하세요
           </h1>
 
@@ -103,11 +89,7 @@ export const Login = () => {
             </div>
           )}
 
-          <label
-            className="block w-full text-black font-normal text-lg mb-2"
-            style={{ fontFamily: "Inter, Helvetica" }}
-            htmlFor="userid"
-          >
+          <label className="block w-full text-black font-normal text-lg mb-2" htmlFor="userid">
             아이디
           </label>
           <input
@@ -121,11 +103,7 @@ export const Login = () => {
             required
           />
 
-          <label
-            className="block w-full text-black font-normal text-lg mb-2"
-            style={{ fontFamily: "Inter, Helvetica" }}
-            htmlFor="password"
-          >
+          <label className="block w-full text-black font-normal text-lg mb-2" htmlFor="password">
             비밀번호
           </label>
           <input
@@ -139,15 +117,8 @@ export const Login = () => {
             required
           />
 
-          <p
-            className="text-gray-500 text-base mb-8 self-end"
-            style={{ width: "100%" }}
-          >
-            <Link
-              to="/reset-password"
-              state={{ from: "/login" }}
-              className="hover:underline ml-2"
-            >
+          <p className="text-gray-500 text-base mb-8 self-end" style={{ width: "100%" }}>
+            <Link to="/reset-password" state={{ from: "/login" }} className="hover:underline ml-2">
               비밀번호 재설정
             </Link>
           </p>
@@ -160,21 +131,9 @@ export const Login = () => {
             {loading ? "로그인 중..." : "로그인"}
           </button>
 
-          <div
-            className="flex justify-center gap-2 text-lg"
-            style={{ width: "100%" }}
-          >
-            <span
-              className="text-[#686868]"
-              style={{ fontFamily: "Inter, Helvetica" }}
-            >
-              아직 사용자가 아니신가요?
-            </span>
-            <Link
-              to="/signup"
-              className="text-[#6a8a4d] font-normal hover:underline"
-              style={{ fontFamily: "Inter, Helvetica" }}
-            >
+          <div className="flex justify-center gap-2 text-lg" style={{ width: "100%" }}>
+            <span className="text-[#686868]">아직 사용자가 아니신가요?</span>
+            <Link to="/signup" className="text-[#6a8a4d] font-normal hover:underline">
               회원가입
             </Link>
           </div>
