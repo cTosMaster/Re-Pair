@@ -1,6 +1,7 @@
 // src/main/java/com/example/asplatform/auth/service/CustomUserDetails.java
 package com.example.asplatform.auth.service;
 
+import com.example.asplatform.common.enums.Role;
 import com.example.asplatform.user.domain.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -67,5 +68,13 @@ public class CustomUserDetails implements UserDetails {
 
     public String getImageUrl() {
         return user.getImageUrl();
+    }
+    
+    public Long getCustomerId() {
+    	 return (user.getCustomer() != null) ? user.getCustomer().getId() : null;
+    }
+
+    public boolean isPlatformAdmin() {
+    	return user.getRole() == Role.ADMIN;
     }
 }

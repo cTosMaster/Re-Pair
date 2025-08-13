@@ -68,14 +68,6 @@ public class PaymentController {
 	    	 
 	    	try {
 	    		  paymentService.updatePaymentStatus(webhookDto.getData());
-			  
-	    	       /* if ("PAYMENT_STATUS_CHANGED".equals(webhookDto.getEventType())) {
-	    	            paymentService.updatePaymentStatus(webhookDto.getData());
-	    	        }
-
-	    	        System.out.println("✅ Toss 콜백 처리 완료: " + webhookDto);
-	    	        return ResponseEntity.ok("success");
-	    	        */
 	    		  
 	    		  System.out.println("✅ Toss 콜백 처리 완료 (정상 응답)");
 	    		  return ResponseEntity.ok("success");

@@ -11,6 +11,12 @@ import com.example.asplatform.payment.domain.Payments;
 
 @Repository
 public interface PaymentsRepository extends JpaRepository<Payments, Long> {
-    Optional<Payments> findByOrderId(String orderId);
-    List<Payments> findByStatus(PaymentStatus status);
+    // 주문 아이디로 조회하기
+	Optional<Payments> findByOrderId(String orderId);
+
+    // 고객사 id로 조회하기 
+    List<Payments> findByCustomerId(Long customerId);
+    
+    // 고객사 id + 상태로 조회하기
+    List<Payments> findByCustomerIdAndStatus(Long customerId , PaymentStatus status);
 }

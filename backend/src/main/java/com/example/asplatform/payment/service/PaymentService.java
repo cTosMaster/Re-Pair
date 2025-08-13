@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.example.asplatform.common.enums.PaymentStatus;
@@ -18,6 +20,7 @@ import com.example.asplatform.payment.dto.responseDTO.TossCallbackDto;
 import com.example.asplatform.payment.dto.responseDTO.TossResponse;
 import com.example.asplatform.payment.dto.responseDTO.WebhookEventData;
 import com.example.asplatform.payment.repository.PaymentsRepository;
+import com.example.asplatform.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
 
@@ -168,28 +171,30 @@ public class PaymentService {
     
     
     /**
-     * ✅ 4. 전체 결제 내역 조회하기
+     * ✅ 4. 전체 결제 내역 조회하기 (자신의 고객사 결제 내역만 볼 수 있음 )
      * @return
      */
     public List<PaymentResponseDto> getAllPayments() {
-        return paymentRepository.findAll().stream()
-                .map(this::toResponseDto)
-                .toList();
+    	Long customerId = getCurrentCustomerId();
+        return paymentRepository.findByCustomerId(customerId).stream()
+        		.map(this::toResponseDto)
+        		.toList();
     }
     
     /**
-     * ✅ 5. 상태별 결제 목록 조회하기 (READY)
+     * ✅ 5. 상태별 결제 목록 조회하기 (READY) - 자신의 고객사 결제 내역만 볼 수 있음 
      * @param status
      * @return
      */
     public List<PaymentResponseDto> getPaymentsByStatus(PaymentStatus status) {
-        return paymentRepository.findByStatus(status).stream()
-                .map(this::toResponseDto)
-                .toList();
+    	Long customerId = getCurrentCustomerId();
+    	return paymentRepository.findByCustomerIdAndStatus(customerId, status).stream()
+    			.map(this::toResponseDto)
+    			.toList();
     }
     
     /**
-     * ✅ 6. 결제 ID로 상세 조회하기
+     * ✅ 6. 결제 ID로 상세 조회하기 
      * @param requestId
      * @return
      */
@@ -223,6 +228,14 @@ public class PaymentService {
                 payment.getAmount(),
                 payment.getStatus()
         );
+    }
+    
+    private Long getCurrentCustomerId() {
+    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if(auth == null || !(auth.getPrincipal() instanceof User user)) {
+    		throw new IllegalStateException("로그인된 사용자 정보를 가져올 수 없습니다.");
+    	}
+    	return user.getCustomer().getId();
     }
     
     public void updatePaymentStatus(WebhookEventData data) {
