@@ -42,10 +42,9 @@ public class AuthService {
      */
     @Transactional
     public LoginResponse login(LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
+        User user = userRepository.findWithCustomerByEmail(req.getEmail()) // ✅ fetch join
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
-        // ✅ 비활성 계정 차단
         ensureActive(user);
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
@@ -54,9 +53,14 @@ public class AuthService {
 
         user.setLastLogin(java.time.LocalDateTime.now());
 
-        String access  = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
+        Long customerId = (user.getCustomer() != null) ? user.getCustomer().getId() : null;
+
+        // ✅ JWT에도 customer_id 포함
+        String access  = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name(), customerId);
         String refresh = jwtUtil.generateRefreshToken(user.getEmail());
-        return new LoginResponse(access, refresh, user.getEmail(), user.getRole().name());
+
+        // ✅ 응답 DTO에도 customerId 포함
+        return new LoginResponse(access, refresh, user.getEmail(), user.getRole().name(), customerId);
     }
 
     /**
@@ -69,13 +73,17 @@ public class AuthService {
         }
 
         String email = jwtUtil.getSubject(req.getRefreshToken());
-        User user = userRepository.findByEmail(email)
+
+        // ✅ fetch join으로 user + customer 한 번에 로딩
+        User user = userRepository.findWithCustomerByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // ✅ 비활성 계정 차단
         ensureActive(user);
 
-        String newAccess = jwtUtil.generateAccessToken(email, user.getRole().name());
+        Long customerId = (user.getCustomer() != null) ? user.getCustomer().getId() : null;
+
+        String newAccess = jwtUtil.generateAccessToken(email, user.getRole().name(), customerId);
         return new AccessTokenResponse(newAccess);
     }
 
@@ -88,14 +96,18 @@ public class AuthService {
             throw new RuntimeException("Invalid or expired refresh token");
         }
         String email = jwtUtil.getSubject(req.getRefreshToken());
-        User user = userRepository.findByEmail(email)
+
+        User user = userRepository.findWithCustomerByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // ✅ 비활성 계정 차단
         ensureActive(user);
 
-        String newAccess  = jwtUtil.generateAccessToken(email, user.getRole().name());
+        Long customerId = (user.getCustomer() != null) ? user.getCustomer().getId() : null;
+
+        String newAccess  = jwtUtil.generateAccessToken(email, user.getRole().name(), customerId);
         String newRefresh = jwtUtil.generateRefreshToken(email);
+
         return new TokenResponse(newAccess, newRefresh);
     }
 
