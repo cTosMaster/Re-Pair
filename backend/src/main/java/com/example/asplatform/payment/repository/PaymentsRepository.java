@@ -19,4 +19,7 @@ public interface PaymentsRepository extends JpaRepository<Payments, Long> {
     
     // 고객사 id + 상태로 조회하기
     List<Payments> findByCustomerIdAndStatus(Long customerId , PaymentStatus status);
+
+    // payment id + 고객사 아이디로 조회
+    Optional<Payments> findByPaymentIdAndCustomerId(Long paymentId, Long cusotmerId);
 }

@@ -84,8 +84,7 @@ public class SecurityConfig {
 					        "/api/payments",
 					        "/api/payments/pending",
 					        "/api/payments/detail/**",
-					        "/api/payments/status/id/**"
-							
+					        "/api/payments/status/id/**"		
 					).hasRole("CUSTOMER")
 
 					// 파일 업로드	api

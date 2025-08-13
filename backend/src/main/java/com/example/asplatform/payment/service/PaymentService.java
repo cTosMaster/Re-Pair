@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.enums.PaymentStatus;
 import com.example.asplatform.payment.domain.Payments;
 import com.example.asplatform.payment.dto.requestDTO.PaymentRequestDto;
@@ -199,7 +200,8 @@ public class PaymentService {
      * @return
      */
     public Payments getPaymentById(Long requestId) {
-        return paymentRepository.findById(requestId)
+    	Long currentCustomerId = getCurrentCustomerId();
+        return paymentRepository.findByPaymentIdAndCustomerId(requestId, currentCustomerId)
                 .orElseThrow(() -> new IllegalArgumentException("결제 요청이 존재하지 않습니다."));
     }
     
@@ -232,10 +234,10 @@ public class PaymentService {
     
     private Long getCurrentCustomerId() {
     	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    	if(auth == null || !(auth.getPrincipal() instanceof User user)) {
+    	if(auth == null || !(auth.getPrincipal() instanceof CustomUserDetails userDetails)) {
     		throw new IllegalStateException("로그인된 사용자 정보를 가져올 수 없습니다.");
     	}
-    	return user.getCustomer().getId();
+    	return userDetails.getCustomerId();
     }
     
     public void updatePaymentStatus(WebhookEventData data) {
