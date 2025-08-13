@@ -28,12 +28,6 @@ public class Engineer {
     @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
 
-    /** 생성 편의용 생성자 */
-    public Engineer(Long userId, Long customerId) {
-        this.userId = userId;
-        this.customerId = customerId;
-    }
-
     /** 배정 상태 토글 메서드 */
     public void setAssigned(boolean assigned) {
         this.assigned = assigned;
