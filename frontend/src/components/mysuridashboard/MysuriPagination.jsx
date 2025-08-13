@@ -1,6 +1,3 @@
-
-import React from 'react';
-
 const MysuriPagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const maxPageNumbersToShow = 5;
