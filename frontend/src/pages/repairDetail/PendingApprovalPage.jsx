@@ -1,73 +1,175 @@
-import { RepairStatusMap } from "../../constants/repairStatus";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+
+// 기존 컴포넌트 유지
 import RepairProgress from "../../components/repairdetail/common/RepairProgress";
 import RepairRequestPreview from "../../components/repairdetail/pendingapproval/RepairRequestPreview";
 import EngineerSelectList from "../../components/repairdetail/pendingapproval/EngineerSelectList";
 import ApprovalActions from "../../components/repairdetail/pendingapproval/ApprovalActions";
 import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
-import { dummyUser } from "./dummyUser";
 
-function PendingApprovalPage() {
-  const userData = {
-    role: dummyUser.role, // "USER" | "CUSTOMER" | "ENGINEER" | "ADMIN"
-    repair: {
-      statusCode: dummyUser.repair.statusCode, // 수리 상태코드
-      isCancelled: dummyUser.repair.isCancelled, // 취소 여부
-    },
+// 서비스(API)
+import { getRequestHistory } from "../../services/commonAPI";
+import { getRepairRequest, listEngineers } from "../../services/customerAPI";
+
+// 상태 맵
+import { RepairStatusMap } from "../../constants/repairStatus";
+
+/** 백엔드 상태 → 프론트 UI 상태 변환 */
+const toUiStatus = (s) =>
+({
+  PENDING: "PENDING_APPROVAL",
+  CANCELED: "CANCELLED",
+  WAITING_FOR_REPAIR: "WAITING_FOR_REPAIR",
+  IN_PROGRESS: "IN_PROGRESS",
+  WAITING_FOR_PAYMENT: "WAITING_FOR_PAYMENT",
+  WAITING_FOR_DELIVERY: "WAITING_FOR_DELIVERY",
+  COMPLETED: "COMPLETED",
+}[s] ?? s);
+
+/** 이력 배열 → 현재 상태/취소 여부/사유 도출 */
+const deriveStatusFromHistory = (history = []) => {
+  if (!Array.isArray(history) || history.length === 0) {
+    return { statusCode: "PENDING_APPROVAL", isCancelled: false, cancelReason: null };
+  }
+  // ✅ 백엔드/프론트 혼용 대비: 전체를 UI 코드로 정규화
+  const norm = history.map((h) => ({
+    ...h,
+    previousStatus: toUiStatus(h?.previousStatus),
+    newStatus: toUiStatus(h?.newStatus),
+  }));
+  const last = norm[norm.length - 1];
+  const statusCode = last?.newStatus ?? "PENDING_APPROVAL";
+  const canceledItem = [...norm].reverse().find((h) => h?.newStatus === "CANCELLED");
+  return {
+    statusCode,
+    isCancelled: statusCode === "CANCELLED",
+    cancelReason: canceledItem?.memo ?? null,
   };
+};
 
-  const categoryData = {
-    title: "고장난 시계 수리 요청",
-    category: "시계",
-    product: "로렉스 데이저스트",
-    phone: "01012345678",
-    content: "유리가 깨졌고 내부 부품이 멈췄습니다.",
-  };
+export default function PendingApprovalPage() {
+  const { requestId: _rid } = useParams(); // 라우터에서 :requestId 받는다고 가정
+  const requestId = _rid ?? "";
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  const engineerList = [
-    { id: 1, name: "김정비", email: "kim1@example.com", phone: "010-1111-2222", status: false, profileImage: null },
-    { id: 3, name: "박수리", email: "park3@example.com", phone: "010-3333-4444", status: false, profileImage: null },
-    { id: 4, name: "최정비", email: "choi4@example.com", phone: "010-4444-5555", status: false, profileImage: null },
-    { id: 6, name: "한수리", email: "han6@example.com", phone: "010-6666-7777", status: false, profileImage: null },
-    { id: 7, name: "서정비", email: "seo7@example.com", phone: "010-7777-8888", status: false, profileImage: null },
-    { id: 9, name: "백정비", email: "baek9@example.com", phone: "010-9999-0000", status: false, profileImage: null },
-    { id: 10, name: "유기술", email: "yoo10@example.com", phone: "010-0000-1111", status: false, profileImage: null },
-    { id: 2, name: "이수리", email: "lee2@example.com", phone: "010-2222-3333", status: true, profileImage: "https://i.pravatar.cc/100?img=1" },
-    { id: 5, name: "정기사", email: "jung5@example.com", phone: "010-5555-6666", status: true, profileImage: "https://i.pravatar.cc/100?img=2" },
-    { id: 8, name: "홍수리", email: "hong8@example.com", phone: "010-8888-9999", status: true, profileImage: "https://i.pravatar.cc/100?img=3" },
-  ];
+  // 화면 상태
+  const [loading, setLoading] = useState(true);
+  const [statusCode, setStatusCode] = useState("PENDING_APPROVAL");
+  const [isCancelled, setIsCancelled] = useState(false);
+  const [cancelReason, setCancelReason] = useState(null);
 
-  const reason = { message: "요청 내용이 불분명하여 수리를 진행할 수 없습니다." };
+  // 프리뷰/기사 리스트
+  const [categoryData, setCategoryData] = useState(null);
+  const [engineerList, setEngineerList] = useState([]);
 
-  const { role, repair } = userData;
-  const { statusCode, isCancelled } = repair;
-
-  const currentStep = RepairStatusMap["PENDING_APPROVAL"];
-  const userStep = RepairStatusMap[statusCode];
-  const isPastStep = userStep > currentStep;
-
+  // 역할 안전 계산
+  const role = useMemo(() => user?.role ?? "GUEST", [user]);
   const isUser = role === "USER";
   const isCustomer = role === "CUSTOMER";
   const isEngineer = role === "ENGINEER";
   const isAdmin = role === "ADMIN";
 
+  useEffect(() => {
+    const ac = new AbortController();
+    (async () => {
+      try {
+        setLoading(true);
+
+        if (!requestId) {
+          console.warn("Missing requestId in route params");
+          setLoading(false);
+          return;
+        }
+
+        // 1) 상태 이력 조회
+        const history = await getRequestHistory(requestId, { signal: ac.signal });
+        const d = deriveStatusFromHistory(history);
+        setStatusCode(d.statusCode);
+        setIsCancelled(d.isCancelled);
+        setCancelReason(d.cancelReason);
+
+        // 2) 요청 상세 (프리뷰용)
+        const { data: detail } = await getRepairRequest(requestId, { signal: ac.signal });
+        setCategoryData({
+          title: detail?.title ?? "",
+          category: detail?.categoryName ?? "",
+          product: detail?.productName ?? "",
+          phone: detail?.contactPhone ?? "",
+          content: detail?.description ?? "",
+        });
+
+        // 3) 기사 목록
+        //  └ 현재 listEngineers가 params만 받는 시그니처라 signal은 제외(A안)
+        const { data: engRes } = await listEngineers({ page: 0, size: 20 });
+        const engineers = Array.isArray(engRes?.items) ? engRes.items : engRes ?? [];
+        setEngineerList(
+          engineers.map((e) => ({
+            id: e.id,
+            name: e.name || e.username || e.email || "이름없음",
+            email: e.email ?? "",
+            phone: e.phone ?? "",
+            status: !!e.assigned, // 필요 시 실제 필드명 맞게 조정
+            profileImage: e.imageUrl ?? null,
+          }))
+        );
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [requestId]);
+
+  // 스텝 비교 (취소면 과거단계 분기보다 우선)
+  const currentStep = RepairStatusMap["PENDING_APPROVAL"];
+  const userStep = RepairStatusMap[statusCode] ?? 0;
+  const isPastStep = !isCancelled && userStep > currentStep;
+
+  // 가드
+  if (authLoading || loading) {
+    return <div className="p-6 text-center text-gray-500">로딩 중...</div>;
+  }
+  if (!isAuthenticated || role === "GUEST") {
+    return <div className="p-6 text-center text-gray-500">이 페이지는 로그인 후 이용할 수 있습니다.</div>;
+  }
+  if (!requestId) {
+    return <div className="p-6 text-center text-red-500">잘못된 접근입니다. (요청 ID 없음)</div>;
+  }
+
   return (
     <div className="p-6 space-y-6">
       {isPastStep ? (
         <div className="space-y-6 text-gray-600">
-          <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-          <RepairRequestPreview categoryData={categoryData} />
+          <RepairProgress
+            statusCode={statusCode}
+            isCancelled={isCancelled}
+            requestId={requestId}     // ✅ 추가
+          />
+          <RepairRequestPreview categoryData={categoryData || {}} />
         </div>
       ) : isCancelled ? (
         <div className="space-y-6 text-gray-600">
-          <RepairProgress statusCode={statusCode} isCancelled={true} />
-          <RepairRequestPreview categoryData={categoryData} />
-          <RejectReasonBox reason={reason.message} />
+          <RepairProgress
+            statusCode={statusCode}
+            isCancelled={true}
+            requestId={requestId}     // ✅ 추가
+          />
+          <RepairRequestPreview categoryData={categoryData || {}} />
+          <RejectReasonBox reason={cancelReason} />
         </div>
       ) : (
         <>
           {isUser && (
             <div className="space-y-6">
-              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
+              <RepairProgress
+                statusCode={statusCode}
+                isCancelled={isCancelled}
+                requestId={requestId}   // ✅ 추가
+              />
               <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
                 접수 대기 상태입니다.
               </div>
@@ -76,8 +178,12 @@ function PendingApprovalPage() {
 
           {isCustomer && (
             <div className="space-y-6">
-              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-              <RepairRequestPreview categoryData={categoryData} />
+              <RepairProgress
+                statusCode={statusCode}
+                isCancelled={isCancelled}
+                requestId={requestId}   // ✅ 추가
+              />
+              <RepairRequestPreview categoryData={categoryData || {}} />
               <EngineerSelectList engineerList={engineerList} />
               <ApprovalActions />
             </div>
@@ -85,8 +191,12 @@ function PendingApprovalPage() {
 
           {isEngineer && (
             <div className="space-y-6">
-              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-              <RepairRequestPreview categoryData={categoryData} />
+              <RepairProgress
+                statusCode={statusCode}
+                isCancelled={isCancelled}
+                requestId={requestId}   // ✅ 추가
+              />
+              <RepairRequestPreview categoryData={categoryData || {}} />
               <EngineerSelectList engineerList={engineerList} />
               <ApprovalActions />
             </div>
@@ -94,8 +204,25 @@ function PendingApprovalPage() {
 
           {isAdmin && (
             <div className="space-y-6">
-              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-              <RepairRequestPreview categoryData={categoryData} />
+              <RepairProgress
+                statusCode={statusCode}
+                isCancelled={isCancelled}
+                requestId={requestId}   // ✅ 추가
+              />
+              <RepairRequestPreview categoryData={categoryData || {}} />
+            </div>
+          )}
+
+          {!isUser && !isCustomer && !isEngineer && !isAdmin && (
+            <div className="space-y-6">
+              <RepairProgress
+                statusCode={statusCode}
+                isCancelled={isCancelled}
+                requestId={requestId}   // ✅ 추가
+              />
+              <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
+                권한을 확인 중입니다…
+              </div>
             </div>
           )}
         </>
@@ -103,5 +230,3 @@ function PendingApprovalPage() {
     </div>
   );
 }
-
-export default PendingApprovalPage;

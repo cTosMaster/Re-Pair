@@ -2,19 +2,31 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import AdminSidebar from '../components/sidebar/AdminSidebar';
 import UserSidebar from '../components/sidebar/UserSidebar';
+import EngineerSidebar from '../components/sidebar/EngineerSidebar'; // ✅ 추가
 import { useContext, useMemo } from 'react';
-import { AuthContext } from '../context/AuthContext'; // or import { useAuth } from '../hooks/useAuth'
+import { AuthContext } from '../context/AuthContext'; // 또는 useAuth 훅 사용 가능
 
 export default function DashboardLayout({ force = 'auto' }) {
-  const { user, loading } = useContext(AuthContext); // useAuth() 써도 동일
+  const { user, loading } = useContext(AuthContext);
   const role = (user?.role || '').toUpperCase();
+  const forced = (force || 'auto').toString().toLowerCase();
 
-  // 사이드바 결정: force가 'admin'/'user'면 강제, 아니면 role로 자동
+  // 사이드바 결정: force가 'admin' | 'engineer' | 'user'면 강제, 아니면 role로 자동
   const Sidebar = useMemo(() => {
-    if (force === 'admin') return AdminSidebar;
-    if (force === 'user') return UserSidebar;
-    return role === 'ADMIN' ? AdminSidebar : UserSidebar;
-  }, [force, role]);
+    if (forced === 'admin') return AdminSidebar;
+    if (forced === 'engineer') return EngineerSidebar; // ✅ 강제 엔지니어
+    if (forced === 'user') return UserSidebar;
+
+    switch (role) {
+      case 'ADMIN':
+        return AdminSidebar;
+      case 'ENGINEER': // ✅ 엔지니어 롤 자동 매칭
+        return EngineerSidebar;
+      // USER, CUSTOMER 등은 기본 사용자 사이드바로
+      default:
+        return UserSidebar;
+    }
+  }, [forced, role]);
 
   if (loading) {
     return (

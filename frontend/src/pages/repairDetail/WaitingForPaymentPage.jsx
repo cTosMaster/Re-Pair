@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { RepairStatusMap } from "../../constants/repairStatus";
 import RepairProgress from "../../components/repairdetail/common/RepairProgress";
@@ -7,132 +7,97 @@ import FinalEstimatePreview from "../../components/repairdetail/common/FinalEsti
 import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
 import PaymentButton from "../../components/repairdetail/waitingforpayment/PaymentButton";
 import { requestPayment } from "../../services/paymentAPI";
-import TossPaymentSection from "./TossPaymentSection";
 import { useAuth } from "../../hooks/useAuth";
-
-// (임시) 견적 프리뷰는 로컬 더미 데이터를 사용합니다. 실제 API 연동 시 교체.
 
 const successUrl = import.meta.env.VITE_PAY_SUCCESS_URL || `${window.location.origin}/payments/success`;
 const failUrl = import.meta.env.VITE_PAY_FAIL_URL || `${window.location.origin}/payments/fail`;
 
-/**
- * 1단계: 결제 방식 선택
- * - [USER]
- *   1) "결제하기" 버튼 클릭 → 토스페이먼츠 섹션으로 스크롤(카드/간편결제)
- *   2) (선택) 가상계좌 발급 버튼 → /payments/request 호출 → 계좌 표시
- * - 이후 단계에서 상태 폴링(/api/payments/status/{orderId}) 추가 예정
- */
 export default function WaitingForPaymentPage() {
   const { user } = useAuth?.() || { user: null };
 
-  // URL에서 repairId를 받아오는 경우 사용 (없으면 더미)
+  // URL에서 repairId
   const { repairId: repairIdParam } = useParams();
   const repairId = useMemo(() => Number(repairIdParam) || 123, [repairIdParam]);
 
   // ----- 역할/상태 -----
-  // role은 useAuth() 값을 사용하고, 없으면 USER로 폴백
   const resolvedRole = user?.role ?? user?.authority ?? (Array.isArray(user?.authorities) ? user.authorities[0] : undefined);
   const role = (typeof resolvedRole === "string" ? resolvedRole : "").toUpperCase() || "USER";
 
-  // 진행상태는 기본값으로 시작 (실제 API 연동 시 교체)
-  const [statusCode, setStatusCode] = useState("WAITING_FOR_PAYMENT");
-  const [isCancelled, setIsCancelled] = useState(false);
-  // TODO: 필요 시 repairId로 상태 조회 API 연동하여 setStatusCode/setIsCancelled 업데이트
-
-  // ----- 결제 섹션 토글/스크롤 -----
-  const [showCardPay, setShowCardPay] = useState(false);
-  const cardPayRef = useRef(null);
-  const handleShowCardPay = () => {
-    setShowCardPay(true);
-    // 섹션이 마운트된 뒤 스무스 스크롤
-    setTimeout(() => cardPayRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
-  };
-
-  // ----- 가상계좌 발급 상태 -----
-  const [issuing, setIssuing] = useState(false);
-  const [issueError, setIssueError] = useState(null);
-  const [paymentInfo, setPaymentInfo] = useState(null);
-
-  // VA 옵션(은행/만료일)
-  const [bankCode, setBankCode] = useState("088"); // 신한 기본
-  const [dueDate, setDueDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 3);
-    return d.toISOString().slice(0, 10); // YYYY-MM-DD
-  });
+  const [statusCode] = useState("WAITING_FOR_PAYMENT");
+  const [isCancelled] = useState(false);
 
   // ----- 견적(더미) -----
-  const lastSaved = {
+  const estimate = {
     items: [
       { id: 1, name: "메인보드 수리", price: 55000 },
       { id: 2, name: "청소 서비스", price: 20000 },
     ],
     extraNote: "추가로 내부 먼지 제거 진행. 고객 요청으로 케이스 청소 포함.",
     totalPrice: 75000,
-    beforeImages: [
-      "https://via.placeholder.com/150",
-      "https://via.placeholder.com/150",
-      "https://via.placeholder.com/150",
-      "https://via.placeholder.com/150",
-    ],
-    afterImages: [
-      "https://via.placeholder.com/150",
-      "https://via.placeholder.com/150",
-      "https://via.placeholder.com/150",
-      "https://via.placeholder.com/150",
-    ],
+    beforeImages: ["https://via.placeholder.com/150","https://via.placeholder.com/150","https://via.placeholder.com/150","https://via.placeholder.com/150"],
+    afterImages: ["https://via.placeholder.com/150","https://via.placeholder.com/150","https://via.placeholder.com/150","https://via.placeholder.com/150"],
   };
   const presetList = [
     { id: 1, name: "기본 점검", price: 10000 },
     { id: 2, name: "프리미엄 클리닝", price: 25000 },
   ];
 
-  // ----- 가상계좌 발급 -----
+  // ----- (팝업용) 주문 식별자/표시명 -----
+  const orderName = useMemo(() => {
+    const n = estimate.items?.length || 0;
+    return n
+      ? `${estimate.items[0].name}${n > 1 ? ` 외 ${n - 1}건` : ""}`
+      : `수리비용 #${repairId}`;
+  }, [estimate.items, repairId]);
+
+  // ⚠️ 운영에서는 서버에서 orderId/amount를 미리 저장/발급 받아야 합니다.
+  // 여기서는 데모용으로 클라이언트에서 임시 생성합니다.
+  const clientOrderId = useMemo(() => `REPAIR-${repairId}-${Date.now()}`, [repairId]);
+
+  // ----- (보조 옵션) 가상계좌 "즉시 발급" 흐름 -----
+  const [issuing, setIssuing] = useState(false);
+  const [issueError, setIssueError] = useState(null);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+
+  const [bankCode, setBankCode] = useState("088"); // 신한
+  const [dueDate, setDueDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 3);
+    return d.toISOString().slice(0, 10);
+  });
+
   const handleRequestPayment = async () => {
     setIssuing(true);
     setIssueError(null);
     try {
-      // 서버가 요구한 요청 폼에 맞춰 구성
-      const orderName = lastSaved.items?.length
-        ? `${lastSaved.items[0].name}${lastSaved.items.length > 1 ? ` 외 ${lastSaved.items.length - 1}건` : ""}`
-        : `수리비용 #${repairId}`;
-
       const payload = {
+        repairId,
         orderName,
-        amount: Number(lastSaved.totalPrice) || 0,
+        amount: Number(estimate.totalPrice) || 0,
         customerName: user?.name || user?.username || "고객",
-        bankCode,
         customerEmail: user?.email || "",
+        method: "VIRTUAL_ACCOUNT",   // 서버가 분기한다면 명시
+        bankCode,
+        dueDate,                     // YYYY-MM-DD
         successUrl,
         failUrl,
-        dueDate, // YYYY-MM-DD
-        repairId,
         customerId: user?.id || user?.userId || 0,
       };
-
       const { data } = await requestPayment(payload);
-      setPaymentInfo(data);
+      setPaymentInfo(data); // { orderId, amount, virtualAccount{...}, ... }
     } catch (e) {
-      console.error('requestPayment error', {
+      console.error("requestPayment error", {
         status: e?.response?.status,
         data: e?.response?.data,
         message: e?.message,
       });
-      const msg = e?.response?.data?.message || e?.response?.data?.error || e?.message || '알 수 없는 오류';
+      const msg = e?.response?.data?.message || e?.response?.data?.error || e?.message || "알 수 없는 오류";
       setIssueError(`결제 요청 실패: ${msg}`);
     } finally {
       setIssuing(false);
     }
   };
 
-  // ----- 뷰 가드 -----
-  const currentStep = RepairStatusMap["WAITING_FOR_PAYMENT"];
-  const isUser = role === "USER";
-  const isCustomer = role === "CUSTOMER";
-  const isEngineer = role === "ENGINEER";
-  const isAdmin = role === "ADMIN";
-
-  // ----- 공통 상단 정보(예시) -----
   const Header = () => (
     <div className="rounded-2xl border bg-white p-5">
       <div className="flex items-center justify-between">
@@ -141,13 +106,12 @@ export default function WaitingForPaymentPage() {
           <p className="text-sm text-gray-600">최종 견적 확정 후 결제를 진행해 주세요.</p>
         </div>
         <div className="text-sm text-gray-500">
-          현재 단계: <span className="font-medium">{currentStep?.label ?? "WAITING_FOR_PAYMENT"}</span>
+          현재 단계: <span className="font-medium">{RepairStatusMap?.["WAITING_FOR_PAYMENT"]?.label ?? "WAITING_FOR_PAYMENT"}</span>
         </div>
       </div>
     </div>
   );
 
-  // ----- 가상계좌 카드 -----
   const VirtualAccountCard = ({ info }) => {
     const account = info?.virtualAccountNumber || info?.virtualAccount?.accountNumber || "";
     const bank = info?.virtualAccount?.bank || info?.bank || "-";
@@ -162,7 +126,7 @@ export default function WaitingForPaymentPage() {
           <dd className="col-span-2 break-all">{info?.orderId ?? "-"}</dd>
 
           <dt className="text-gray-500">결제금액</dt>
-          <dd className="col-span-2">{(info?.amount ?? lastSaved.totalPrice).toLocaleString()}원</dd>
+          <dd className="col-span-2">{(info?.amount ?? estimate.totalPrice).toLocaleString()}원</dd>
 
           <dt className="text-gray-500">은행</dt>
           <dd className="col-span-2">{bank}</dd>
@@ -191,29 +155,40 @@ export default function WaitingForPaymentPage() {
     );
   };
 
+  const isUser = role === "USER";
+  const isCustomer = role === "CUSTOMER";
+  const isEngineer = role === "ENGINEER";
+  const isAdmin = role === "ADMIN";
+
   return (
     <div className="p-6 space-y-6">
       <Header />
 
-      {/* 취소/예외 처리 */}
       {isCancelled && <RejectReasonBox reason={{ message: "요청이 취소되었습니다." }} />}
 
-      {/* 권한/단계별 뷰 */}
       {!isCancelled && (
         <>
-          {/* USER(일반 사용자): 최종견적 확인 + 결제 방식 선택 */}
+          {/* USER: 최종견적 확인 + 결제 */}
           {isUser && (
             <div className="space-y-6">
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-              <FinalEstimatePreview estimate={lastSaved} />
+              <FinalEstimatePreview estimate={estimate} />
 
-              {/* 1) 기본 결제 버튼 → 토스 섹션으로 스크롤 */}
+              {/* 1) (권장) 토스 팝업 결제창: 가상계좌 */}
               <div className="space-y-2">
-                <PaymentButton onClick={handleShowCardPay} disabled={false} />
-                <p className="text-xs text-gray-500">카드/간편결제로 진행합니다.</p>
+                <PaymentButton
+                  orderId={clientOrderId}                // ⚠️ 운영에서는 서버 선저장 값 사용 권장
+                  amount={estimate.totalPrice}
+                  orderName={orderName}
+                  customerName={user?.name || user?.username}
+                  customerEmail={user?.email}
+                />
+                <p className="text-xs text-gray-500">
+                  팝업 결제창으로 가상계좌를 발급합니다. 결제 성공 시 {new URL(successUrl).pathname} 로 리다이렉트됩니다.
+                </p>
               </div>
 
-              {/* 2) (선택) 가상계좌로 발급 진행 - 은행/만료일 옵션 */}
+              {/* 2) (선택) 서버 즉시 가상계좌 발급 → 계좌 정보 즉시 표시 */}
               {!paymentInfo && (
                 <div className="space-y-3 rounded-2xl border p-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
@@ -239,45 +214,21 @@ export default function WaitingForPaymentPage() {
                     disabled={issuing}
                     className="w-full rounded-2xl border py-3 font-medium disabled:opacity-50"
                   >
-                    가상계좌 발급으로 진행
+                    {issuing ? "가상계좌 발급 중..." : "서버에서 즉시 가상계좌 발급"}
                   </button>
-                  {issuing && <p className="text-sm text-gray-500">가상계좌 발급 중...</p>}
                   {issueError && <p className="text-sm text-red-600">{issueError}</p>}
                 </div>
               )}
 
-              {/* 가상계좌 정보 표시 */}
               {paymentInfo && <VirtualAccountCard info={paymentInfo} />}
-
-              {/* 토스페이먼츠 결제 섹션 */}
-              {showCardPay && (
-                <div ref={cardPayRef} className="space-y-4">
-                  <TossPaymentSection repairId={repairId} />
-                </div>
-              )}
             </div>
           )}
 
-          {/* 고객사 관리자: 최종견적 편집/확정 (필요 시 역할 정책에 맞게 수정) */}
-          {isCustomer && (
+          {/* 고객사/엔지니어/관리자: 내부용 견적 편집 */}
+          {(isCustomer || isEngineer || isAdmin) && (
             <div className="space-y-6">
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-              <FinalEstimateEditor initialEstimate={lastSaved} presetList={presetList} />
-            </div>
-          )}
-
-          {/* 수리기사/관리자: 내부용 견적 편집 */}
-          {isEngineer && (
-            <div className="space-y-6">
-              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-              <FinalEstimateEditor initialEstimate={lastSaved} presetList={presetList} />
-            </div>
-          )}
-
-          {isAdmin && (
-            <div className="space-y-6">
-              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} />
-              <FinalEstimateEditor initialEstimate={lastSaved} presetList={presetList} />
+              <FinalEstimateEditor initialEstimate={estimate} presetList={presetList} />
             </div>
           )}
         </>

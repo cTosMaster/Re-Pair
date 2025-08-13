@@ -16,14 +16,12 @@ export default function Header() {
 
   const navByRole = {
     USER: [
-      { label: "업체 등록", path: "/register-partner" },
       { label: "업체 목록", path: "/partners" },
       { label: "My 수리견적", path: "/user/dash" },
     ],
     ENGINEER: [
-      { label: "업체 등록", path: "/register-partner" },
       { label: "업체 목록", path: "/partners" },
-      { label: "My 업무관리", path: "/my-center" },
+      { label: "My 업무관리", path: "/engineer/dash" },
     ],
     CUSTOMER: [
       { label: "업체 등록", path: "/register-partner" },
