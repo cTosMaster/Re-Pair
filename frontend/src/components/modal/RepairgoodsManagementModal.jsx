@@ -3,7 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import api from "../../services/api";
 import { createRepairItem } from "../../services/customerAPI";
 
-const RepairgoodsManagementModal = ({ isOpen, onClose, onSubmit }) => {
+const RepairgoodsManagementModal = ({ isOpen, onClose }) => {
 
   // 기존 form 구조 유지
   const [form, setForm] = useState({
@@ -85,8 +85,6 @@ const RepairgoodsManagementModal = ({ isOpen, onClose, onSubmit }) => {
       await createRepairItem(data)
       alert("수리 물품이 성공적으로 등록되었습니다.");
 
-      if (onSubmit) onSubmit(form);
-      onClose();
       } catch (error) {
         console.error("수리 물품 등록 실패:", error);
         alert("등록에 실패했습니다.");
