@@ -1,12 +1,10 @@
 package com.example.asplatform.repairHistory.service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.asplatform.repairHistory.domain.RepairHistory;
 import com.example.asplatform.repairHistory.dto.responseDTO.RepairStatusHistoryResponseDTO;
 import com.example.asplatform.repairHistory.dto.responseDTO.RepairStatusHistoryWrapperDTO;
 import com.example.asplatform.repairHistory.repository.RepairHistoryRepository;

@@ -1,6 +1,15 @@
 // src/main/java/com/example/asplatform/user/controller/UserController.java
 package com.example.asplatform.user.controller;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.asplatform.auth.dto.requestDTO.SendResetLinkRequest;
 import com.example.asplatform.auth.dto.responseDTO.MessageResponse;
 import com.example.asplatform.auth.service.AuthService;
@@ -8,11 +17,9 @@ import com.example.asplatform.user.dto.requestDTO.RegisterRequest;
 import com.example.asplatform.user.dto.requestDTO.UpdateMyProfileRequest;
 import com.example.asplatform.user.dto.responseDTO.MyProfileResponse;
 import com.example.asplatform.user.service.UserService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")

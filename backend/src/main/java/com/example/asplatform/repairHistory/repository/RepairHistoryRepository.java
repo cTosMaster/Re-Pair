@@ -4,12 +4,17 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
 import com.example.asplatform.repairHistory.domain.RepairHistory;
 import com.example.asplatform.repairRequest.domain.RepairRequest;
 
 @Repository
 public interface RepairHistoryRepository extends JpaRepository<RepairHistory, Long> {
 
+    List<RepairHistory> findByRepairRequest_RequestIdOrderByChangedAtDesc(Long requestId);
+
+    // 오래된순 버전
+    List<RepairHistory> findByRepairRequest_RequestIdOrderByChangedAtAsc(Long requestId);
     /**
      * 특정 수리 요청(repairRequestId)에 대한 상태 변경 이력을
      * 변경일시(changedAt) 기준으로 내림차순 정렬하여 조회

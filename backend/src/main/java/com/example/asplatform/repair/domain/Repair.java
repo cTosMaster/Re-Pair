@@ -1,11 +1,22 @@
 package com.example.asplatform.repair.domain;
 
+import java.time.LocalDateTime;
+
 import com.example.asplatform.repairRequest.domain.RepairRequest;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "repairs")
@@ -47,4 +58,11 @@ public class Repair {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+    public Repair(RepairRequest request) {
+        this.request = request;
+    }
+
+    public void setDescription(String description) { this.description = description; }
+    public void setFinalPrice(int finalPrice) { this.finalPrice = finalPrice; }
+    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
 }

@@ -1,9 +1,13 @@
 package com.example.asplatform.repairRequest.dto.responseDTO;
 
-import com.example.asplatform.common.enums.RepairStatus;
-import lombok.*;
-
 import java.time.LocalDateTime;
+
+import com.example.asplatform.common.enums.RepairStatus;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder

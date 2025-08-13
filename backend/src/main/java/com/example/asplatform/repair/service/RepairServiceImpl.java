@@ -52,8 +52,8 @@ public class RepairServiceImpl implements RepairService {
         req.setStatus(RepairStatus.IN_PROGRESS);
 
         historyRepo.save(RepairHistory.builder()
-                .requestId(requestId)
-                .changedBy(engineer.getId())
+                .repairRequest(req)         
+                .changedBy(engineer)
                 .previousStatus(prev)
                 .newStatus(RepairStatus.IN_PROGRESS)
                 .changedAt(LocalDateTime.now())
@@ -80,13 +80,9 @@ public class RepairServiceImpl implements RepairService {
             throw new IllegalStateException("현재 상태에서 '수리 완료' 입력이 불가합니다: " + prev);
         }
 
-        // -------- 업서트 (연관 기반) --------
-        // backend-dev 엔티티는 requestId 필드가 없고, 연관 RepairRequest request 를 사용
         RepairRequest reqEntity = requestRepo.getReferenceById(requestId);
         Repair rep = repairRepo.findByRequestId(requestId)
-        .orElseGet(() -> Repair.builder()
-                .requestId(requestId)   // <- 연관이 아니라 PK값만 세팅
-                .build());
+                .orElse(Repair.builder().request(reqEntity).build()); 
         // ----------------------------------
 
         rep.setFinalPrice(finalPrice);

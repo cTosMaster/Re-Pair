@@ -1,14 +1,16 @@
 // src/main/java/com/example/asplatform/auth/service/CustomUserDetails.java
 package com.example.asplatform.auth.service;
 
-import com.example.asplatform.user.domain.User;
-import lombok.Getter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import java.util.Collection;
 import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import com.example.asplatform.user.domain.User;
+
+import lombok.Getter;
 
 @Getter
 public class CustomUserDetails implements UserDetails {

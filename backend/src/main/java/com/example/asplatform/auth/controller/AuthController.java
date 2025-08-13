@@ -1,21 +1,26 @@
 // src/main/java/com/example/asplatform/auth/controller/AuthController.java
 package com.example.asplatform.auth.controller;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.asplatform.auth.dto.requestDTO.LoginRequest;
+import com.example.asplatform.auth.dto.requestDTO.ResetPasswordRequest;
 import com.example.asplatform.auth.dto.requestDTO.SendResetLinkRequest;
 import com.example.asplatform.auth.dto.requestDTO.TokenRefreshRequest;
 import com.example.asplatform.auth.dto.requestDTO.VerifyCodeRequest;
-import com.example.asplatform.auth.dto.requestDTO.ResetPasswordRequest;
-import com.example.asplatform.auth.dto.responseDTO.LoginResponse;
 import com.example.asplatform.auth.dto.responseDTO.AccessTokenResponse;
-import com.example.asplatform.auth.dto.responseDTO.TokenResponse;
+import com.example.asplatform.auth.dto.responseDTO.LoginResponse;
 import com.example.asplatform.auth.dto.responseDTO.MessageResponse;
+import com.example.asplatform.auth.dto.responseDTO.TokenResponse;
 import com.example.asplatform.auth.dto.responseDTO.VerifyCodeResponse;
 import com.example.asplatform.auth.service.AuthService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
