@@ -4,15 +4,31 @@ import { jwtDecode } from 'jwt-decode';
 import { AuthContext } from './AuthContext';
 import { getMyInfo, refreshToken } from '../services/authAPI';
 
-// 토큰에서 최소 유저 뽑기
+// 토큰에서 최소 유저 뽑기 (+ userId/customerId 지원)
 const getMinimalUserFromToken = (token) => {
   try {
-    const { sub, email, role, roles, authorities, exp } = jwtDecode(token);
+    const decoded = jwtDecode(token);
+    const {
+      sub,
+      email,
+      role,
+      roles,
+      authorities,
+      exp,
+      userId,
+      uid,
+      customerId,
+      cid,
+    } = decoded;
+
     const rawRole = role || roles?.[0] || authorities?.[0] || '';
+
     return {
       email: email || sub || '',
       role: String(rawRole).replace(/^ROLE_/, ''),
-      exp: exp ? exp * 1000 : undefined, // 만료시각(ms) - 참고용
+      userId: userId ?? uid,            // 토큰에 있으면 즉시 주입
+      customerId: customerId ?? cid,    // 토큰에 있으면 즉시 주입
+      exp: exp ? exp * 1000 : undefined,
     };
   } catch {
     return null;
@@ -28,51 +44,75 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // 토큰만 있으면 인증된 것으로 간주 (서버 권한은 서버가 판단)
   const isAuthenticated = !!accessToken;
 
+  // user 병합 저장 (기존 필드 보존)
   const persistUser = useCallback((u) => {
-    setUserState(u);
-    if (u) localStorage.setItem('user', JSON.stringify(u));
-    else localStorage.removeItem('user');
+    setUserState((prev) => {
+      const next = u ? { ...prev, ...u } : null;
+      if (next) localStorage.setItem('user', JSON.stringify(next));
+      else localStorage.removeItem('user');
+      return next;
+    });
   }, []);
 
   const clearAuth = useCallback(() => {
     setAccessToken(null);
-    persistUser(null);
+    setUserState(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     navigate('/login', { replace: true });
-  }, [navigate, persistUser]);
+  }, [navigate]);
 
-  // 필요할 때만 호출하는 프로필 조회 (자동 호출 X)
+  // 프로필 조회: customerId 매핑 포함
   const refetch = useCallback(async () => {
     try {
       const res = await getMyInfo();
-      persistUser(res.data);
-      return res.data;
+      const profile = res?.data ?? {};
+
+      const normalized = {
+        ...profile,
+        userId: profile.userId ?? profile.id,
+        customerId: profile.customerId ?? profile.customer_id ?? profile.customer?.id,
+        role: profile.role || profile.authority || (Array.isArray(profile.authorities) ? profile.authorities[0] : undefined),
+        email: profile.email || profile.username || profile.sub,
+      };
+      if (typeof normalized.role === 'string') normalized.role = normalized.role.replace(/^ROLE_/, '');
+
+      persistUser(normalized);
+      return normalized;
     } catch (err) {
-      // 권한 문제는 조용히 무시
       const s = err?.response?.status;
       if (s !== 401 && s !== 403) console.warn('getMyInfo 실패:', s, err?.message);
       return null;
     }
   }, [persistUser]);
 
-  // 로그인/토큰 적용: minimal user 세팅만 하고 끝 (/me 자동 호출 안함)
-  const applyLogin = useCallback(async ({ accessToken: token }) => {
+  // 로그인/토큰 적용: minimal user 세팅 + (부족하면 프로필 보강)
+  const applyLogin = useCallback(async ({ accessToken: token, withProfile = true }) => {
     if (!token) throw new Error('accessToken 누락');
 
     localStorage.setItem('accessToken', token);
     setAccessToken(token);
 
     const minimal = getMinimalUserFromToken(token);
-    if (minimal) persistUser({ email: minimal.email, role: minimal.role });
+    if (minimal) {
+      const base = { email: minimal.email, role: minimal.role };
+      // 토큰에 userId/customerId가 있으면 즉시 주입
+      persistUser({ ...base, userId: minimal.userId, customerId: minimal.customerId });
+    }
+
+    if (withProfile) {
+      // customerId가 비어있으면 한 번만 프로필 보강
+      const needsProfile = !minimal?.customerId || !minimal?.userId;
+      if (needsProfile) await refetch();
+    }
 
     return minimal?.role || null;
-  }, [persistUser]);
+  }, [persistUser, refetch]);
 
-  // 토큰 리프레시 (성공 시 minimal user 갱신)
+  // 토큰 리프레시 (성공 시 minimal user 갱신 + 프로필 보강)
   const handleTokenRefresh = useCallback(async () => {
     try {
       const res = await refreshToken();
@@ -83,7 +123,10 @@ export const AuthProvider = ({ children }) => {
       setAccessToken(newToken);
 
       const minimal = getMinimalUserFromToken(newToken);
-      if (minimal) persistUser({ email: minimal.email, role: minimal.role });
+      if (minimal) persistUser({ email: minimal.email, role: minimal.role, userId: minimal.userId, customerId: minimal.customerId });
+
+      // 새 토큰에도 식별자가 없으면 프로필로 보강
+      if (!minimal?.customerId || !minimal?.userId) await refetch();
 
       return true;
     } catch (err) {
@@ -91,9 +134,9 @@ export const AuthProvider = ({ children }) => {
       clearAuth();
       return false;
     }
-  }, [clearAuth, persistUser]);
+  }, [clearAuth, persistUser, refetch]);
 
-  // 새로고침/부팅 시: 토큰만으로 세션 복구 (/me 자동 호출 안함)
+  // 부팅 시 세션 복구
   useEffect(() => {
     const restore = async () => {
       try {
@@ -102,30 +145,33 @@ export const AuthProvider = ({ children }) => {
         const minimal = getMinimalUserFromToken(accessToken);
         if (!minimal) { clearAuth(); return; }
 
-        // minimal user 먼저 세팅
-        persistUser({ email: minimal.email, role: minimal.role });
+        // minimal 먼저 세팅
+        persistUser({ email: minimal.email, role: minimal.role, userId: minimal.userId, customerId: minimal.customerId });
 
-        // 만료면 리프레시만 시도
+        // 만료면 리프레시
         if (minimal.exp && minimal.exp <= Date.now()) {
           await handleTokenRefresh();
+        } else {
+          // 토큰에 식별자 없으면 한 번만 프로필 보강
+          if (!minimal.customerId || !minimal.userId) await refetch();
         }
       } finally {
         setLoading(false);
       }
     };
     restore();
-  }, [accessToken, handleTokenRefresh, persistUser, clearAuth]);
+  }, [accessToken, handleTokenRefresh, persistUser, clearAuth, refetch]);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user,                  // { email, role, userId, customerId, ... }
         accessToken,
         isAuthenticated,
-        setUser: persistUser,  // 외부에서 필요시 직접 세팅 가능
-        login: applyLogin,     // 로그인 시 토큰 적용용
+        setUser: persistUser,
+        login: applyLogin,
         logout: clearAuth,
-        refetch,               // 프로필이 꼭 필요할 때만 수동 호출
+        refetch,
         loading,
       }}
     >
