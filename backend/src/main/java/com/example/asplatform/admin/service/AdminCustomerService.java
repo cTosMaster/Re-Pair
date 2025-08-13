@@ -2,11 +2,13 @@ package com.example.asplatform.admin.service;
 
 import com.example.asplatform.admin.dto.CustomerDto;
 import com.example.asplatform.admin.dto.CustomerUpdateRequest;
+import com.example.asplatform.category.repository.CustomerCategoryRepository;
 import com.example.asplatform.common.enums.CustomerStatus;
 import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.customer.domain.CustomerAddress;
 import com.example.asplatform.admin.repository.AdminCustomerRepository;
 import com.example.asplatform.customer.repository.CustomerAddressRepository;
+import com.example.asplatform.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -24,6 +26,8 @@ public class AdminCustomerService {
 
     private final AdminCustomerRepository customerRepo;
     private final CustomerAddressRepository addrRepo;
+    private final UserRepository userRepo;
+    private final CustomerCategoryRepository customerCategoryRepo;
 
     private static final GeometryFactory gf = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -35,9 +39,11 @@ public class AdminCustomerService {
 
     @Transactional(readOnly = true)
     public Page<CustomerDto> getAll(Pageable pageable) {
-        return customerRepo.findAll(pageable)
+        // 승인된 고객사 목록만 반환
+        return customerRepo.findByStatus(CustomerStatus.APPROVED, pageable)
                 .map(this::toDto);
     }
+
 
     @Transactional(readOnly = true)
     public CustomerDto getOne(Long id) {
@@ -81,6 +87,13 @@ public class AdminCustomerService {
 
     public void delete(Long id, boolean hard) {
         if (hard) {
+            // 1) users.customer_id -> NULL
+            userRepo.clearCustomerByCustomerId(id);
+
+            // 2) 고객사 카테고리 선삭제 (연관관계 매핑/DB CASCADE가 없기 때문)
+            customerCategoryRepo.deleteByCustomerId(id);
+
+            // 3) 마지막으로 고객사 삭제
             customerRepo.deleteById(id);
         } else {
             changeStatus(id, CustomerStatus.REJECTED);
