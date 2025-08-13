@@ -1,9 +1,12 @@
 package com.example.asplatform.review.service;
 
+import com.example.asplatform.common.enums.Role;
+import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.repair.domain.Repair;
 import com.example.asplatform.repair.repository.RepairRepository;
 import com.example.asplatform.review.domain.Review;
 import com.example.asplatform.review.dto.requestDTO.ReviewRequest;
+import com.example.asplatform.review.dto.requestDTO.ReviewUpdateRequest;
 import com.example.asplatform.review.dto.responseDTO.ReviewResponse;
 import com.example.asplatform.review.repository.ReviewRepository;
 import com.example.asplatform.user.domain.User;
@@ -75,38 +78,25 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
-    // 관리자 혹은 자기 자신만 삭제 가능
     @Transactional
     public void deleteReview(Long reviewId, Long requesterId) {
         User requester = userRepository.findById(requesterId)
                 .orElseThrow(() -> new IllegalArgumentException("요청 사용자 없음"));
 
-        String role = requester.getRole().name(); // 'USER','ENGINEER','CUSTOMER','ADMIN'
+        int deleted;
+        if (requester.getRole() == Role.CUSTOMER) {
+            Customer customer = requester.getCustomer();
+            if (customer == null) throw new AccessDeniedException("고객사 정보가 없어 삭제할 수 없습니다.");
 
-        //  CUSTOMER(고객사 관리자): 같은 고객사 소속 리뷰만 삭제 허용
-        if ("CUSTOMER".equals(role)) {
-            Long customerId = requester.getCustomer().getId(); // PK명에 맞춰 getCustomerId()일 수도 있음
-            boolean sameCustomer =
-                    reviewRepository.existsByReviewIdAndRepair_Request_RepairableItem_Customer_Id(reviewId, customerId)
-                    // ↓ 만약 Customer PK가 customerId라면 위 대신 아래를 사용
-                    // reviewRepository.existsByReviewIdAndRepair_Request_RepairableItem_Customer_Customer_Id(reviewId, customerId)
-                    ;
-
-            if (!sameCustomer) {
-                throw new AccessDeniedException("해당 고객사 소속 리뷰만 삭제할 수 있습니다.");
-            }
-            reviewRepository.deleteById(reviewId);
-            return;
+            deleted = reviewRepository
+                    .deleteByReviewIdAndRepair_Request_RepairableItem_Customer_Id(reviewId, customer.getId());
+        } else {
+            deleted = reviewRepository.deleteByReviewIdAndUser_Id(reviewId, requesterId);
         }
 
-        //  그 외 역할(USER/ENGINEER 등): 작성자 본인만 삭제 허용
-        boolean isOwner = reviewRepository.existsByReviewIdAndUser_Id(reviewId, requesterId);
-        if (!isOwner) {
-            throw new AccessDeniedException("내가 작성한 리뷰만 삭제할 수 있습니다.");
-        }
-
-        reviewRepository.deleteById(reviewId);
+        if (deleted == 0) throw new AccessDeniedException("삭제 권한이 없습니다.");
     }
+
 
 
     // 고객사 별 리뷰 찾기
@@ -115,12 +105,35 @@ public class ReviewService {
         return reviewRepository.findByCustomerReviews(customerId, pageable);
     }
 
-     // Review → ReviewResponseDTO 변환
+    @Transactional
+    public ReviewResponse updateReview(Long reviewId, Long meId, ReviewUpdateRequest req) {
+        if (req.getRating() == null && req.getReviewContent() == null) {
+            throw new IllegalArgumentException("수정할 값이 없습니다.");
+        }
+
+        // 내가 쓴 리뷰만 조회 (없으면 404 또는 403 성격)
+        Review review = reviewRepository.findByReviewIdAndUser_Id(reviewId, meId)
+                .orElseThrow(() -> new AccessDeniedException("내가 작성한 리뷰만 수정할 수 있습니다."));
+
+        if (req.getRating() != null) {
+            int rating = req.getRating();
+            if (rating < 1 || rating > 5) throw new IllegalArgumentException("평점은 1~5 사이여야 합니다.");
+            review.setRating(rating);
+        }
+        if (req.getReviewContent() != null) {
+            review.setReviewContent(req.getReviewContent());
+        }
+
+        return toResponse(reviewRepository.save(review));
+    }
+
+
+    // Review → ReviewResponseDTO 변환
      private ReviewResponse toResponse(Review r) {
          return ReviewResponse.builder()
                  .reviewId(r.getReviewId())
                  .repairId(r.getRepair().getId())
-                 ///.repairTitle(r.getRepair().getRequest().getTitle())
+                 .repairTitle(r.getRepair().getRequest().getTitle())
                  .username(r.getUser().getName())
                  .rating(r.getRating())
                  .reviewContent(r.getReviewContent())

@@ -9,18 +9,23 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByRepair_Id(Long repairId);
-
+    Optional<Review> findByReviewIdAndUser_Id(Long reviewId, Long userId); // 작성자 본인 소유 리뷰만 로드
     /** 후기 중복 방지용 */
     boolean existsByRepair_IdAndUser_Id(Long repairId, Long userId);
 
-    /** 작성자 본인 여부 */
-    boolean existsByReviewIdAndUser_Id(Long reviewId, Long userId);
+    // 작성자 본인만 삭제 (작성자 userId와 reviewId가 모두 일치할 때만 삭제)
+    int deleteByReviewIdAndUser_Id(Long reviewId, Long userId);
 
-    /** 같은 고객사 소속 리뷰인지 */
-    boolean existsByReviewIdAndRepair_Request_RepairableItem_Customer_Id(Long reviewId, Long customerId);
+    // 고객사 관리자 삭제 (같은 고객사 소속 수리건의 리뷰일 때만 삭제)
+    // Customer PK가 'id'인 경우 (당신의 Customer 엔티티는 id가 맞습니다)
+    int deleteByReviewIdAndRepair_Request_RepairableItem_Customer_Id(Long reviewId, Long customerId);
+
+    // 존재 유무 확인(404/403 구분용 선택사항)
+    boolean existsById(Long reviewId);
 
 
     /** 후기 이름 추가를 위한 쿼리 */

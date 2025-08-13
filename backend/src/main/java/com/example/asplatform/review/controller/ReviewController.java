@@ -2,8 +2,10 @@ package com.example.asplatform.review.controller;
 
 import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.review.dto.requestDTO.ReviewRequest;
+import com.example.asplatform.review.dto.requestDTO.ReviewUpdateRequest;
 import com.example.asplatform.review.dto.responseDTO.ReviewResponse;
 import com.example.asplatform.review.service.ReviewService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -63,6 +65,18 @@ public class ReviewController {
     ) {
         return ResponseEntity.ok(reviewService.getReviewsByRepairId(repairId));
     }
+
+    // 리뷰 수정
+    @PatchMapping("/reviews/{reviewId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ReviewResponse> updateReview(
+            @PathVariable Long reviewId,
+            @AuthenticationPrincipal CustomUserDetails me,
+            @RequestBody @Valid ReviewUpdateRequest request
+    ) {
+        return ResponseEntity.ok(reviewService.updateReview(reviewId, me.getId(), request));
+    }
+
 
     // 리뷰 삭제
     @DeleteMapping("/{reviewId}")
