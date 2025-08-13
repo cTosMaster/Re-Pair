@@ -2,6 +2,7 @@ package com.example.asplatform.preset.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,8 +35,8 @@ public class PresetController {
 	 * @return
 	 */
 	@GetMapping(params = {"!categoryId", "!itemId"})
-	public ResponseEntity<List<PresetResponseDto>> getPresets(@AuthenticationPrincipal UserDetails userDetails){
-		List<PresetResponseDto> presets = presetService.getAllPreset();
+	public ResponseEntity<Page<PresetResponseDto>> getPresets(@AuthenticationPrincipal UserDetails userDetails, @RequestParam(value = "page", defaultValue = "0") int page){
+		Page<PresetResponseDto> presets = presetService.getAllPreset(page);
 		return new ResponseEntity<>(presets, HttpStatus.OK);
 		
 	}
@@ -47,8 +48,8 @@ public class PresetController {
 	 * @return
 	 */
 	@GetMapping(params = {"categoryId", "itemId"})
-	public ResponseEntity<List<PresetResponseDto>> filterPresets(@RequestParam Long categoryId , @RequestParam Long itemId, @AuthenticationPrincipal UserDetails userDetails) {
-		List<PresetResponseDto> presets = presetService.getPresetsByCategoryAndItem(categoryId, itemId);
+	public ResponseEntity<Page<PresetResponseDto>> filterPresets(@RequestParam Long categoryId , @RequestParam Long itemId, @AuthenticationPrincipal UserDetails userDetails, @RequestParam(value = "page", defaultValue = "0") int page) {
+		Page<PresetResponseDto> presets = presetService.getPresetsByCategoryAndItem(categoryId, itemId, page);
 		return new ResponseEntity<>(presets, HttpStatus.OK);
 	}
 	

@@ -59,22 +59,19 @@ public class SecurityConfig {
 					 * - 프리셋 전체 조회
 					 * - 카테고리, 제품별 프리셋 필터 조회
 					 */
-					 .requestMatchers(HttpMethod.GET, "/api/presets/**").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
 					
-					// POST - 신규 등록은 ADMIN만
-					 .requestMatchers(HttpMethod.POST, "/api/presets")
-					     .hasRole("ADMIN")
+					 .requestMatchers(HttpMethod.GET, "/api/presets/**")
+				        .hasAnyRole("ADMIN", "CUSTOMER", "ENGINEER")
+				        
+				        // 금액 계산, 단일 프리셋 미리보기
+				        .requestMatchers(HttpMethod.POST, "/api/presets/calculate", "/api/presets/{presetId}")
+				            .hasAnyRole("ADMIN", "CUSTOMER", "ENGINEER")
 					     
-					 /**
-					  * - 단일 프리셋 미리 보기
-					  * - 자동 금액 계산
-					  */
-					 .requestMatchers(HttpMethod.POST, "/api/presets/calculate").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
-					 .requestMatchers(HttpMethod.POST, "/api/presets/{presetId}").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
+				        // 등록, 수정, 삭제는 CUSTOMER만 (자신의 고객사만 Service에서 검증)
+				        .requestMatchers(HttpMethod.POST, "/api/presets").hasRole("CUSTOMER")
+				        .requestMatchers(HttpMethod.PUT, "/api/presets/**").hasRole("CUSTOMER")
+				        .requestMatchers(HttpMethod.DELETE, "/api/presets/**").hasRole("CUSTOMER")
 					 
-					 //post , put , delete 는 ADMIN만 허용
-					 .requestMatchers(HttpMethod.PUT, "/api/presets/**").hasRole("ADMIN")
-					 .requestMatchers(HttpMethod.DELETE, "/api/presets/**").hasRole("ADMIN")
 
 					 
 				
@@ -83,19 +80,21 @@ public class SecurityConfig {
 					        "/api/payments/status/**",
 					        "/api/payments",
 					        "/api/payments/pending",
-					        "/api/payments/detail/**"
-
-
+					        "/api/payments/detail/**",
+					        "/api/payments/status/id/**"		
 					).hasRole("CUSTOMER")
 
 					// 파일 업로드	api
 					.requestMatchers("/api/files/initiate", "/api/files/complete").permitAll()
+					// 상대방 쪽에서 있던 관리자 대시보드 ADMIN 접근 제한 유지
+                    .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                     // Swagger UI 문서 열어두기
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
                     // 그 외 모든 요청은 인증 필요
                     .anyRequest().authenticated()
+
                 )
                 // 사용자 인증(로그인) 처리 (아이디/비밀번호 검증 담당)
                 .authenticationProvider(authenticationProvider)
