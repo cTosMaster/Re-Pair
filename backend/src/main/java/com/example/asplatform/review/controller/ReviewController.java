@@ -5,7 +5,13 @@ import com.example.asplatform.review.dto.requestDTO.ReviewRequest;
 import com.example.asplatform.review.dto.responseDTO.ReviewResponse;
 import com.example.asplatform.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,10 +37,23 @@ public class ReviewController {
 
     // 내 후기 조회
     @GetMapping("/my")
-    public ResponseEntity<List<ReviewResponse>> getMyReviews(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+    public ResponseEntity<Page<ReviewResponse>> getMyReviews(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            @ParameterObject Pageable pageable // swagger용
+
     ) {
-        return ResponseEntity.ok(reviewService.getReviewsByUser(userDetails.getId()));
+        return ResponseEntity.ok(reviewService.getReviewsByUser(user.getId(), pageable));
+    }
+
+    // 고객사별 리뷰 찾기
+    @GetMapping("/customers/{customerId}/reviews")
+    public ResponseEntity<Page<ReviewResponse>> getCustomerReviews(
+            @PathVariable Long customerId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            @ParameterObject Pageable pageable
+    ) {
+        return ResponseEntity.ok(reviewService.getReviewsByCustomer(customerId, pageable));
     }
 
     // 수리건별 후기 조회
@@ -47,11 +66,13 @@ public class ReviewController {
 
     // 리뷰 삭제
     @DeleteMapping("/{reviewId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long reviewId,
-            @AuthenticationPrincipal CustomUserDetails me // 또는 Long userId
+            @AuthenticationPrincipal CustomUserDetails user
     ) {
-        reviewService.deleteReview(reviewId, me.getId());
+        reviewService.deleteReview(reviewId, user.getId());
         return ResponseEntity.noContent().build();
     }
+
 }

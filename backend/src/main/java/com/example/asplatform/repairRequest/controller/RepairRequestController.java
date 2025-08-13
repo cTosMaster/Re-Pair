@@ -187,6 +187,7 @@ public class RepairRequestController {
 
 
 	// RepairRequestCommandController.java
+	// 완료 버튼
 	@PatchMapping("/{requestId}/complete-test")
 	@PreAuthorize("hasAnyAuthority('ENGINEER','CUSTOMER')") // 임시로 둘 다 허용
 	public ResponseEntity<RepairRequestSimpleResponse> completeTest(
