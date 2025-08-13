@@ -59,22 +59,19 @@ public class SecurityConfig {
 					 * - 프리셋 전체 조회
 					 * - 카테고리, 제품별 프리셋 필터 조회
 					 */
-					 .requestMatchers(HttpMethod.GET, "/api/presets/**").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
 					
-					// POST - 신규 등록은 ADMIN만
-					 .requestMatchers(HttpMethod.POST, "/api/presets")
-					     .hasRole("ADMIN")
+					 .requestMatchers(HttpMethod.GET, "/api/presets/**")
+				        .hasAnyRole("ADMIN", "CUSTOMER", "ENGINEER")
+				        
+				        // 금액 계산, 단일 프리셋 미리보기
+				        .requestMatchers(HttpMethod.POST, "/api/presets/calculate", "/api/presets/{presetId}")
+				            .hasAnyRole("ADMIN", "CUSTOMER", "ENGINEER")
 					     
-					 /**
-					  * - 단일 프리셋 미리 보기
-					  * - 자동 금액 계산
-					  */
-					 .requestMatchers(HttpMethod.POST, "/api/presets/calculate").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
-					 .requestMatchers(HttpMethod.POST, "/api/presets/{presetId}").hasAnyRole("CUSTOMER", "ENGINEER", "ADMIN")
+				        // 등록, 수정, 삭제는 CUSTOMER만 (자신의 고객사만 Service에서 검증)
+				        .requestMatchers(HttpMethod.POST, "/api/presets").hasRole("CUSTOMER")
+				        .requestMatchers(HttpMethod.PUT, "/api/presets/**").hasRole("CUSTOMER")
+				        .requestMatchers(HttpMethod.DELETE, "/api/presets/**").hasRole("CUSTOMER")
 					 
-					 //post , put , delete 는 ADMIN만 허용
-					 .requestMatchers(HttpMethod.PUT, "/api/presets/**").hasRole("ADMIN")
-					 .requestMatchers(HttpMethod.DELETE, "/api/presets/**").hasRole("ADMIN")
 
 					 
 				

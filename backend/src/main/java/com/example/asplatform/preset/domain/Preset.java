@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.example.asplatform.admin.domain.PlatformCategory;
+import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.item.domain.RepairableItem;
 
 import jakarta.persistence.Column;
@@ -31,6 +32,10 @@ public class Preset {
     @Column(name = "preset_id")
     private Long presetId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false) // 외래 키 컬럼 이름 명시
     private PlatformCategory category;
