@@ -51,12 +51,25 @@ export const reassignEngineer = (repairId, engineerId, body = {}) =>
   });
 
 /** 수리물품 전체 조회 (필터/페이징 옵션) */
-export const listRepairItems = (params = { page: 0, size: 20, categoryId: undefined, keyword: '' }) =>
-  api.get('/repair-items', { params });
+const normalizeId = (v) => {
+  if (v == null) return null;
+  if (typeof v === 'number' || typeof v === 'string') return v;
+  if (typeof v === 'object') {
+    // 흔한 케이스들 방어
+    return v.customerId ?? v.id ?? v.value ?? null;
+  }
+  return null;
+};
+
+export const listRepairItems = (customerIdLike) => {
+  const cid = normalizeId(customerIdLike);
+  if (!cid) return Promise.resolve({ data: [] });
+  return api.get(`/repair-items/customer/${encodeURIComponent(cid)}`);
+};
 
 /** 수리물품 등록 */
 export const createRepairItem = (data) =>
-  api.post('/repair-items', data); // { categoryId, name, price, ... }
+  api.post('/repair-items', data); // { customer_id, categoryId, name, price }
 
 /** 수리물품 수정 */
 export const updateRepairItem = (id, data) =>

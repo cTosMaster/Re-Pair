@@ -27,8 +27,8 @@ import CenterManager from "./components/dashboard/admin/CenterManager.jsx";
 import CategoryManager from "./components/dashboard/admin/CategoryManager.jsx";
 import UserDashboard from "./pages/user/UserDashboard.jsx";
 import CompleteList from "./components/dashboard/user/CompleteList.jsx";
-import RepairRequestForm from "./components/repairdetail/common/RepairRequestForm.jsx";
 import AuthDebugPage from "./context/AuthDebugPage.jsx";
+import EngineerDashboard from "./pages/engineer/EngineerDashboard.jsx";
 
 function App() {
   return (
@@ -61,6 +61,9 @@ function App() {
       {/* ✅ ENGINEER 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["ENGINEER"]} />}>
         <Route path="/engineer/main" element={<EngineerMainPage />} />
+        <Route path="/engineer/dash" element={<DashboardLayout />}>
+          <Route index element={<EngineerDashboard />} />
+        </Route>
       </Route>
 
       {/* ✅ CUSTOMER 전용 */}
@@ -77,22 +80,40 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* 비밀번호찾기 추가 */}
         <Route path="/signup" element={<SignUp />} />
-        
+
       </Route>
 
       {/* [로그인만 필요] 공통 영역 */}
-      <Route element={<ProtectedRoute />}>
+      <Route element={<ProtectedRoute allowedRoles={["USER","ENGINEER","CUSTOMER","ADMIN"]} />}>
         {/* 모든 로그인 사용자가 공통으로 쓰는 라우트들 */}
         <Route path="/register-partner" element={<CompanyFormContainer />} />
         <Route path="/agreementPage" element={<AgreementPage />} />
         <Route path="/companyFormContainer" element={<CompanyFormContainer />} />
-        <Route path="/1" element={<PendingApprovalPage />} />
-        <Route path="/2" element={<WaitingForRepairPage />} />
-        <Route path="/3" element={<InProgressPage />} />
-        <Route path="/4" element={<WaitingForPaymentPage />} />
-        <Route path="/5" element={<WaitingForDeliveryPage />} />
-        <Route path="/6" element={<CompletedPage />} />
-        <Route path="/7" element={<RepairRequestForm />} />
+        {/* ✅ 수리 현황판 단계별: requestId를 포함하는 파라미터 라우트 */}
+        <Route
+          path="/repair-requests/:requestId/pending-approval"
+          element={<PendingApprovalPage />}
+        />
+        <Route
+          path="/repair-requests/:requestId/waiting-for-repair"
+          element={<WaitingForRepairPage />}
+        />
+        <Route
+          path="/repair-requests/:requestId/in-progress"
+          element={<InProgressPage />}
+        />
+        <Route
+          path="/repair-requests/:requestId/waiting-for-payment"
+          element={<WaitingForPaymentPage />}
+        />
+        <Route
+          path="/repair-requests/:requestId/waiting-for-delivery"
+          element={<WaitingForDeliveryPage />}
+        />
+        <Route
+          path="/repair-requests/:requestId/completed"
+          element={<CompletedPage />}
+        />
         <Route path="/authdebug" element={<AuthDebugPage />} />
       </Route>
 

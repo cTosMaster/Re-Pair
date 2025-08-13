@@ -18,14 +18,19 @@ export default function UserDashboard() {
     (v) => (v ? new Date(v).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' }) : '-'),
     []
   );
+  console.log(rows);
+  const goDetail = (r) => {
+    navigate(`/repair-requests/${r.id}/pending-approval`);
+  };
 
+  // 응답값 변수에 담기 
   const mapRow = useCallback((r) => ({
-    id: r.request_id ?? r.requestId ?? r.id,
+    id: r.requestid ?? '(requestid 없음)',
     title: r.title ?? '(제목 없음)',
-    category: r.category ?? r.categoryName ?? '',
-    createdAt: r.created_at ?? r.createdAt,
-    name: r.user_name ?? r.userName ?? r.name ?? '',
-    phone: r.contact_phone ?? r.phone ?? '',
+    category: r.category ?? '(카테고리 없음)',
+    createdAt: r.createdAt ?? '(생성일 없음)',
+    name: r.userName ?? '(유저명 없음)',
+    phone: r.userPhone ?? '(폰번호 없음)',
   }), []);
 
   const fetchList = useCallback(async () => {
@@ -87,19 +92,19 @@ export default function UserDashboard() {
       <div className="space-y-3">
         {loading && rows.length === 0
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm p-4 animate-pulse">
-                <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
-                <div className="h-4 w-2/3 bg-gray-200 rounded" />
-              </div>
-            ))
+            <div key={i} className="bg-white rounded-xl shadow-sm p-4 animate-pulse">
+              <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
+              <div className="h-4 w-2/3 bg-gray-200 rounded" />
+            </div>
+          ))
           : rows.length === 0
-          ? (
+            ? (
               <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400">
                 진행중인 수리가 없습니다.
               </div>
             )
-          : rows.map((r) => (
-              <div key={r.id} className="bg-white rounded-xl shadow-sm px-6 py-4">
+            : rows.map((r, i) => (
+              <div key={r.id ?? `row-${r.createdAt ?? ''}-${i}`} className="bg-white rounded-xl shadow-sm px-6 py-4">
                 <div className="grid grid-cols-12 items-center">
                   {/* 이름/연락처 */}
                   <div className="col-span-4 flex items-center gap-3">
@@ -124,7 +129,8 @@ export default function UserDashboard() {
                   <div className="col-span-2 flex items-center justify-end gap-3">
                     <div className="text-sm text-gray-600">{fmtDate(r.createdAt)}</div>
                     <button
-                      onClick={() => navigate('/1')}
+                      onClick={() => goDetail(r)}
+                      disabled={!r.id}
                       className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
                     >
                       상세보기
@@ -148,11 +154,10 @@ export default function UserDashboard() {
 
         {pageNumbers.map((p) => (
           <button
-            key={p}
+            key={`page-${p}`}
             onClick={() => setPage(p)}
-            className={`px-3 py-1 rounded ${
-              p === page ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'
-            }`}
+            className={`px-3 py-1 rounded ${p === page ? 'bg-gray-900 text-white' : 'hover:bg-gray-100'
+              }`}
           >
             {p + 1}
           </button>
