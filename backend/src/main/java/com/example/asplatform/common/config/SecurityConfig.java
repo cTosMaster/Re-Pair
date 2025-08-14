@@ -74,9 +74,7 @@ public class SecurityConfig {
 					 
 					 //post , put , delete 는 ADMIN만 허용
 					 .requestMatchers(HttpMethod.PUT, "/api/presets/**").hasRole("ADMIN")
-					 .requestMatchers(HttpMethod.DELETE, "/api/presets/**").hasRole("ADMIN")
-
-					 
+					 .requestMatchers(HttpMethod.DELETE, "/api/presets/**").hasRole("ADMIN") 
 				
 					// 인증 처리가 필요한 API ( CUSTOMER 권한을 가진 사용자만 결제 부분에 접근 가능 ) 
 					.requestMatchers(

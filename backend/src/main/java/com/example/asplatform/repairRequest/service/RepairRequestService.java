@@ -1,7 +1,8 @@
 package com.example.asplatform.repairRequest.service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,18 +14,22 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.asplatform.common.enums.RepairStatus;
+import com.example.asplatform.common.enums.Role;
 import com.example.asplatform.common.enums.StatusGroup;
 import com.example.asplatform.item.domain.RepairableItem;
 import com.example.asplatform.item.repository.RepairableItemRepository;
 import com.example.asplatform.repairHistory.domain.RepairHistory;
 import com.example.asplatform.repairHistory.repository.RepairHistoryRepository;
 import com.example.asplatform.repairRequest.domain.RepairRequest;
+import com.example.asplatform.repairRequest.dto.requestDTO.DeleteRepairRequestsRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.RepairRequestCreateDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto;
+import com.example.asplatform.repairRequest.dto.responseDTO.DeleteRepairRequestsResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestListDto;
 import com.example.asplatform.repairRequest.repository.RepairRequestRepository;
 import com.example.asplatform.user.domain.User;
@@ -137,11 +142,59 @@ public class RepairRequestService {
 	
 	
 	
-	
+	/**
+	 * 해당 고객사에 소속된 수리 요청 목록 조회
+	 * 
+	 * @param customerId
+	 * @param keyword
+	 * @param categoryId
+	 * @param status
+	 * @param pageable
+	 * @return
+	 */
 	public Page<CustomerRepairRequestListDto> getCustomerRequestList(Long customerId, String keyword, Long categoryId,
 			RepairStatus status, Pageable pageable) {
 
 		return repairRequestRepository.findCustomerList(customerId, keyword, categoryId, status, pageable);
 	}
+	
+	
+	@Transactional
+    public DeleteRepairRequestsResponseDto deleteRequests(DeleteRepairRequestsRequestDto req, User user) {
+		
+		System.out.println(user);
+		
+        if (user.getRole() != Role.CUSTOMER) {
+            throw new AccessDeniedException("고객사 관리자만 삭제할 수 있습니다.");
+        }
+        
+        Long customerId = user.getCustomer().getId();
+        Long userId = user.getId();
+        
+        // 상태 허용 조건
+        var allowedStatuses = List.of(RepairStatus.CANCELED, RepairStatus.COMPLETED);
+
+        // 삭제 가능한 대상 id 선별
+        List<Long> requested = req.ids();
+        List<Long> deletableIds = repairRequestRepository.findDeletableIds(requested, customerId, allowedStatuses);
+
+        // 소프트 딜리트
+        int deletedCount = 0;
+        if (!deletableIds.isEmpty()) {
+        	deletedCount = repairRequestRepository.softDeleteByIds(deletableIds, userId, allowedStatuses);
+        }
+
+        // 스킵된 ID 계산
+        var skipped = new ArrayList<>(new HashSet<>(requested));
+        skipped.removeAll(deletableIds);
+
+        String msg = "삭제 처리 완료";
+        if (!skipped.isEmpty()) {
+            msg += " (권한 없음/상태 불가/이미 삭제/존재하지 않음: " + skipped.size() + "건)";
+        }
+        return new DeleteRepairRequestsResponseDto(deletedCount, skipped, msg);
+    }
+	
+	
 
 }

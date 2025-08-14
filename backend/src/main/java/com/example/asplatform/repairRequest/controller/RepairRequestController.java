@@ -8,6 +8,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,12 +20,16 @@ import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.common.enums.StatusGroup;
 import com.example.asplatform.common.service.RepairStatusManager;
+import com.example.asplatform.repairRequest.dto.requestDTO.DeleteRepairRequestsRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.ManualStatusChangeRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.RepairRequestCreateDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto;
+import com.example.asplatform.repairRequest.dto.responseDTO.DeleteRepairRequestsResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestListDto;
 import com.example.asplatform.repairRequest.service.RepairRequestService;
 import com.example.asplatform.user.domain.User;
+
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 import lombok.RequiredArgsConstructor;
@@ -146,5 +151,23 @@ public class RepairRequestController {
 		repairStatusManager.changeStatus(requestId, request.getTargetStatus(), user, request.getMemo());
 		return ResponseEntity.ok().build();
 	}
+	
+	
+	/**
+	 * 수리 요청 삭제 (소프트 딜리트)
+	 * 
+	 * @param request
+	 * @param principal
+	 * @return
+	 */
+    @PostMapping("/delete")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<DeleteRepairRequestsResponseDto> delete(
+            @Valid @RequestBody DeleteRepairRequestsRequestDto request,
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+    	User user = principal.getUser();
+        return ResponseEntity.ok(repairRequestService.deleteRequests(request, user));
+    }
 
 }

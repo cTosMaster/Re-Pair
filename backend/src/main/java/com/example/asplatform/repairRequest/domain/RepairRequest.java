@@ -72,10 +72,16 @@ public class RepairRequest {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    
+    private LocalDateTime deletedAt;
+
+    private Long deletedBy;
+    
 
     public void setStatus(RepairStatus status) {
         this.status = status;
     }
+   
 
     @PrePersist
     public void onCreate() {
