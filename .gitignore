@@ -60,9 +60,3 @@ node_modules/
 ### Config / Secret ###
 .env
 .env.*
-application.yml
-application.properties
-application-*.yml
-application-*.properties
-src/main/resources/application.yml
-src/main/resources/application.properties
