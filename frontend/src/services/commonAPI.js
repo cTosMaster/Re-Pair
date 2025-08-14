@@ -50,3 +50,7 @@ export const sendStatusUpdateNotification = (payload, options = {}) => {
     signal: options.signal,
   });
 };
+
+/** 고객사 상세 조회 */
+export const getCenterDetail = (customerId) =>
+  api.get(`/customers/${encodeURIComponent(customerId)}`);
