@@ -77,28 +77,31 @@ stage('Backend Build & Push') {
     }
   }
   steps {
-dir(env.BACK_DIR) {
-  sh '''
-    # Maven 컨테이너를 "현재 사용자 UID:GID"로 실행해 권한 문제 방지
-    UID=$(id -u)
-    GID=$(id -g)
-    docker run --rm -u $UID:$GID \
-      -v "$PWD":/workspace \
-      -v "$HOME/.m2":/var/maven/.m2 \
-      -e MAVEN_CONFIG=/var/maven/.m2 \
-      -w /workspace \
-      maven:3.9.10-eclipse-temurin-21 \
-      mvn -q -DskipTests clean package
+    dir(env.BACK_DIR) {
+      sh '''
+        set -e
+        UID=$(id -u)
+        GID=$(id -g)
 
-    # 이미지 빌드 & 푸시
-    docker buildx build --platform linux/arm64 \
-      -t "$BACKEND_IMAGE:$TAG" -t "$BACKEND_IMAGE:latest" \
-      -f Dockerfile . --push
-  '''
-}
+        # 워크스페이스 로컬 캐시 사용 (권한 안전)
+        mkdir -p .m2
+
+        docker run --rm -u $UID:$GID \
+          -e HOME=/var/maven \
+          -e MAVEN_CONFIG=/var/maven/.m2 \
+          -v "$PWD":/workspace \
+          -v "$PWD/.m2":/var/maven/.m2 \
+          -w /workspace \
+          maven:3.9.10-eclipse-temurin-21 \
+          mvn -q -DskipTests clean package
+
+        docker buildx build --platform linux/arm64 \
+          -t "$BACKEND_IMAGE:$TAG" -t "$BACKEND_IMAGE:latest" \
+          -f Dockerfile . --push
+      '''
+    }
   }
 }
-
     // 배포: 백엔드 컨테이너를 실제로 빌드한 경우에만 롤아웃
     stage('K3s 배포 (kubectl set image)') {
       when {
