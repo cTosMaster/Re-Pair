@@ -44,10 +44,6 @@ public class CustomerCategory {
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
     
-
-    @Column(name="is_deleted", nullable=false)
-    private boolean deleted;
-
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
