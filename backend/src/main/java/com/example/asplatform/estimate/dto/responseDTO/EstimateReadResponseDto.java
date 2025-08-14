@@ -13,5 +13,5 @@ public record EstimateReadResponseDto(	Long estimateId,
 	    int usedPresetCount,
 	    List<PresetBrief> presets  ) { // 선택 프리셋 요약(이름/ID)
 
-	  public record PresetBrief(Long presetId, String name /*, Integer currentPriceOpt */) {}
+	  public record PresetBrief(Long presetId, String name, int price /*, Integer currentPriceOpt */) {}
 }
