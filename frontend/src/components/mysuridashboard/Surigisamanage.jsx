@@ -19,13 +19,16 @@ const fetchEngineers = useCallback(async () => {
   if (!user?.customerId) return;
   try {
     const res = await listEngineers({ customerId: user.customerId });
-    // res.data가 배열인지 확인
-    setData(Array.isArray(res.data) ? res.data : []);
+    
+    // res.data가 Page 구조일 수 있음: content 배열로 접근
+    // Spring Data Page -> { content: [...], totalElements, totalPages, ... }
+    setData(Array.isArray(res.data?.content) ? res.data.content : []);
   } catch (error) {
     console.error("수리기사 목록 불러오기 실패:", error);
     alert("수리기사 목록을 불러오지 못했습니다.");
   }
 }, [user?.customerId]);
+
 
   useEffect(() => {
     fetchEngineers();
@@ -42,12 +45,16 @@ const fetchEngineers = useCallback(async () => {
   };
 
   const filteredList = data
-    .filter((item) => item.name.includes(search) || item.email.includes(search))
-    .sort((a, b) => {
-      if (sortOption === "이름") return a.name.localeCompare(b.name);
-      if (sortOption === "날짜") return new Date(b.createdAt) - new Date(a.createdAt);
-      return 0;
-    });
+  .filter((item) =>
+    item.name.includes(search) ||
+    item.email.includes(search) ||
+    (item.registeredAt && item.registeredAt.includes(search))
+  )
+  .sort((a, b) => {
+    if (sortOption === "이름") return a.name.localeCompare(b.name);
+    if (sortOption === "날짜") return new Date(b.registeredAt) - new Date(a.registeredAt);
+    return 0;
+  });
 
   const totalItems = filteredList.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
@@ -75,7 +82,7 @@ const fetchEngineers = useCallback(async () => {
               className="px-4 py-2 border border-gray-300 rounded-lg"
             >
               <option>이름</option>
-              <option>날짜</option>
+              <option>등록일</option>
             </select>
           </div>
         </div>
@@ -115,7 +122,7 @@ const fetchEngineers = useCallback(async () => {
               </div>
 
               <div className="w-1/3 text-center text-[#B3B3B3] ">
-                {new Date(item.createdAt).toLocaleDateString()}
+                {new Date(item.registeredAt).toLocaleDateString()}
               </div>
             </div>
           ))}

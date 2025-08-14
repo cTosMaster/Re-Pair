@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import { createEngineer } from "../../services/customerAPI";
 
-const MySurigisaaddModal = ({ isOpen, onClose, onSubmit,customerId }) => {
+
+
+const MySurigisaaddModal = ({ isOpen, onClose, onSubmit, initialData }) => {
+  const { user } = useAuth();
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -9,6 +14,30 @@ const MySurigisaaddModal = ({ isOpen, onClose, onSubmit,customerId }) => {
     passwordConfirm: "",
     phone: "",
   });
+
+    // initialData 변경 시 form에 반영
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        name: initialData.name || "",
+        email: initialData.email || "",
+        password: "",           // 비밀번호는 보안상 빈 값 유지
+        passwordConfirm: "",
+        phone: initialData.phone || "",
+        registeredAt: initialData.registeredAt || new Date().toISOString().split("T")[0], // ISO → YYYY-MM-DD
+      });
+    } else {
+      // 등록 모드일 때 초기화
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+        passwordConfirm: "",
+        phone: "",
+        registeredAt: new Date().toISOString().split("T")[0],
+      });
+    }
+  }, [initialData]);
 
   if (!isOpen) return null;
 
@@ -32,7 +61,7 @@ const MySurigisaaddModal = ({ isOpen, onClose, onSubmit,customerId }) => {
     try {
       // 테스트용 임의 customerId 지정
       await createEngineer({
-        customerId,
+        customerId : user.customerId,
         name: form.name,
         email: form.email,
         password: form.password,
@@ -48,7 +77,7 @@ const MySurigisaaddModal = ({ isOpen, onClose, onSubmit,customerId }) => {
       alert("등록에 실패했습니다.");
     }
   };
-
+  
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white p-8 rounded-lg shadow-xl w-[540px]">
