@@ -42,6 +42,8 @@ export default function UserDashboard() {
       createdAt: r.createdAt ?? '(생성일 없음)',
       name: r.userName ?? '(유저명 없음)',
       phone: r.userPhone ?? '(폰번호 없음)',
+      companyName: r.companyName ?? '(회사 없음)',
+      item: r.item ?? '(물품 없음)',
     }),
     []
   );
@@ -81,7 +83,7 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">진행중인 수리</h1>
+      <h1 className="text-2xl font-bold text-gray-800">수리진행 항목 조회</h1>
 
       {/* 검색 */}
       <div className="bg-white rounded-xl shadow-sm p-4 flex items-center justify-between">
@@ -110,18 +112,18 @@ export default function UserDashboard() {
       <div className="space-y-3">
         {loading && rows.length === 0
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm p-4 animate-pulse">
-                <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
-                <div className="h-4 w-2/3 bg-gray-200 rounded" />
-              </div>
-            ))
-          : rows.length === 0
-          ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400">
-              진행중인 수리가 없습니다.
+            <div key={i} className="bg-white rounded-xl shadow-sm p-4 animate-pulse">
+              <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
+              <div className="h-4 w-2/3 bg-gray-200 rounded" />
             </div>
-          )
-          : rows.map((r, i) => (
+          ))
+          : rows.length === 0
+            ? (
+              <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-400">
+                진행중인 수리가 없습니다.
+              </div>
+            )
+            : rows.map((r, i) => (
               <div
                 key={r.id ?? `row-${r.createdAt ?? ''}-${i}`}
                 className="bg-white rounded-xl shadow-sm px-6 py-4"
@@ -133,24 +135,26 @@ export default function UserDashboard() {
                       <UserRound size={18} className="text-gray-500" />
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">{r.name || '-'}</div>
+                      <div className="font-semibold text-gray-900">{r.companyName || '-'}</div>
                       <div className="text-xs text-gray-500">{r.phone || '-'}</div>
                     </div>
                   </div>
 
                   {/* 제목 */}
                   <div className="col-span-6">
-                    <div className="font-medium text-gray-900">{r.title}</div>
-                    {r.category && <span className="ml-1 text-xs text-gray-500">({r.category})</span>}
+                    <div className="font-bold text-gray-900">{r.title}</div>
+                    {r.category && <span className="ml-1 text-xs text-gray-500">({r.category} / {r.item})</span>}
                   </div>
 
                   {/* 날짜 + 상세보기 */}
-                  <div className="col-span-2 flex items-center justify-end gap-3">
-                    <div className="text-sm text-gray-600">{fmtDate(r.createdAt)}</div>
+                  <div className="col-span-2 grid justify-items-end content-center gap-2 min-w-[140px]">
+                    <div className="text-sm text-gray-600 whitespace-nowrap">
+                      {fmtDate(r.createdAt)}
+                    </div>
                     <button
                       onClick={() => goDetail(r)}
                       disabled={!r.id}
-                      className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+                      className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50 disabled:opacity-40"
                     >
                       상세보기
                     </button>
