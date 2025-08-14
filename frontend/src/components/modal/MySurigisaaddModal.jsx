@@ -1,205 +1,158 @@
-import React, { useState, useEffect } from "react";
+import React, { useState,useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
+import { createEngineer } from "../../services/customerAPI";
+
+
 
 const MySurigisaaddModal = ({ isOpen, onClose, onSubmit, initialData }) => {
-  const [form, setForm] = useState(
-  initialData || {
+  const { user } = useAuth();
+
+  const [form, setForm] = useState({
     name: "",
-    userId: "",
     email: "",
     password: "",
     passwordConfirm: "",
     phone: "",
-    status: "수리대기",
-  }
-  );
-  const [isEditMode, setIsEditMode] = useState(!initialData); // 초기 등록이면 편집 모드, 아니면 읽기 모드
+  });
 
-  // initialData가 바뀔 때마다 form 상태 초기화
- useEffect(() => {
-  if (initialData) {
-    setForm(initialData);
-    setIsEditMode(false);  // 수정 모드 아님 (읽기 전용)
-  } else {
-    setForm({
-      name: "",
-      userId: "",
-      email: "",
-      password: "",
-      passwordConfirm: "",
-      phone: "",
-      status: "수리대기",
-    });
-    setIsEditMode(true);  // 신규 등록 시에는 수정 모드로 시작
-  }
-}, [initialData]);
+    // initialData 변경 시 form에 반영
+  useEffect(() => {
+    if (initialData) {
+      setForm({
+        name: initialData.name || "",
+        email: initialData.email || "",
+        password: "",           // 비밀번호는 보안상 빈 값 유지
+        passwordConfirm: "",
+        phone: initialData.phone || "",
+        registeredAt: initialData.registeredAt || new Date().toISOString().split("T")[0], // ISO → YYYY-MM-DD
+      });
+    } else {
+      // 등록 모드일 때 초기화
+      setForm({
+        name: "",
+        email: "",
+        password: "",
+        passwordConfirm: "",
+        phone: "",
+        registeredAt: new Date().toISOString().split("T")[0],
+      });
+    }
+  }, [initialData]);
+
+  if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (!isOpen) return null;
+  const handleSave = async () => {
+    // 필수 입력 체크
+    if (!form.name || !form.email || !form.phone || !form.password || !form.passwordConfirm) {
+      alert("모든 필드를 입력해주세요.");
+      return;
+    }
 
+    if (form.password !== form.passwordConfirm) {
+      alert("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    try {
+      // 테스트용 임의 customerId 지정
+      await createEngineer({
+        customerId : user.customerId,
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        passwordcheck: form.passwordConfirm,
+        phone: form.phone,
+      });
+
+      alert("수리기사가 성공적으로 등록되었습니다.");
+      if (onSubmit) onSubmit(); // 목록 갱신
+      onClose();
+    } catch (error) {
+      console.error("수리기사 등록 실패:", error);
+      alert("등록에 실패했습니다.");
+    }
+  };
+  
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 bg-black/50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white p-8 rounded-lg shadow-xl w-[540px]">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">
-            {initialData ? "수리기사 수정" : "수리기사 등록"}
-          </h1>
-          {initialData && !isEditMode && (
-            <button
-              onClick={() => setIsEditMode(true)}
-              className="text-green-600 font-semibold hover:underline"
-            >
-              수정
-            </button>
-          )}
-        </div>
+        <h1 className="text-2xl font-semibold mb-6">수리기사 등록</h1>
 
-        <form className="space-y-5">
-          {/* 이름 */}
+        <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
           <div>
-            <label className="block mb-1">
-              이름 <span className="text-red-500">*</span>
-            </label>
+            <label className="block mb-1">이름 *</label>
             <input
               type="text"
               name="name"
               value={form.name}
               onChange={handleChange}
-              readOnly={!isEditMode}
               className="w-full border border-gray-300 rounded-md px-4 py-2"
-              style={{ width: "492px", height: "48px" }}              
-            />
-          </div>
-          
-            {/* 아이디 */}
-          <div>
-            <label className="block mb-1">
-              아이디 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="userId"
-              value={form.userId}
-              onChange={handleChange}
-              readOnly={!!initialData} //수정불가
-              className="w-full border border-gray-300 rounded-md px-4 py-2"
-              style={{ width: "492px", height: "48px" }}           
             />
           </div>
 
-          {/* 이메일 */}
           <div>
-            <label className="block mb-1">
-              이메일 <span className="text-red-500">*</span>
-            </label>
+            <label className="block mb-1">이메일 *</label>
             <input
               type="email"
               name="email"
               value={form.email}
               onChange={handleChange}
-              readOnly={!isEditMode}
               className="w-full border border-gray-300 rounded-md px-4 py-2"
-              style={{ width: "492px", height: "48px" }}
             />
           </div>
 
-        {/*  비밀번호 */}
           <div>
-            <label className="block mb-1">
-              비밀번호 <span className="text-red-500">*</span>
-            </label>
+            <label className="block mb-1">비밀번호 *</label>
             <input
               type="password"
               name="password"
               value={form.password}
               onChange={handleChange}
-              readOnly={!!initialData} //수정불가
               className="w-full border border-gray-300 rounded-md px-4 py-2"
-              style={{ width: "492px", height: "48px" }}
             />
           </div>
 
-        {/* 비밀번호 확인 */}
           <div>
-            <label className="block mb-1">
-              비밀번호 확인 <span className="text-red-500">*</span>
-            </label>
+            <label className="block mb-1">비밀번호 확인 *</label>
             <input
               type="password"
               name="passwordConfirm"
               value={form.passwordConfirm}
               onChange={handleChange}
-              readOnly={!!initialData} //수정불가
               className="w-full border border-gray-300 rounded-md px-4 py-2"
-              style={{ width: "492px", height: "48px" }}
             />
           </div>
 
-                  
-          {/* 연락처 */}
           <div>
-            <label className="block mb-1">
-              연락처 <span className="text-red-500">*</span>
-            </label>
+            <label className="block mb-1">연락처 *</label>
             <input
               type="tel"
               name="phone"
               value={form.phone}
               onChange={handleChange}
-              readOnly={!isEditMode}
               className="w-full border border-gray-300 rounded-md px-4 py-2"
-              style={{ width: "492px", height: "48px" }}
             />
           </div>
 
-          {/* 수리 상태 */}
-          <div>
-            <label className="block mb-1">
-              수리 상태 <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-4 py-2"
-              style={{ width: "492px", height: "48px" }}
-            >
-              <option value="수리대기">수리대기</option>
-              <option value="수리중">수리중</option>
-            </select>
-          </div>
-
-          {/* 버튼 */}
           <div className="flex gap-3 justify-end mt-6">
             <button
               type="button"
-              onClick={() => {
-                if (isEditMode) {
-                  // 수정 중일 때 취소 누르면 읽기 모드로 돌아가고 원래 값 복원
-                  setForm(initialData);
-                  setIsEditMode(false);
-                } else {
-                  onClose();
-                }
-              }}
+              onClick={onClose}
               className="bg-gray-300 text-gray-700 rounded-lg font-semibold"
-              style={{ width: "240px", height: "48px" }}
             >
-              {isEditMode ? "취소" : "닫기"}
+              닫기
             </button>
             <button
               type="button"
-              onClick={() => {
-                  onSubmit(form);
-                  setIsEditMode(false);
-                }}
-                className="bg-[#a3cd7f] text-white rounded-lg font-bold"
-                style={{ width: "240px", height: "48px" }}
-              >
-                저장
+              onClick={handleSave}
+              className="bg-[#a3cd7f] text-white rounded-lg font-bold"
+            >
+              저장
             </button>
           </div>
         </form>

@@ -1,115 +1,58 @@
-
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import MysuriPagination from "./MysuriPagination";
 import MySurigisaaddModal from "../modal/MySurigisaaddModal";
-
-const dummyData = [
-  {
-    id: 1,
-    name: "surisuri",
-    phone: "010-1234-1234",
-    email: "kimduck@example.com",
-    date: "2025.06.01",
-    status: "수리중",
-  },
-  // 데이터 반복
-  {
-    id: 2,
-    name: "surisuri",
-    phone: "010-1234-1234",
-    email: "kimduck@example.com",
-    date: "2025.06.01",
-    status: "수리중",
-  },
-  {
-    id: 3,
-    name: "surisuri",
-    phone: "010-1234-1234",
-    email: "kimduck@example.com",
-    date: "2025.06.01",
-    status: "수리중",
-  },
-  {
-    id: 4,
-    name: "surisuri",
-    phone: "010-1234-1234",
-    email: "kimduck@example.com",
-    date: "2025.06.01",
-    status: "수리중",
-  },
-  {
-    id: 5,
-    name: "surisuri",
-    phone: "010-1234-1234",
-    email: "kimduck@example.com",
-    date: "2025.06.01",
-    status: "수리대기",
-  },
-  {
-    id: 6,
-    name: "user6",
-    phone: "010-1111-1111",
-    email: "kimduck@example.com",
-    date: "2025.06.06",
-    status: "수리대기",
-  },
-  {
-    id: 7,
-    name: "user7",
-    phone: "010-2222-2222",
-    email: "kimduck@example.com",
-    date: "2025.06.07",
-    status: "수리중",
-  },
-];
+import { listEngineers } from "../../services/customerAPI";
+import { useAuth } from "../../hooks/useAuth";
 
 const ITEMS_PER_PAGE = 5;
 
 const Surigisamanage = () => {
-  const [data, setData] = useState(dummyData); // 실제 리스트
-  const [search, setSearch] = useState(""); // 검색
-  const [sortOption, setSortOption] = useState("제목");
+  const { user } = useAuth();
+  const [data, setData] = useState([]);
+  const [search, setSearch] = useState("");
+  const [sortOption, setSortOption] = useState("이름");
   const [currentPage, setCurrentPage] = useState(1); 
-  const [isModalOpen, setIsModalOpen] = useState(false); //모달 오픈
-  const [editingSurigisa, setEditingSurigisa] = useState(null); // 모달 수정
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSurigisa, setEditingSurigisa] = useState(null);
+
+const fetchEngineers = useCallback(async () => {
+  if (!user?.customerId) return;
+  try {
+    const res = await listEngineers({ customerId: user.customerId });
+    
+    // res.data가 Page 구조일 수 있음: content 배열로 접근
+    // Spring Data Page -> { content: [...], totalElements, totalPages, ... }
+    setData(Array.isArray(res.data?.content) ? res.data.content : []);
+  } catch (error) {
+    console.error("수리기사 목록 불러오기 실패:", error);
+    alert("수리기사 목록을 불러오지 못했습니다.");
+  }
+}, [user?.customerId]);
+
+
+  useEffect(() => {
+    fetchEngineers();
+  }, [fetchEngineers]);
 
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     setCurrentPage(1);
   };
 
-  // 신규 추가 또는 수정 저장
-  const handleSaveSurigisa = (newItem) => {
-  if (editingSurigisa) {
-    // 수정 시에는 기존 id 유지, date도 수정 안함 (필요시 수정 가능)
-    setData((prev) =>
-      prev.map((item) =>
-        item.id === editingSurigisa.id ? { ...item, ...newItem } : item
-      )
-    );
-  } else {
-    // 신규 추가 시 오늘 날짜 자동 등록
-    const newId = Math.max(...data.map((i) => i.id)) + 1;
-    const today = new Date();
-    const formattedDate = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
-
-    setData((prev) => [...prev, { id: newId, date: formattedDate, ...newItem }]);
-  }
-  setEditingSurigisa(null);
-  setIsModalOpen(false);
-};
-
+  // 모달에서 등록 후 목록 갱신
+  const handleRefresh = () => {
+    fetchEngineers();
+  };
 
   const filteredList = data
-  .filter((item) => item.name.includes(search) || item.email.includes(search))
+  .filter((item) =>
+    item.name.includes(search) ||
+    item.email.includes(search) ||
+    (item.registeredAt && item.registeredAt.includes(search))
+  )
   .sort((a, b) => {
-    if (sortOption === "이름") {
-      return a.name.localeCompare(b.name);
-    } else if (sortOption === "날짜") {
-      const dateA = new Date(a.date.replace(/\./g, "-"));
-      const dateB = new Date(b.date.replace(/\./g, "-"));
-      return dateB - dateA; // 최신순
-    }
+    if (sortOption === "이름") return a.name.localeCompare(b.name);
+    if (sortOption === "날짜") return new Date(b.registeredAt) - new Date(a.registeredAt);
     return 0;
   });
 
@@ -139,16 +82,9 @@ const Surigisamanage = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg"
             >
               <option>이름</option>
-              <option>날짜</option>
+              <option>등록일</option>
             </select>
           </div>
-        </div>
-
-        {/* 리스트 헤더 */}
-        <div className="grid grid-cols-3 text-gray-500 font-semibold text-sm py-2 border-b">
-          <div className="col-span-1 pl-5">기사정보</div>
-          <div className="col-span-1 text-center">상태</div>
-          <div className="col-span-1 text-center">등록일자</div>
         </div>
 
         {/* 리스트 */}
@@ -156,10 +92,10 @@ const Surigisamanage = () => {
           {currentItems.map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between border rounded-lg p-4"
+              className="flex items-center justify-between border rounded-lg p-4 cursor-pointer"
               onClick={() => {
-                setEditingSurigisa(item); // 클릭한 기사 데이터 셋팅
-                setIsModalOpen(true); // 모달 열기
+                setEditingSurigisa(item);
+                setIsModalOpen(true);
               }}
             >
               <div className="flex items-center space-x-4 w-1/3">
@@ -175,18 +111,18 @@ const Surigisamanage = () => {
 
               <div className="w-1/3 flex justify-center">
                 {item.status === "수리중" ? (
-                  <button className="w-[96px] h-[37px] bg-[#6A8B4E] text-white rounded-[10px] text-sm font-[16px]">
+                  <button className="w-[96px] h-[37px] bg-[#6A8B4E] text-white rounded-[10px] text-sm">
                     수리중
                   </button>
                 ) : (
-                  <button className="w-[96px] h-[37px] bg-white text-[#6A8B4E] border border-[#6A8B4E] rounded-[10px] text-sm font-[16px]">
+                  <button className="w-[96px] h-[37px] bg-white text-[#6A8B4E] border border-[#6A8B4E] rounded-[10px] text-sm">
                     수리대기
                   </button>
                 )}
               </div>
 
               <div className="w-1/3 text-center text-[#B3B3B3] ">
-                {item.date}
+                {new Date(item.registeredAt).toLocaleDateString()}
               </div>
             </div>
           ))}
@@ -216,12 +152,10 @@ const Surigisamanage = () => {
         {isModalOpen && (
           <MySurigisaaddModal
             isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-              setEditingSurigisa(null);
-            }}
-            onSubmit={handleSaveSurigisa}
+            onClose={() => setIsModalOpen(false)}
+            onSubmit={handleRefresh}
             initialData={editingSurigisa}
+            customerId={user?.customerId} // 항상 전달
           />
         )}
       </div>

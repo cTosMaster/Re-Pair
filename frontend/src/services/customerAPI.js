@@ -40,8 +40,10 @@ export const updateEngineer = (engineerId, data) =>
   api.put(`/engineers/${encodeURIComponent(engineerId)}`, data);
 
 /** 수리기사 전체 목록 조회 (필요시 페이징 파라미터 추가) */
-export const listEngineers = (params = { page: 0, size: 20 }) =>
-  api.get('/engineers', { params });
+export const listEngineers = ({ customerId, page = 0, size = 20 }) =>
+  api.get("/engineers", {
+    params: { customerId, page, size },
+  });
 
 /** 기사 재배정: 특정 수리(repairId)에 engineer 재할당 */
 export const reassignEngineer = (repairId, engineerId, body = {}) =>
