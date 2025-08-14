@@ -10,7 +10,7 @@ import FirstEstimatePreview from "../../components/repairdetail/waitingforrepair
 import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBox";
 
 // 서비스(API)
-import { getRequestHistory } from "../../services/commonAPI";
+import { getRequestHistory, getEngineer } from "../../services/commonAPI";
 import { getRepairRequest } from "../../services/customerAPI";
 import { getPreEstimate, listPresets } from "../../services/engineerAPI";
 
@@ -20,34 +20,34 @@ import { RepairStatusMap } from "../../constants/repairStatus";
 // ✅ 상태→UI/라우트 공용 유틸
 import { fromApiToUi, segmentForStatus } from "../../routes/statusRoute";
 
-/** 이력에서 현재 상태/취소 여부/취소사유 도출 (statusRoute 유틸만 사용) */
+/** 카드 맵핑 (간결 버전) */
+const toEngineerCard = (eng, detail = {}) => (
+  !eng ? null : {
+    name: eng.name ?? eng.username ?? eng.email ?? "배정된 기사",
+    email: eng.email ?? "",
+    phone: eng.phone ?? "",
+    profileImage: eng.imageUrl ?? "",
+    dateText: eng.registeredAt ?? detail.assignedAt ?? detail.updatedAt ?? detail.createdAt ?? "",
+  }
+);
+
+/** 상태 이력 → 현재 상태/취소 여부 도출 */
 const deriveStatusFromHistory = (history = []) => {
   if (!Array.isArray(history) || history.length === 0) {
     return { statusCode: "WAITING_FOR_REPAIR", isCancelled: false, cancelReason: null };
   }
-  const norm = history.map((h) => ({
+  const norm = history.map(h => ({
     ...h,
     previousStatus: fromApiToUi(h?.previousStatus),
     newStatus: fromApiToUi(h?.newStatus),
   }));
   const last = norm[norm.length - 1];
   const statusCode = last?.newStatus ?? "WAITING_FOR_REPAIR";
-  const canceledItem = [...norm].reverse().find((h) => h?.newStatus === "CANCELLED");
-  return {
-    statusCode,
-    isCancelled: statusCode === "CANCELLED",
-    cancelReason: canceledItem?.memo ?? null,
-  };
+  const canceledItem = [...norm].reverse().find(h => h?.newStatus === "CANCELLED");
+  return { statusCode, isCancelled: statusCode === "CANCELLED", cancelReason: canceledItem?.memo ?? null };
 };
 
-// ✅ 더미 엔지니어 카드 (실데이터 없을 때 사용)
-const DUMMY_ENGINEER = {
-  name: "김독수리",
-  email: "engineer01@example.com",
-  phone: "010-0000-0000",
-  profileImage: "",
-  dateText: "",
-};
+const DUMMY_ENGINEER = { name: "김독수리", email: "engineer01@example.com", phone: "010-0000-0000", profileImage: "", dateText: "" };
 
 export default function WaitingForRepairPage() {
   const { requestId: _rid } = useParams();
@@ -56,18 +56,23 @@ export default function WaitingForRepairPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
-  // 화면 상태
+  // ✅ engineerid 기준 (state 우선, 없으면 ?eid)
+  const inboundEngineerId = useMemo(() => {
+    const s = location.state?.engineerid ?? location.state?.engineerId ?? null;
+    const qs = new URLSearchParams(location.search);
+    const v = s ?? qs.get("eid") ?? qs.get("engineerid");
+    return v != null && String(v).trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+  }, [location.state, location.search]);
+
   const [loading, setLoading] = useState(true);
   const [statusCode, setStatusCode] = useState("WAITING_FOR_REPAIR");
   const [isCancelled, setIsCancelled] = useState(false);
   const [cancelReason, setCancelReason] = useState(null);
 
-  // 엔지니어 카드 / 견적서 / 프리셋
   const [engineerCard, setEngineerCard] = useState(null);
-  const [estimate, setEstimate] = useState(null);   // FirstEstimatePreview용
-  const [presetList, setPresetList] = useState([]); // FirstEstimateForm용
+  const [estimate, setEstimate] = useState(null);
+  const [presetList, setPresetList] = useState([]);
 
-  // 역할
   const role = useMemo(() => String(user?.role || "GUEST").toUpperCase(), [user]);
   const isUser = role === "USER";
   const isCustomer = role === "CUSTOMER";
@@ -88,74 +93,64 @@ export default function WaitingForRepairPage() {
         setIsCancelled(d.isCancelled);
         setCancelReason(d.cancelReason);
 
-        // ✅ 상태에 맞는 경로로 자동 교정 (peek이면 스킵)
-        const isPeek =
-          location.state?.peek === true ||
-          new URLSearchParams(location.search).has("peek");
+        // 2) 상태 기반 경로 교정 (+ engineerid 보존)
+        const isPeek = location.state?.peek === true || new URLSearchParams(location.search).has("peek");
         if (!isPeek) {
           const expectedSeg = segmentForStatus(d.statusCode);
           const endsWithExpected = location.pathname.endsWith(`/${expectedSeg}`);
           if (!endsWithExpected) {
-            navigate(`/repair-requests/${encodeURIComponent(requestId)}/${expectedSeg}`, {
-              replace: true,
-            });
-            return; // 교정 후 다시 로드
+            const qs = new URLSearchParams(location.search);
+            if (inboundEngineerId != null && !qs.get("eid") && !qs.get("engineerid")) {
+              qs.set("eid", String(inboundEngineerId));
+            }
+            navigate(
+              `/repair-requests/${encodeURIComponent(requestId)}/${expectedSeg}${qs.toString() ? `?${qs}` : ""}`,
+              { replace: true, state: { ...location.state, engineerid: inboundEngineerId } }
+            );
+            return;
           }
         }
 
-        // 2) 요청 상세 (엔지니어 카드 구성)
+        // 3) 요청 상세 → 엔지니어 카드
         const { data: detail } = await getRepairRequest(requestId, { signal: ac.signal });
-        const eng =
-          detail?.engineer ??
-          detail?.assignedEngineer ??
-          detail?.engineerInfo ??
-          null;
+        const fallbackEng = detail?.engineer ?? detail?.assignedEngineer ?? detail?.engineerInfo ?? null;
 
-        setEngineerCard(
-          eng
-            ? {
-                name: eng?.name ?? eng?.username ?? eng?.email ?? "배정된 기사",
-                email: eng?.email ?? "",
-                phone: eng?.phone ?? "",
-                profileImage: eng?.imageUrl ?? "",
-                dateText: detail?.assignedAt ?? detail?.updatedAt ?? detail?.createdAt ?? "",
-              }
-            : null
-        );
+        const detailEngineerId = detail?.engineerid ?? null; // 👈 서버 응답 키: engineerid
+        const engineerId = inboundEngineerId ?? detailEngineerId ?? null;
 
-        // 3) 1차 견적(있는 경우만)
+        if (engineerId) {
+          try {
+            console.log("[WFR] calling getEngineer with", engineerId);
+            const { data: eng } = await getEngineer(engineerId, { signal: ac.signal });
+            setEngineerCard(toEngineerCard(eng, detail));
+          } catch {
+            setEngineerCard(toEngineerCard(fallbackEng, detail));
+          }
+        } else {
+          setEngineerCard(toEngineerCard(fallbackEng, detail));
+        }
+
+        // 4) 1차 견적
         try {
           const { data: pe } = await getPreEstimate(requestId, { signal: ac.signal });
           const presets = Array.isArray(pe?.presets)
-            ? pe.presets.map((p) => ({
-                id: p.id ?? p.presetId ?? p.code ?? Math.random(),
-                name: p.name ?? p.title ?? "프리셋",
-                price: p.price ?? p.amount ?? 0,
-              }))
+            ? pe.presets.map(p => ({ id: p.id ?? p.presetId ?? p.code ?? Math.random(), name: p.name ?? p.title ?? "프리셋", price: p.price ?? p.amount ?? 0 }))
             : [];
           setEstimate({
             presets,
             extraNote: pe?.description ?? pe?.extraNote ?? "",
-            totalPrice:
-              (presets || []).reduce((s, p) => s + (p.price || 0), 0) +
-              (Number(pe?.extraAmount) || 0),
+            totalPrice: presets.reduce((s, p) => s + (p.price || 0), 0) + (Number(pe?.extraAmount) || 0),
             createdAt: pe?.createdAt ?? "",
           });
         } catch {
-          setEstimate(null); // 견적이 아직 없으면 조용히 스킵
+          setEstimate(null);
         }
 
-        // 4) 프리셋 목록 (폼 사용 대비)
+        // 5) 프리셋 목록
         if (!d.isCancelled && d.statusCode === "WAITING_FOR_REPAIR" && (isEngineer || isAdmin || isCustomer)) {
-          const { data: presetRes } = await listPresets({ page: 0, size: 50 });
-          const items = Array.isArray(presetRes?.items) ? presetRes.items : presetRes ?? [];
-          setPresetList(
-            items.map((p) => ({
-              id: p.id ?? p.presetId ?? p.code ?? Math.random(),
-              name: p.name ?? p.title ?? "프리셋",
-              price: p.price ?? p.amount ?? 0,
-            }))
-          );
+          const { data: presetRes } = await listPresets({ page: 0, size: 50, signal: ac.signal });
+          const items = Array.isArray(presetRes?.items) ? presetRes.items : (Array.isArray(presetRes) ? presetRes : []);
+          setPresetList(items.map(p => ({ id: p.id ?? p.presetId ?? p.code ?? Math.random(), name: p.name ?? p.title ?? "프리셋", price: p.price ?? p.amount ?? 0 })));
         } else {
           setPresetList([]);
         }
@@ -166,23 +161,15 @@ export default function WaitingForRepairPage() {
       }
     })();
     return () => ac.abort();
-  }, [requestId, location.pathname, navigate, isEngineer, isAdmin, isCustomer]);
+  }, [requestId, location.pathname, navigate, isEngineer, isAdmin, isCustomer, inboundEngineerId]);
 
-  // 스텝 비교 (취소가 아니면서 현재 단계보다 뒤로 갔는지)
   const currentStep = RepairStatusMap["WAITING_FOR_REPAIR"];
   const userStep = RepairStatusMap[statusCode] ?? 0;
   const isPastStep = !isCancelled && userStep > currentStep;
 
-  // 가드
-  if (authLoading || loading) {
-    return <div className="p-6 text-center text-gray-500">로딩 중...</div>;
-  }
-  if (!isAuthenticated || role === "GUEST") {
-    return <div className="p-6 text-center text-gray-500">이 페이지는 로그인 후 이용할 수 있습니다.</div>;
-  }
-  if (!requestId) {
-    return <div className="p-6 text-center text-red-500">잘못된 접근입니다. (요청 ID 없음)</div>;
-  }
+  if (authLoading || loading) return <div className="p-6 text-center text-gray-500">로딩 중...</div>;
+  if (!isAuthenticated || role === "GUEST") return <div className="p-6 text-center text-gray-500">이 페이지는 로그인 후 이용할 수 있습니다.</div>;
+  if (!requestId) return <div className="p-6 text-center text-red-500">잘못된 접근입니다. (요청 ID 없음)</div>;
 
   return (
     <div className="p-6 space-y-6">
@@ -213,13 +200,12 @@ export default function WaitingForRepairPage() {
           {(isCustomer || isEngineer || isAdmin) && (
             <div className="space-y-6">
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
-              <FirstEstimateForm presetList={presetList} />
+              <FirstEstimateForm presetList={presetList} initialEngineerId={inboundEngineerId} />
             </div>
           )}
         </>
       )}
 
-      {/* ✅ 공통 하단: 엔지니어 카드 (실데이터 없으면 더미 카드 표시) */}
       <SelectedEngineerCard engineer={engineerCard ?? DUMMY_ENGINEER} />
     </div>
   );

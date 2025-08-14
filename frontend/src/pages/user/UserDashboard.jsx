@@ -22,12 +22,19 @@ export default function UserDashboard() {
 
   console.log(rows);
 
-  // ✅ 상태 기반으로 해당 단계 경로로 이동
+  // ✅ 상태 기반으로 해당 단계 경로로 이동 (engineerid 대응, 최소 수정)
   const goDetail = (r) => {
     const id = r?.id;
     if (!id) return;
-    const seg = segmentForStatus(r.statusUi || 'PENDING_APPROVAL');
-    navigate(`/repair-requests/${encodeURIComponent(id)}/${seg}`);
+
+    const seg = segmentForStatus(r?.statusUi || 'PENDING_APPROVAL');
+    const eid = r?.engineerid ?? r?.engineerId ?? null;
+
+    // 쿼리 & state 모두에 실어 보냄 → 리다이렉트 시 유실 방지
+    navigate(
+      `/repair-requests/${encodeURIComponent(id)}/${seg}${eid != null ? `?eid=${encodeURIComponent(eid)}` : ''}`,
+      eid != null ? { state: { engineerid: eid } } : undefined
+    );
   };
 
   // 응답값 변수에 담기
@@ -36,6 +43,7 @@ export default function UserDashboard() {
       // ✅ ID 매핑 강화 (백엔드: requestid 소문자)
       id: r.requestid ?? r.requestId ?? r.request_id ?? r.id ?? null,
       // ✅ 한글 상태 → UI 코드 (예: '수리대기' → 'WAITING_FOR_REPAIR')
+      engineerId: r.engineerid ?? null,
       statusUi: fromKoToUi(r.status),
       title: r.title ?? '(제목 없음)',
       category: r.category ?? '(카테고리 없음)',
