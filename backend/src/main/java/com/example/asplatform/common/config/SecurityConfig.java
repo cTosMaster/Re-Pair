@@ -65,6 +65,13 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/api/presets/calculate", "/api/presets/{presetId}")
 						.hasAnyRole("ADMIN", "CUSTOMER", "ENGINEER")
 
+						// 파일 업로드 api
+						.requestMatchers("/api/files/initiate", "/api/files/complete").permitAll()
+						// (추가) 플랫폼 관리자, 고객사 관리자 둘다 플랫폼 카테고리 조회가능해야 함.
+						.requestMatchers("/api/admin/platform-categories").hasAnyRole("ADMIN", "CUSTOMER")
+						// 상대방 쪽에서 있던 관리자 대시보드 ADMIN 접근 제한 유지
+						.requestMatchers("/api/admin/**").hasRole("ADMIN")
+
 						// 등록, 수정, 삭제는 CUSTOMER만 (자신의 고객사만 Service에서 검증)
 						.requestMatchers(HttpMethod.POST, "/api/presets").hasRole("CUSTOMER")
 						.requestMatchers(HttpMethod.PUT, "/api/presets/**").hasRole("CUSTOMER")
