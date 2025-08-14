@@ -1,0 +1,67 @@
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}   # 운영은 none 권장
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        show_sql: ${SPRING_JPA_SHOW_SQL:true}
+        format_sql: ${SPRING_JPA_FORMAT_SQL:true}
+    open-in-view: false
+
+  servlet:
+    multipart:
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:10MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:20MB}
+
+  thymeleaf:
+    cache: ${SPRING_THYMELEAF_CACHE:false}
+
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.naver.com}
+    port: ${SPRING_MAIL_PORT:465}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        transport:
+          protocol: smtp
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+            trust: ${SPRING_MAIL_HOST}
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:/data/uploads}
+
+jwt:
+  secret: ${JWT_SECRET:veryLongDefaultSecretKeyThatIsAtLeast32Bytes!!}
+  access-expire-ms: ${JWT_ACCESS_EXPIRE_MS:3600000}
+  refresh-expire-ms: ${JWT_REFRESH_EXPIRE_MS:86400000}
+
+payment:
+  toss:
+    secret-key: ${PAYMENT_TOSS_SECRET_KEY}
+    api-url: ${PAYMENT_TOSS_API_URL:https://api.tosspayments.com/v1}
+
+logging:
+  level:
+    org.hibernate.SQL: ${LOGGING_LEVEL_HIBERNATE_SQL:debug}
+    org.springframework.security: ${LOGGING_LEVEL_SECURITY:DEBUG}
+    org.hibernate.type.descriptor.sql.BasicExtractor: ${LOGGING_LEVEL_HIBERNATE_TYPE:trace}
+
+app:
+  s3:
+    bucket: ${APP_S3_BUCKET:repair6}
+    region: ${APP_S3_REGION:us-east-2}
