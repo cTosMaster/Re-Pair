@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "customer_categories")
@@ -17,6 +19,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @Builder
+@SQLDelete(sql = "UPDATE customer_categories SET is_deleted = true WHERE category_id = ?")
+@Where(clause = "is_deleted = false")
 public class CustomerCategory {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,6 +37,9 @@ public class CustomerCategory {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(name="is_deleted", nullable=false)
+    private boolean deleted;
 
     @PrePersist
     public void prePersist() {

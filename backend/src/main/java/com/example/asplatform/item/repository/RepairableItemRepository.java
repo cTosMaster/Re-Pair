@@ -22,4 +22,6 @@ public interface RepairableItemRepository extends JpaRepository<RepairableItem, 
 
     // 고객사 + 카테고리 기준 조회
     List<RepairableItem> findByCustomerIdAndCategoryId(Long customerId, Long categoryId);
+
+    boolean existsByCategoryIdAndDeletedFalse(Long categoryId);
 }
