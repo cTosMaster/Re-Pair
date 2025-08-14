@@ -166,7 +166,6 @@ const CategoryManagement = () => {
               onClick={() => goPage(0)}
               disabled={page === 0}
               className={`px-3 h-9 rounded border ${page === 0 ? "text-gray-300 border-gray-200" : "hover:bg-gray-100"}`}
-              title="첫 페이지"
             >
               «
             </button>
@@ -174,7 +173,6 @@ const CategoryManagement = () => {
               onClick={() => goPage(page - 1)}
               disabled={page === 0}
               className={`px-3 h-9 rounded border ${page === 0 ? "text-gray-300 border-gray-200" : "hover:bg-gray-100"}`}
-              title="이전"
             >
               ‹
             </button>
@@ -197,7 +195,6 @@ const CategoryManagement = () => {
               className={`px-3 h-9 rounded border ${
                 page >= totalPages - 1 ? "text-gray-300 border-gray-200" : "hover:bg-gray-100"
               }`}
-              title="다음"
             >
               ›
             </button>
@@ -207,7 +204,6 @@ const CategoryManagement = () => {
               className={`px-3 h-9 rounded border ${
                 page >= totalPages - 1 ? "text-gray-300 border-gray-200" : "hover:bg-gray-100"
               }`}
-              title="마지막 페이지"
             >
               »
             </button>
