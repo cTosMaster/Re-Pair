@@ -14,7 +14,7 @@ pipeline {
 
   stages {
     stage('조건 체크 & Checkout') {
-      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' } }
+      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop' } }
       steps {
         checkout scm
         sh 'git rev-parse --short HEAD > .git/short_sha'
@@ -27,7 +27,7 @@ pipeline {
     }
 
     stage('buildx 준비 (ARM64)') {
-      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' } }
+      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop' } }
       steps {
         sh '''
           docker run --privileged --rm tonistiigi/binfmt --install all || true
@@ -39,7 +39,7 @@ pipeline {
     }
 
     stage('DockerHub 로그인') {
-      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' } }
+      when { expression { env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop' } }
       steps {
         withCredentials([usernamePassword(credentialsId: 'docker-user', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
@@ -51,7 +51,7 @@ pipeline {
     stage('Frontend Build & Push') {
       when {
         expression {
-          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') &&
+          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop') &&
           fileExists("${env.FRONT_DIR}") &&
           fileExists("${env.FRONT_DIR}/Dockerfile")
         }
@@ -71,7 +71,7 @@ pipeline {
     stage('Backend Build & Push') {
       when {
         expression {
-          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') &&
+          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop') &&
           fileExists("${env.BACK_DIR}") &&
           fileExists("${env.BACK_DIR}/Dockerfile")
         }
@@ -93,7 +93,7 @@ pipeline {
     stage('K3s 배포 (kubectl set image)') {
       when {
         expression {
-          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') &&
+          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop') &&
           fileExists("${env.BACK_DIR}") &&
           fileExists("${env.BACK_DIR}/Dockerfile")
         }
@@ -112,10 +112,10 @@ pipeline {
     always  { sh 'docker logout || true' }
     success {
       script {
-        if (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') {
+        if (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop') {
           echo '✅ 배포 성공'
         } else {
-          echo '⏭️ main 아님: 빌드/배포 스킵'
+          echo '⏭️ main/develop 아님: 빌드/배포 스킵'
         }
       }
     }
