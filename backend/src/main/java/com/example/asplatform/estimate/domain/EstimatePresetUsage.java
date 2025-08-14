@@ -9,11 +9,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import lombok.Getter;
 import lombok.Setter;
 
 @Entity
 @Table(name = "estimate_preset_usage")
 @Setter
+@Getter
 public class EstimatePresetUsage {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

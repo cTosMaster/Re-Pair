@@ -1,9 +1,6 @@
 package com.example.asplatform.repairRequest.domain;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.item.domain.RepairableItem;
 import com.example.asplatform.user.domain.User;
@@ -19,7 +16,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.*;
 
@@ -65,17 +61,17 @@ public class RepairRequest {
     @Column(nullable = false, length = 50)
     private RepairStatus status;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
     
     private LocalDateTime deletedAt;
 
     private Long deletedBy;
     
-
+    
     public void setStatus(RepairStatus status) {
         this.status = status;
     }

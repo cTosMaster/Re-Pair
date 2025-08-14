@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +20,7 @@ import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairReques
 
 @Repository
 public interface RepairRequestRepository extends JpaRepository<RepairRequest, Long> {
+	
 	/**
 	 * 로그인한 고객의 수리 요청 목록을 상태(status) 그룹과 키워드로 필터링하여 페이징 조회.
 	 * 

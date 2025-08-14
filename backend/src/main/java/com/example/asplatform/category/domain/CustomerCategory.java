@@ -2,6 +2,9 @@ package com.example.asplatform.category.domain;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,6 +16,8 @@ import lombok.*;
 
 @Entity
 @Table(name = "customer_categories")
+@SQLDelete(sql = "UPDATE customer_categories SET is_deleted = true WHERE category_id = ?")
+@Where(clause = "is_deleted = false")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
@@ -33,6 +38,10 @@ public class CustomerCategory {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+    
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+    
 
     @PrePersist
     public void prePersist() {
