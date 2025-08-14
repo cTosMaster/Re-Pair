@@ -31,8 +31,6 @@ import org.hibernate.annotations.Where;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SQLDelete(sql = "UPDATE repairable_items SET is_deleted = true WHERE item_id = ?")
-@Where(clause = "is_deleted = false")
 public class RepairableItem {
 
 	@Id
