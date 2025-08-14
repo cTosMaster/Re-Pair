@@ -40,10 +40,6 @@ public class CustomerCategory {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-    
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
-    
 
     @Column(name="is_deleted", nullable=false)
     private boolean deleted;
