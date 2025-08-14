@@ -68,26 +68,33 @@ pipeline {
     }
 
     // 백엔드: 디렉토리와 Dockerfile이 있을 때만 빌드/푸시
-    stage('Backend Build & Push') {
-      when {
-        expression {
-          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop') &&
-          fileExists("${env.BACK_DIR}") &&
-          fileExists("${env.BACK_DIR}/Dockerfile")
-        }
-      }
-      steps {
-        dir(env.BACK_DIR) {
-          sh '''
-            chmod +x mvnw || true
-            ./mvnw -q -DskipTests clean package
-            docker buildx build --platform linux/arm64 \
-              -t "$BACKEND_IMAGE:$TAG" -t "$BACKEND_IMAGE:latest" \
-              -f Dockerfile . --push
-          '''
-        }
-      }
+stage('Backend Build & Push') {
+  when {
+    expression {
+      (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'develop' || env.BRANCH_NAME == 'develop') &&
+      fileExists("${env.BACK_DIR}") &&
+      fileExists("${env.BACK_DIR}/Dockerfile")
     }
+  }
+  steps {
+    dir(env.BACK_DIR) {
+      sh '''
+        # Maven 컨테이너로 JAR 빌드 (JDK21)
+        docker run --rm \
+          -v "$PWD":/workspace \
+          -v "$HOME/.m2":/root/.m2 \
+          -w /workspace \
+          maven:3.9.10-eclipse-temurin-21 \
+          mvn -q -DskipTests clean package
+
+        # 이미지 빌드 & 푸시
+        docker buildx build --platform linux/arm64 \
+          -t "$BACKEND_IMAGE:$TAG" -t "$BACKEND_IMAGE:latest" \
+          -f Dockerfile . --push
+      '''
+    }
+  }
+}
 
     // 배포: 백엔드 컨테이너를 실제로 빌드한 경우에만 롤아웃
     stage('K3s 배포 (kubectl set image)') {
