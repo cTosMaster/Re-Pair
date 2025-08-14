@@ -51,23 +51,17 @@ public class RepairableItemService {
         item.update(category, request.getName(), request.getPrice());
     }
 
+    // soft delete
+    // Service
     @Transactional
     public void deleteItem(Long itemId) {
-        try {
-            // 존재하지 않으면 EmptyResultDataAccessException 발생
-            repairableItemRepository.deleteById(itemId);
-            // FK 제약 위반을 즉시 감지(트랜잭션 종료까지 미루지 않도록)
-            repairableItemRepository.flush();
-        } catch (EmptyResultDataAccessException e) {
-            // id 없음 → 404
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "해당 수리 항목이 존재하지 않습니다. id=" + itemId, e);
-        } catch (DataIntegrityViolationException e) {
-            // 참조 중 → 409
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "해당 수리용품은 다른 데이터에서 사용 중이라 삭제할 수 없습니다.", e);
+        // 존재 확인(삭제된 건 @Where로 조회 안 되므로, 필요시 별도 exists native/쿼리 사용)
+        if (!repairableItemRepository.existsById(itemId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 항목입니다. id=" + itemId);
         }
+        repairableItemRepository.deleteById(itemId);  // @SQLDelete -> UPDATE is_deleted=true
     }
+
 
     // 전체 수리물품 조회
     public List<RepairableItemResponse> getAllItems() {
