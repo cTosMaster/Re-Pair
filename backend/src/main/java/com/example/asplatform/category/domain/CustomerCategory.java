@@ -24,8 +24,6 @@ import org.hibernate.annotations.Where;
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @Builder
-@SQLDelete(sql = "UPDATE customer_categories SET is_deleted = true WHERE category_id = ?")
-@Where(clause = "is_deleted = false")
 public class CustomerCategory {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
