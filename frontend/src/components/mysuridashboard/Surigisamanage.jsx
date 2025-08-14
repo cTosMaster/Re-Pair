@@ -15,16 +15,17 @@ const Surigisamanage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSurigisa, setEditingSurigisa] = useState(null);
 
-  const fetchEngineers = useCallback(async () => {
-    if (!user?.customerId) return; // customerId 없으면 요청하지 않음
-    try {
-      const res = await listEngineers({ customerId: user.customerId });
-      setData(res.data);
-    } catch (error) {
-      console.error("수리기사 목록 불러오기 실패:", error);
-      alert("수리기사 목록을 불러오지 못했습니다.");
-    }
-  }, [user?.customerId]);
+const fetchEngineers = useCallback(async () => {
+  if (!user?.customerId) return;
+  try {
+    const res = await listEngineers({ customerId: user.customerId });
+    // res.data가 배열인지 확인
+    setData(Array.isArray(res.data) ? res.data : []);
+  } catch (error) {
+    console.error("수리기사 목록 불러오기 실패:", error);
+    alert("수리기사 목록을 불러오지 못했습니다.");
+  }
+}, [user?.customerId]);
 
   useEffect(() => {
     fetchEngineers();
