@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { segmentForStatus } from "../../routes/statusRoute";
 
 // 공용 컴포넌트
 import RepairProgress from "../../components/repairdetail/common/RepairProgress";
@@ -18,27 +17,18 @@ import { getPreEstimate, listPresets } from "../../services/engineerAPI";
 // 상태 맵
 import { RepairStatusMap } from "../../constants/repairStatus";
 
-/** 백엔드 상태 → UI 상태 변환(CANCELED → CANCELLED 등 표기 보정) */
-const toUiStatus = (s) =>
-  ({
-    PENDING: "PENDING_APPROVAL",
-    CANCELED: "CANCELLED",
-    WAITING_FOR_REPAIR: "WAITING_FOR_REPAIR",
-    IN_PROGRESS: "IN_PROGRESS",
-    WAITING_FOR_PAYMENT: "WAITING_FOR_PAYMENT",
-    WAITING_FOR_DELIVERY: "WAITING_FOR_DELIVERY",
-    COMPLETED: "COMPLETED",
-  }[s] ?? s);
+// ✅ 상태→UI/라우트 공용 유틸
+import { fromApiToUi, segmentForStatus } from "../../routes/statusRoute";
 
-/** 이력에서 현재 상태/취소 여부/취소사유 도출 */
+/** 이력에서 현재 상태/취소 여부/취소사유 도출 (statusRoute 유틸만 사용) */
 const deriveStatusFromHistory = (history = []) => {
   if (!Array.isArray(history) || history.length === 0) {
     return { statusCode: "WAITING_FOR_REPAIR", isCancelled: false, cancelReason: null };
   }
   const norm = history.map((h) => ({
     ...h,
-    previousStatus: toUiStatus(h?.previousStatus),
-    newStatus: toUiStatus(h?.newStatus),
+    previousStatus: fromApiToUi(h?.previousStatus),
+    newStatus: fromApiToUi(h?.newStatus),
   }));
   const last = norm[norm.length - 1];
   const statusCode = last?.newStatus ?? "WAITING_FOR_REPAIR";
@@ -98,12 +88,19 @@ export default function WaitingForRepairPage() {
         setIsCancelled(d.isCancelled);
         setCancelReason(d.cancelReason);
 
-        // ✅ 상태에 맞는 경로로 자동 교정
-        const expectedSeg = segmentForStatus(d.statusCode);
-        const endsWithExpected = location.pathname.endsWith(`/${expectedSeg}`);
-        if (!endsWithExpected) {
-          navigate(`/repair-requests/${encodeURIComponent(requestId)}/${expectedSeg}`, { replace: true });
-          return; // 경로 교정 후 이 컴포넌트가 다시 로드됨
+        // ✅ 상태에 맞는 경로로 자동 교정 (peek이면 스킵)
+        const isPeek =
+          location.state?.peek === true ||
+          new URLSearchParams(location.search).has("peek");
+        if (!isPeek) {
+          const expectedSeg = segmentForStatus(d.statusCode);
+          const endsWithExpected = location.pathname.endsWith(`/${expectedSeg}`);
+          if (!endsWithExpected) {
+            navigate(`/repair-requests/${encodeURIComponent(requestId)}/${expectedSeg}`, {
+              replace: true,
+            });
+            return; // 교정 후 다시 로드
+          }
         }
 
         // 2) 요청 상세 (엔지니어 카드 구성)
@@ -136,7 +133,6 @@ export default function WaitingForRepairPage() {
                 price: p.price ?? p.amount ?? 0,
               }))
             : [];
-
           setEstimate({
             presets,
             extraNote: pe?.description ?? pe?.extraNote ?? "",
@@ -170,7 +166,7 @@ export default function WaitingForRepairPage() {
       }
     })();
     return () => ac.abort();
-  }, [requestId, isEngineer, isAdmin, isCustomer, location.pathname, navigate]);
+  }, [requestId, location.pathname, navigate, isEngineer, isAdmin, isCustomer]);
 
   // 스텝 비교 (취소가 아니면서 현재 단계보다 뒤로 갔는지)
   const currentStep = RepairStatusMap["WAITING_FOR_REPAIR"];
@@ -194,13 +190,11 @@ export default function WaitingForRepairPage() {
         <div className="space-y-6 text-gray-600">
           <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
           {estimate && <FirstEstimatePreview estimate={estimate} />}
-          {/* 분기 내부의 엔지니어 카드는 제거됨 */}
         </div>
       ) : isCancelled ? (
         <div className="space-y-6 text-gray-600">
           <RepairProgress statusCode={statusCode} isCancelled={true} requestId={requestId} />
           {estimate && <FirstEstimatePreview estimate={estimate} />}
-          {/* 분기 내부의 엔지니어 카드는 제거됨 */}
           <RejectReasonBox reason={cancelReason} />
         </div>
       ) : (
@@ -213,7 +207,6 @@ export default function WaitingForRepairPage() {
                 <br />
                 추가로 수리기사와 유선 상담이 있을 예정입니다.
               </div>
-              {/* 분기 내부의 엔지니어 카드는 제거됨 */}
             </div>
           )}
 
