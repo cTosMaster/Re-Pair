@@ -24,7 +24,7 @@ const RepairgoodsManagementModal = ({ isOpen, onClose }) => {
       api
         .get(`/customer-categories/${user.customerId}`)
         .then((res) => {
-          console.log("📦 카테고리 API 응답:", res.data);
+          console.log("카테고리 API 응답:", res.data);
           setCategories(res.data);
         })
         .catch((err) => {

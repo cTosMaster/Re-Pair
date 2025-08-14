@@ -51,21 +51,8 @@ export const reassignEngineer = (repairId, engineerId, body = {}) =>
   });
 
 /** 수리물품 전체 조회 (필터/페이징 옵션) */
-const normalizeId = (v) => {
-  if (v == null) return null;
-  if (typeof v === 'number' || typeof v === 'string') return v;
-  if (typeof v === 'object') {
-    // 흔한 케이스들 방어
-    return v.customerId ?? v.id ?? v.value ?? null;
-  }
-  return null;
-};
-
-export const listRepairItems = (customerIdLike) => {
-  const cid = normalizeId(customerIdLike);
-  if (!cid) return Promise.resolve({ data: [] });
-  return api.get(`/repair-items/customer/${encodeURIComponent(cid)}`);
-};
+export const listRepairItems = (params = { page: 0, size: 20, categoryId: undefined, keyword: '' }) =>
+  api.get('/repair-items', { params });
 
 /** 수리물품 등록 */
 export const createRepairItem = (data) =>
@@ -80,7 +67,7 @@ export const deleteRepairItem = (id) =>
   api.delete(`/repair-items/${encodeURIComponent(id)}`);
 
 /** 수리 상태 수동 취소 */
-export const cancelRepairRequest = (requestId, body = {}, options = {}) =>
+export const cancelRepairRequest = (requestId, body = {},  options = {}) =>
   api.patch(`/repair-requests/${encodeURIComponent(requestId)}/cancel`, body, {
     signal: options.signal,
   });
