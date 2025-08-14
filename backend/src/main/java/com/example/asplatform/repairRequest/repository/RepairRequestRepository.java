@@ -2,12 +2,13 @@ package com.example.asplatform.repairRequest.repository;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.data.domain.Page;
@@ -19,6 +20,7 @@ import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairReques
 
 @Repository
 public interface RepairRequestRepository extends JpaRepository<RepairRequest, Long> {
+	
 	/**
 	 * 로그인한 고객의 수리 요청 목록을 상태(status) 그룹과 키워드로 필터링하여 페이징 조회.
 	 * 
@@ -133,6 +135,74 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			@Param("categoryId") Long categoryId, // null 가능
 			@Param("status") RepairStatus status, // null 가능
 			Pageable pageable);
+
+	/**
+	 * 삭제할 수 있는 대상 선별: - 내 customerId 소속
+	 * - 아직 삭제되지 않음
+	 * - 상태: CANCELED or COMPLETED
+	 * 
+	 * @param ids
+	 * @param customerId
+	 * @param allowed
+	 * @return
+	 */
+	@Query("""
+			    select r.id
+			    from RepairRequest r
+			    join r.repairableItem ri
+			    join ri.customer c
+			    where r.id in :ids
+			      and c.id = :customerId
+			      and r.isDeleted = false
+			      and r.status in :allowed
+			""")
+
+	List<Long> findDeletableIds(@Param("ids") List<Long> ids, @Param("customerId") Long customerId,
+			@Param("allowed") Collection<RepairStatus> allowed);
+
+	/**
+	 * 소프트 딜리트 실행 - JPQL bulk update에는 join을 안 쓰고, 위에서 선별된 id들만 업데이트
+	 * 
+	 * @param ids
+	 * @param userId
+	 * @param allowed
+	 * @return
+	 */
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("""
+			    update RepairRequest r
+			       set r.isDeleted = true,
+			           r.deletedAt = CURRENT_TIMESTAMP,
+			           r.deletedBy = :userId
+			     where r.id in :ids
+			       and r.isDeleted = false
+			       and r.status in :allowed
+			""")
+	int softDeleteByIds(@Param("ids") List<Long> ids, @Param("userId") Long userId,
+			@Param("allowed") Collection<RepairStatus> allowed);
+
+	/**
+	 * 로그인한 엔지니어가 자신의 요청(requestId)을 작성 가능한 상태(수리대기)일 때만 조회
+	 * - 엔지니어 소유(= 배정됨)
+	 * - 현재 상태가 WAITING_FOR_REPAIR
+	 * - is_delete = false
+	 * 
+	 * @param requestId
+	 * @param engineerId
+	 * @param waiting
+	 * @return
+	 */
+	@Query("""
+			    select r
+			      from RepairRequest r
+			      where r.id = :requestId
+			        and r.engineer.id = :engineerId
+			        and r.status = :waiting
+			        and r.isDeleted = false
+			""")
+	Optional<RepairRequest> findOwnedWaitingForRepair(@Param("requestId") Long requestId,
+			@Param("engineerId") Long engineerId,
+			@Param("waiting") RepairStatus waiting /* RepairStatus.WAITING_FOR_REPAIR */);
 
 	boolean existsByEngineer_IdAndStatusIn(Long engineerId, Collection<RepairStatus> statuses);
 

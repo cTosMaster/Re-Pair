@@ -1,6 +1,8 @@
 package com.example.asplatform.repairRequest.service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,14 +23,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.asplatform.common.enums.RepairStatus;
+import com.example.asplatform.common.enums.Role;
 import com.example.asplatform.common.enums.StatusGroup;
 import com.example.asplatform.item.domain.RepairableItem;
 import com.example.asplatform.item.repository.RepairableItemRepository;
 import com.example.asplatform.repairHistory.domain.RepairHistory;
 import com.example.asplatform.repairHistory.repository.RepairHistoryRepository;
 import com.example.asplatform.repairRequest.domain.RepairRequest;
+import com.example.asplatform.repairRequest.dto.requestDTO.DeleteRepairRequestsRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.RepairRequestCreateDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto;
+import com.example.asplatform.repairRequest.dto.responseDTO.DeleteRepairRequestsResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestListDto;
 import com.example.asplatform.repairRequest.repository.RepairRequestRepository;
 import com.example.asplatform.user.domain.User;
@@ -51,6 +56,7 @@ public class RepairRequestService {
 
 	@PersistenceContext
 	private EntityManager em;
+
 	/**
 	 * 수리 요청 등록
 	 * 
@@ -108,7 +114,8 @@ public class RepairRequestService {
 	 * @param size
 	 * @return
 	 */
-	public Page<RepairRequestListDto> getEngineerRequestList(User user, RepairStatus status, Long categoryId, String keyword, int page,
+	public Page<RepairRequestListDto> getEngineerRequestList(User user, RepairStatus status, Long categoryId,
+			String keyword, int page,
 			int size) {
 
 		Long engineerId = user.getId();
@@ -141,10 +148,57 @@ public class RepairRequestService {
 		return new PageImpl<>(content, result.getPageable(), result.getTotalElements());
 	}
 
+	/**
+	 * 해당 고객사에 소속된 수리 요청 목록 조회
+	 * 
+	 * @param customerId
+	 * @param keyword
+	 * @param categoryId
+	 * @param status
+	 * @param pageable
+	 * @return
+	 */
+
 	public Page<CustomerRepairRequestListDto> getCustomerRequestList(Long customerId, String keyword, Long categoryId,
 			RepairStatus status, Pageable pageable) {
 
 		return repairRequestRepository.findCustomerList(customerId, keyword, categoryId, status, pageable);
+	}
+
+	@Transactional
+	public DeleteRepairRequestsResponseDto deleteRequests(DeleteRepairRequestsRequestDto req, User user) {
+
+		System.out.println(user);
+
+		if (user.getRole() != Role.CUSTOMER) {
+			throw new AccessDeniedException("고객사 관리자만 삭제할 수 있습니다.");
+		}
+
+		Long customerId = user.getCustomer().getId();
+		Long userId = user.getId();
+
+		// 상태 허용 조건
+		var allowedStatuses = List.of(RepairStatus.CANCELED, RepairStatus.COMPLETED);
+
+		// 삭제 가능한 대상 id 선별
+		List<Long> requested = req.ids();
+		List<Long> deletableIds = repairRequestRepository.findDeletableIds(requested, customerId, allowedStatuses);
+
+		// 소프트 딜리트
+		int deletedCount = 0;
+		if (!deletableIds.isEmpty()) {
+			deletedCount = repairRequestRepository.softDeleteByIds(deletableIds, userId, allowedStatuses);
+		}
+
+		// 스킵된 ID 계산
+		var skipped = new ArrayList<>(new HashSet<>(requested));
+		skipped.removeAll(deletableIds);
+
+		String msg = "삭제 처리 완료";
+		if (!skipped.isEmpty()) {
+			msg += " (권한 없음/상태 불가/이미 삭제/존재하지 않음: " + skipped.size() + "건)";
+		}
+		return new DeleteRepairRequestsResponseDto(deletedCount, skipped, msg);
 	}
 
 	/** 접수: ENGINEER는 본인 자동배정, CUSTOMER는 engineerId 필수 */
@@ -166,11 +220,13 @@ public class RepairRequestService {
 				throw new AccessDeniedException("다른 기사에게 배정된 요청은 접수 불가");
 			}
 		} else if ("CUSTOMER".equals(role)) {
-			if (engineerId == null) throw new IllegalArgumentException("engineerId는 필수입니다.");
+			if (engineerId == null)
+				throw new IllegalArgumentException("engineerId는 필수입니다.");
 			if (!engineerRepository.existsById(engineerId))
 				throw new IllegalArgumentException("엔지니어 없음: " + engineerId);
 			rr.setEngineer(em.getReference(User.class, engineerId));
-		} else throw new AccessDeniedException("권한 없음");
+		} else
+			throw new AccessDeniedException("권한 없음");
 
 		var prev = rr.getStatus();
 		rr.setStatus(RepairStatus.WAITING_FOR_REPAIR);
@@ -184,8 +240,10 @@ public class RepairRequestService {
 				.build());
 
 		Long newEngineerId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
-		if (newEngineerId != null) refreshEngineerAssignedFlag(newEngineerId);
-		if (prevEngineerId != null && !prevEngineerId.equals(newEngineerId)) refreshEngineerAssignedFlag(prevEngineerId);
+		if (newEngineerId != null)
+			refreshEngineerAssignedFlag(newEngineerId);
+		if (prevEngineerId != null && !prevEngineerId.equals(newEngineerId))
+			refreshEngineerAssignedFlag(prevEngineerId);
 
 		return RepairRequestSimpleResponse.builder()
 				.requestId(rr.getRequestId())
@@ -198,7 +256,8 @@ public class RepairRequestService {
 	/** 반려: ENGINEER는 자기 배정건만, CUSTOMER는 사유만 필수 */
 	@Transactional
 	public RepairRequestSimpleResponse reject(Long requestId, User currentUser, String reason) {
-		if (reason == null || reason.isBlank()) throw new IllegalArgumentException("반려 사유 필수");
+		if (reason == null || reason.isBlank())
+			throw new IllegalArgumentException("반려 사유 필수");
 
 		final var rr = repairRequestRepository.findById(requestId)
 				.orElseThrow(() -> new IllegalArgumentException("요청 없음: " + requestId));
@@ -225,7 +284,8 @@ public class RepairRequestService {
 				.memo(reason)
 				.build());
 
-		if (prevEngineerId != null) refreshEngineerAssignedFlag(prevEngineerId);
+		if (prevEngineerId != null)
+			refreshEngineerAssignedFlag(prevEngineerId);
 
 		return RepairRequestSimpleResponse.builder()
 				.requestId(rr.getRequestId())
@@ -292,7 +352,8 @@ public class RepairRequestService {
 
 		// 기사 배정 캐시 갱신 (활성 건 없으면 is_assigned=0)
 		Long engId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
-		if (engId != null) refreshEngineerAssignedFlag(engId);
+		if (engId != null)
+			refreshEngineerAssignedFlag(engId);
 
 		return RepairRequestSimpleResponse.builder()
 				.requestId(rr.getRequestId())
@@ -301,6 +362,7 @@ public class RepairRequestService {
 				.engineerId(engId)
 				.build();
 	}
+
 	/** 엔지니어 활성 작업 캐시 갱신 */
 	private void refreshEngineerAssignedFlag(Long engineerId) {
 		boolean hasActive = repairRequestRepository.existsByEngineer_IdAndStatusIn(
@@ -309,10 +371,7 @@ public class RepairRequestService {
 						RepairStatus.WAITING_FOR_REPAIR,
 						RepairStatus.IN_PROGRESS,
 						RepairStatus.WAITING_FOR_PAYMENT,
-						RepairStatus.WAITING_FOR_DELIVERY
-				)
-		);
+						RepairStatus.WAITING_FOR_DELIVERY));
 		engineerRepository.findById(engineerId).ifPresent(e -> e.setAssigned(hasActive));
 	}
 }
-

@@ -3,6 +3,8 @@ package com.example.asplatform.preset.domain;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import com.example.asplatform.admin.domain.PlatformCategory;
 import com.example.asplatform.customer.domain.Customer;
@@ -23,6 +25,8 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "presets")
+@SQLDelete(sql = "UPDATE presets SET is_deleted = true WHERE preset_id = ?")
+@Where(clause = "is_deleted = false")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -56,4 +60,8 @@ public class Preset {
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
+    
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
 }

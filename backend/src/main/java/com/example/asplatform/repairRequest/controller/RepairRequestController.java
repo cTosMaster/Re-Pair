@@ -10,17 +10,29 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.*;
 import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.common.enums.StatusGroup;
 import com.example.asplatform.common.service.RepairStatusManager;
+import com.example.asplatform.repairRequest.dto.requestDTO.DeleteRepairRequestsRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.ManualStatusChangeRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.RepairRequestCreateDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto;
+import com.example.asplatform.repairRequest.dto.responseDTO.DeleteRepairRequestsResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestListDto;
 import com.example.asplatform.repairRequest.service.RepairRequestService;
 import com.example.asplatform.user.domain.User;
+
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 
 import lombok.RequiredArgsConstructor;
@@ -91,12 +103,14 @@ public class RepairRequestController {
 	@GetMapping("/engineer-my")
 	@PreAuthorize("hasRole('ENGINEER')")
 	public ResponseEntity<Page<RepairRequestListDto>> getEngineerRequestList(
-			@AuthenticationPrincipal CustomUserDetails principal, @RequestParam(required = false) RepairStatus status, @RequestParam(required = false) Long categoryId,
+			@AuthenticationPrincipal CustomUserDetails principal, @RequestParam(required = false) RepairStatus status,
+			@RequestParam(required = false) Long categoryId,
 			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
 			@RequestParam(required = false) String keyword) {
 		User user = principal.getUser();
 
-		Page<RepairRequestListDto> result = repairRequestService.getEngineerRequestList(user, status, categoryId, keyword, page,
+		Page<RepairRequestListDto> result = repairRequestService.getEngineerRequestList(user, status, categoryId,
+				keyword, page,
 				size);
 
 		return ResponseEntity.ok(result);
@@ -117,8 +131,8 @@ public class RepairRequestController {
 	public Page<CustomerRepairRequestListDto> getCustomerRequestList(
 			@AuthenticationPrincipal CustomUserDetails principal, @RequestParam(required = false) String keyword, // 고객명/제목
 			@RequestParam(required = false) Long categoryId, @RequestParam(required = false) RepairStatus status, // 잘못된
-																												// 값이면
-																												// 400
+																													// 값이면
+																													// 400
 			@PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
 		Long customerId = principal.getUser().getCustomer().getId();
@@ -146,6 +160,22 @@ public class RepairRequestController {
 		return ResponseEntity.ok().build();
 	}
 
+	/**
+	 * 수리 요청 삭제 (소프트 딜리트)
+	 * 
+	 * @param request
+	 * @param principal
+	 * @return
+	 */
+	@PostMapping("/delete")
+	@PreAuthorize("hasRole('CUSTOMER')")
+	public ResponseEntity<DeleteRepairRequestsResponseDto> delete(
+			@Valid @RequestBody DeleteRepairRequestsRequestDto request,
+			@AuthenticationPrincipal CustomUserDetails principal) {
+		User user = principal.getUser();
+		return ResponseEntity.ok(repairRequestService.deleteRequests(request, user));
+	}
+
 	// 수리기사의 경우 engineer배정해야함. 수리기사의 경우 자동 배정
 	@PatchMapping("/{requestId}/accept")
 	@PreAuthorize("hasAnyRole('CUSTOMER','ENGINEER')")
@@ -153,11 +183,9 @@ public class RepairRequestController {
 			@PathVariable("requestId") Long requestId,
 			@AuthenticationPrincipal CustomUserDetails me,
 			@RequestParam(required = false) Long engineerId,
-			@RequestParam(required = false) String memo
-	) {
+			@RequestParam(required = false) String memo) {
 		return ResponseEntity.ok(
-				repairRequestService.accept(requestId, me.getUser(), engineerId, memo)
-		);
+				repairRequestService.accept(requestId, me.getUser(), engineerId, memo));
 	}
 
 	// 관리자,수리기사 수리요청 거절/ reason 필요함
@@ -166,12 +194,10 @@ public class RepairRequestController {
 	public ResponseEntity<RepairRequestSimpleResponse> reject(
 			@PathVariable("requestId") Long requestId,
 			@AuthenticationPrincipal CustomUserDetails me,
-			@RequestBody(required = false) java.util.Map<String,String> body
-	) {
+			@RequestBody(required = false) java.util.Map<String, String> body) {
 		String reason = body != null ? body.get("reason") : null;
 		return ResponseEntity.ok(
-				repairRequestService.reject(requestId, me.getUser(), reason)
-		);
+				repairRequestService.reject(requestId, me.getUser(), reason));
 	}
 
 	// 수리기사만 waiting_for_repair -> in_progress
@@ -179,12 +205,9 @@ public class RepairRequestController {
 	@PreAuthorize("hasRole('ENGINEER')")
 	public ResponseEntity<RepairRequestSimpleResponse> start(
 			@PathVariable("requestId") Long requestId,
-			@AuthenticationPrincipal CustomUserDetails me
-	) {
+			@AuthenticationPrincipal CustomUserDetails me) {
 		return ResponseEntity.ok(repairRequestService.startWork(requestId, me.getUser()));
 	}
-
-
 
 	// RepairRequestCommandController.java
 	// 완료 버튼
@@ -193,8 +216,7 @@ public class RepairRequestController {
 	public ResponseEntity<RepairRequestSimpleResponse> completeTest(
 			@PathVariable("requestId") Long requestId,
 			@AuthenticationPrincipal CustomUserDetails me,
-			@RequestParam(required = false) String memo
-	) {
+			@RequestParam(required = false) String memo) {
 		return ResponseEntity.ok(repairRequestService.completeForTest(requestId, me.getUser(), memo));
 	}
 
