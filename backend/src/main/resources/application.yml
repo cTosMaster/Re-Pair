@@ -1,7 +1,5 @@
 server:
-  port: 0
-
-debug: true
+  port: ${SERVER_PORT:8081}
 
 spring:
   datasource:
