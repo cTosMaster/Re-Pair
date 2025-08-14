@@ -47,8 +47,15 @@ pipeline {
       }
     }
 
+    // 프론트: 디렉토리와 Dockerfile이 있을 때만 빌드/푸시
     stage('Frontend Build & Push') {
-      when { expression { (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') && fileExists(env.FRONT_DIR) } }
+      when {
+        expression {
+          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') &&
+          fileExists("${env.FRONT_DIR}") &&
+          fileExists("${env.FRONT_DIR}/Dockerfile")
+        }
+      }
       steps {
         dir(env.FRONT_DIR) {
           sh '''
@@ -60,11 +67,19 @@ pipeline {
       }
     }
 
+    // 백엔드: 디렉토리와 Dockerfile이 있을 때만 빌드/푸시
     stage('Backend Build & Push') {
-      when { expression { (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') && fileExists(env.BACK_DIR) } }
+      when {
+        expression {
+          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') &&
+          fileExists("${env.BACK_DIR}") &&
+          fileExists("${env.BACK_DIR}/Dockerfile")
+        }
+      }
       steps {
         dir(env.BACK_DIR) {
           sh '''
+            chmod +x mvnw || true
             ./mvnw -q -DskipTests clean package
             docker buildx build --platform linux/arm64 \
               -t "$BACKEND_IMAGE:$TAG" -t "$BACKEND_IMAGE:latest" \
@@ -74,8 +89,15 @@ pipeline {
       }
     }
 
+    // 배포: 백엔드 컨테이너를 실제로 빌드한 경우에만 롤아웃
     stage('K3s 배포 (kubectl set image)') {
-      when { expression { (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') && fileExists(env.BACK_DIR) } }
+      when {
+        expression {
+          (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') &&
+          fileExists("${env.BACK_DIR}") &&
+          fileExists("${env.BACK_DIR}/Dockerfile")
+        }
+      }
       steps {
         sh '''
           ssh -o StrictHostKeyChecking=no "$SSH_BACKEND_USER@$SSH_BACKEND_HOST" \
@@ -88,7 +110,15 @@ pipeline {
 
   post {
     always  { sh 'docker logout || true' }
-    success { echo '✅ 배포 성공' }
+    success {
+      script {
+        if (env.CHANGE_TARGET == 'main' || env.BRANCH_NAME == 'main') {
+          echo '✅ 배포 성공'
+        } else {
+          echo '⏭️ main 아님: 빌드/배포 스킵'
+        }
+      }
+    }
     failure { echo '❌ 실패: 콘솔 로그 확인' }
   }
 }
