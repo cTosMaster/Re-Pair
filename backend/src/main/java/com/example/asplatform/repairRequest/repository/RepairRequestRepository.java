@@ -137,8 +137,8 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			Pageable pageable);
 
 	/**
-	 * 삭제할 수 있는 대상 선별: - 내 customerId 소속 
-	 * - 아직 삭제되지 않음 
+	 * 삭제할 수 있는 대상 선별: - 내 customerId 소속
+	 * - 아직 삭제되지 않음
 	 * - 상태: CANCELED or COMPLETED
 	 * 
 	 * @param ids
@@ -156,6 +156,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			      and r.isDeleted = false
 			      and r.status in :allowed
 			""")
+
 	List<Long> findDeletableIds(@Param("ids") List<Long> ids, @Param("customerId") Long customerId,
 			@Param("allowed") Collection<RepairStatus> allowed);
 
@@ -180,10 +181,9 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 	int softDeleteByIds(@Param("ids") List<Long> ids, @Param("userId") Long userId,
 			@Param("allowed") Collection<RepairStatus> allowed);
 
-	
 	/**
-	 * 로그인한 엔지니어가 자신의 요청(requestId)을 작성 가능한 상태(수리대기)일 때만 조회 
-	 * - 엔지니어 소유(= 배정됨) 
+	 * 로그인한 엔지니어가 자신의 요청(requestId)을 작성 가능한 상태(수리대기)일 때만 조회
+	 * - 엔지니어 소유(= 배정됨)
 	 * - 현재 상태가 WAITING_FOR_REPAIR
 	 * - is_delete = false
 	 * 
@@ -203,8 +203,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 	Optional<RepairRequest> findOwnedWaitingForRepair(@Param("requestId") Long requestId,
 			@Param("engineerId") Long engineerId,
 			@Param("waiting") RepairStatus waiting /* RepairStatus.WAITING_FOR_REPAIR */);
-	
-	
-	
+
+	boolean existsByEngineer_IdAndStatusIn(Long engineerId, Collection<RepairStatus> statuses);
 
 }

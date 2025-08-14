@@ -41,9 +41,10 @@ public class RepairableItem {
 	@JoinColumn(name = "category_id", nullable = false)
 	private CustomerCategory category;
 
-	// 제품명 (예: 갤럭시 S7)
-	@Column(nullable = false)
-	private String name;
+    // 제품명 (예: 아이폰 13)
+    @Column(nullable = false)
+    private String name;
+
 
 	// 단가 (0 = 미정)
 	@Column(nullable = false)

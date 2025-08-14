@@ -2,6 +2,7 @@ package com.example.asplatform.payment.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.asplatform.common.enums.PaymentStatus;
@@ -68,14 +70,6 @@ public class PaymentController {
 	    	 
 	    	try {
 	    		  paymentService.updatePaymentStatus(webhookDto.getData());
-			  
-	    	       /* if ("PAYMENT_STATUS_CHANGED".equals(webhookDto.getEventType())) {
-	    	            paymentService.updatePaymentStatus(webhookDto.getData());
-	    	        }
-
-	    	        System.out.println("✅ Toss 콜백 처리 완료: " + webhookDto);
-	    	        return ResponseEntity.ok("success");
-	    	        */
 	    		  
 	    		  System.out.println("✅ Toss 콜백 처리 완료 (정상 응답)");
 	    		  return ResponseEntity.ok("success");
@@ -112,17 +106,17 @@ public class PaymentController {
 	    /**
 	     * ✅ 4. 결제 내역 전체 조회
 	     */
-	    @GetMapping("")
-	    public ResponseEntity<List<PaymentResponseDto>> getAllPayments(@AuthenticationPrincipal UserDetails userDetails) {
-	        return ResponseEntity.ok(paymentService.getAllPayments());
+	    @GetMapping
+	    public ResponseEntity<Page<PaymentResponseDto>> getAllPayments(@AuthenticationPrincipal UserDetails userDetails, @RequestParam(value = "page", defaultValue = "1") int page) {
+	        return ResponseEntity.ok(paymentService.getAllPayments(page));
 	    }
 
 	    /**
 	     * ✅ 5. 결제 대기 목록 조회
 	     */
 	    @GetMapping("/pending")
-	    public ResponseEntity<List<PaymentResponseDto>> getPendingPayments(@AuthenticationPrincipal UserDetails userDetails) {
-	        return ResponseEntity.ok(paymentService.getPaymentsByStatus(PaymentStatus.READY));
+	    public ResponseEntity<Page<PaymentResponseDto>> getPendingPayments(@AuthenticationPrincipal UserDetails userDetails, @RequestParam(value = "page", defaultValue = "1") int page) {
+	        return ResponseEntity.ok(paymentService.getPaymentsByStatus(PaymentStatus.READY, page));
 	    }
 
 	    /**

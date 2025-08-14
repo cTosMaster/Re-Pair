@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class ReviewRequest {
-    private Long repairId;
     private int rating;
     private String reviewContent;
 }

@@ -27,6 +27,13 @@ public class AuthService {
     private final EmailUtil emailUtil;
     private final PasswordEncoder passwordEncoder; // 비밀번호 암호화(BCrypt) 인코더
 
+    // 계정 비활성화 여부 체크
+    private void ensureActive(User user) {
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new RuntimeException("비활성화된 계정입니다. 관리자에게 문의하세요.");
+        }
+    }
+
     /**
      * 로그인 처리
      * 1) 이메일로 사용자 조회
@@ -35,17 +42,25 @@ public class AuthService {
      */
     @Transactional
     public LoginResponse login(LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
+        User user = userRepository.findWithCustomerByEmail(req.getEmail()) // ✅ fetch join
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+
+        ensureActive(user);
+
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
 
         user.setLastLogin(java.time.LocalDateTime.now());
 
-        String access  = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
+        Long customerId = (user.getCustomer() != null) ? user.getCustomer().getId() : null;
+
+        // ✅ JWT에도 customer_id 포함
+        String access  = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name(), customerId);
         String refresh = jwtUtil.generateRefreshToken(user.getEmail());
-        return new LoginResponse(access, refresh, user.getEmail(), user.getRole().name());
+
+        // ✅ 응답 DTO에도 customerId 포함
+        return new LoginResponse(access, refresh, user.getEmail(), user.getRole().name(), customerId);
     }
 
     /**
@@ -56,10 +71,19 @@ public class AuthService {
         if (!jwtUtil.validateToken(req.getRefreshToken())) {
             throw new RuntimeException("Invalid or expired refresh token");
         }
+
         String email = jwtUtil.getSubject(req.getRefreshToken());
-        User user = userRepository.findByEmail(email)
+
+        // ✅ fetch join으로 user + customer 한 번에 로딩
+        User user = userRepository.findWithCustomerByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        String newAccess = jwtUtil.generateAccessToken(email, user.getRole().name());
+
+        // ✅ 비활성 계정 차단
+        ensureActive(user);
+
+        Long customerId = (user.getCustomer() != null) ? user.getCustomer().getId() : null;
+
+        String newAccess = jwtUtil.generateAccessToken(email, user.getRole().name(), customerId);
         return new AccessTokenResponse(newAccess);
     }
 
@@ -72,10 +96,18 @@ public class AuthService {
             throw new RuntimeException("Invalid or expired refresh token");
         }
         String email = jwtUtil.getSubject(req.getRefreshToken());
-        User user = userRepository.findByEmail(email)
+
+        User user = userRepository.findWithCustomerByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        String newAccess  = jwtUtil.generateAccessToken(email, user.getRole().name());
+
+        // ✅ 비활성 계정 차단
+        ensureActive(user);
+
+        Long customerId = (user.getCustomer() != null) ? user.getCustomer().getId() : null;
+
+        String newAccess  = jwtUtil.generateAccessToken(email, user.getRole().name(), customerId);
         String newRefresh = jwtUtil.generateRefreshToken(email);
+
         return new TokenResponse(newAccess, newRefresh);
     }
 
