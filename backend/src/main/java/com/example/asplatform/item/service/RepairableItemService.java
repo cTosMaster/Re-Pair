@@ -11,6 +11,7 @@ import com.example.asplatform.item.dto.responseDTO.RepairableItemResponse;
 import com.example.asplatform.item.repository.RepairableItemRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class RepairableItemService {
 
@@ -52,18 +54,23 @@ public class RepairableItemService {
     }
 
     // soft delete
-    // Service
     @Transactional
     public void deleteItem(Long itemId) {
-        // 존재 확인(삭제된 건 @Where로 조회 안 되므로, 필요시 별도 exists native/쿼리 사용)
-        if (!repairableItemRepository.existsById(itemId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 항목입니다. id=" + itemId);
+        Boolean deleted = repairableItemRepository.selectIsDeleted(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 항목입니다. id=" + itemId));
+
+        if (Boolean.TRUE.equals(deleted)) {
+            log.warn("삭제 거부: 이미 소프트 삭제된 항목 itemId={}", itemId); // ← 콘솔/로그
+            throw new ResponseStatusException(HttpStatus.GONE, "이미 삭제된 항목입니다.");
         }
-        repairableItemRepository.deleteById(itemId);  // @SQLDelete -> UPDATE is_deleted=true
+
+        // 살아있는 경우에만 soft delete (@SQLDelete가 is_deleted=true로 업데이트)
+        repairableItemRepository.deleteById(itemId);
     }
 
 
     // 전체 수리물품 조회
+    @Transactional(readOnly = true)
     public List<RepairableItemResponse> getAllItems() {
         return repairableItemRepository.findAll().stream()
                 .map(RepairableItemResponse::from)
