@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -41,17 +44,11 @@ public class EstimateService {
 	private final UserRepository userRepository;
 	private final RepairStatusManager repairStatusManager;
 
-	
-	
 	/**
-	 * 1차 견적 등록
-	 * - 호출자는 엔지니어만(ROLE_ENGINEER)
-	 * - 타겟 수리요청은: 본인에게 배정
-	 * - 상태=WAITING_FOR_REPAIR && 미삭제
-	 * - 한 요청당 1개의 1차 견적만 허용(서비스 가드 + DB UNIQUE)
-	 * - 프리셋/수기 금액은 nullable 허용
-	 * - 총액(price) = COALESCE(preset_total,0) + COALESCE(manual_amount,0)
-	 * - 처리 완료 후 상태 변경: WAITING_FOR_REPAIR -> IN_PROGRESS
+	 * 1차 견적 등록 - 호출자는 엔지니어만(ROLE_ENGINEER) - 타겟 수리요청은: 본인에게 배정 -
+	 * 상태=WAITING_FOR_REPAIR && 미삭제 - 한 요청당 1개의 1차 견적만 허용(서비스 가드 + DB UNIQUE) -
+	 * 프리셋/수기 금액은 nullable 허용 - 총액(price) = COALESCE(preset_total,0) +
+	 * COALESCE(manual_amount,0) - 처리 완료 후 상태 변경: WAITING_FOR_REPAIR -> IN_PROGRESS
 	 * 
 	 * @param req
 	 * @param user
@@ -67,10 +64,9 @@ public class EstimateService {
 		RepairRequest target = repairRequestRepository
 				.findOwnedWaitingForRepair(req.requestId(), user.getId(), RepairStatus.WAITING_FOR_REPAIR)
 				.orElseThrow(() -> new AccessDeniedException("대상 요청이 없거나 권한/상태가 올바르지 않습니다."));
-		
-	    // 고객사 ID 확보
-	    Long customerId = target.getRepairableItem().getCustomer().getId();
-	    
+
+		// 고객사 ID 확보
+		Long customerId = target.getRepairableItem().getCustomer().getId();
 
 		// 중복 방지(UX용 가드) - DB UNIQUE와 중복 방어
 		if (estimateRepository.existsByRequestId(req.requestId())) {
@@ -155,36 +151,34 @@ public class EstimateService {
 		Estimate est = estimateRepository.findByRequestId(requestId)
 				.orElseThrow(() -> new NoSuchElementException("1차 견적이 존재하지 않습니다."));
 
-		
-	    // requestId로 수리요청 가져와서 customerId 확보(연관에 맞게 선택)
-	    RepairRequest target = repairRequestRepository.findById(est.getRequestId())
-	            .orElseThrow(() -> new NoSuchElementException("대상 수리요청을 찾을 수 없습니다."));
-	    Long customerId = target.getRepairableItem().getCustomer().getId();
-		
+		// requestId로 수리요청 가져와서 customerId 확보(연관에 맞게 선택)
+		RepairRequest target = repairRequestRepository.findById(est.getRequestId())
+				.orElseThrow(() -> new NoSuchElementException("대상 수리요청을 찾을 수 없습니다."));
+		Long customerId = target.getRepairableItem().getCustomer().getId();
+
 		// 선택 프리셋 조회
 		List<EstimatePresetUsage> usages = usageRepository.findByEstimateId(est.getEstimateId());
 		usages.sort(Comparator.comparingLong(EstimatePresetUsage::getUsageId));
 		List<Long> presetIds = usages.stream().map(EstimatePresetUsage::getPresetId).toList();
 
-		// 프리셋 이름 매핑 
-	    List<PresetBrief> presetBriefs = List.of();
-	    if (!presetIds.isEmpty()) {
-	        List<Preset> presets = presetRepository
-	                .findByPresetIdInAndCustomerIdAndIsDeletedFalse(presetIds, customerId);
+		// 프리셋 이름 매핑
+		List<PresetBrief> presetBriefs = List.of();
+		if (!presetIds.isEmpty()) {
+			List<Preset> presets = presetRepository.findByPresetIdInAndCustomerIdAndIsDeletedFalse(presetIds,
+					customerId);
 
-	        Map<Long, String> nameMap = new HashMap<>();
-	        for (Preset p : presets) {
-	            nameMap.put(p.getPresetId(), p.getName());
-	        }
+			Map<Long, Preset> presetMap = presets.stream()
+					.collect(Collectors.toMap(Preset::getPresetId, Function.identity()));
 
-	        // 사용내역 순서대로 반환, 누락되면 "(삭제됨)" 표시
-	        presetBriefs = usages.stream()
-	                .map(u -> new PresetBrief(
-	                        u.getPresetId(),
-	                        nameMap.getOrDefault(u.getPresetId(), "(삭제됨/권한외)")
-	                ))
-	                .toList();
-	    }
+			// 사용내역 순서대로 반환, 누락되면 "(삭제됨)" 표시
+			presetBriefs = usages.stream().map(u -> {
+				Preset p = presetMap.get(u.getPresetId());
+				if (p == null) {
+					return new PresetBrief(u.getPresetId(), "(삭제됨/권한외)", 0);
+				}
+				return new PresetBrief(p.getPresetId(), p.getName(), p.getPrice());
+			}).toList();
+		}
 
 		int presetTotal = est.getPresetTotal() == null ? 0 : est.getPresetTotal();
 		int manualAmt = est.getManualAmount() == null ? 0 : est.getManualAmount();
