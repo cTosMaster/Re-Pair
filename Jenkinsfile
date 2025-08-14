@@ -77,22 +77,25 @@ stage('Backend Build & Push') {
     }
   }
   steps {
-    dir(env.BACK_DIR) {
-      sh '''
-        # Maven 컨테이너로 JAR 빌드 (JDK21)
-        docker run --rm \
-          -v "$PWD":/workspace \
-          -v "$HOME/.m2":/root/.m2 \
-          -w /workspace \
-          maven:3.9.10-eclipse-temurin-21 \
-          mvn -q -DskipTests clean package
+dir(env.BACK_DIR) {
+  sh '''
+    # Maven 컨테이너를 "현재 사용자 UID:GID"로 실행해 권한 문제 방지
+    UID=$(id -u)
+    GID=$(id -g)
+    docker run --rm -u $UID:$GID \
+      -v "$PWD":/workspace \
+      -v "$HOME/.m2":/var/maven/.m2 \
+      -e MAVEN_CONFIG=/var/maven/.m2 \
+      -w /workspace \
+      maven:3.9.10-eclipse-temurin-21 \
+      mvn -q -DskipTests clean package
 
-        # 이미지 빌드 & 푸시
-        docker buildx build --platform linux/arm64 \
-          -t "$BACKEND_IMAGE:$TAG" -t "$BACKEND_IMAGE:latest" \
-          -f Dockerfile . --push
-      '''
-    }
+    # 이미지 빌드 & 푸시
+    docker buildx build --platform linux/arm64 \
+      -t "$BACKEND_IMAGE:$TAG" -t "$BACKEND_IMAGE:latest" \
+      -f Dockerfile . --push
+  '''
+}
   }
 }
 
