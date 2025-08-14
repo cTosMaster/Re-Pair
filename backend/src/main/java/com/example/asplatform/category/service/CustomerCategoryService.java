@@ -44,16 +44,15 @@ public class CustomerCategoryService {
 
     @Transactional
     public void deleteCategory(Long categoryId) {
-        // 1) 존재 확인 (@Where 덕분에 이미 삭제된 건 조회 안 됨 → Optional empty)
-        CustomerCategory cat = customerCategoryRepository.findById(categoryId)
+        // 1) 존재 확인 (@Where 때문에 이미 삭제된 건 안 잡힘)
+        customerCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다. id=" + categoryId));
 
-        // 2) 참조 가드: 살아있는 아이템이 있으면 삭제 금지
-        if (itemRepository.existsByCategoryIdAndDeletedFalse(categoryId)) {
-            throw new IllegalStateException("이 카테고리를 사용하는 수리 항목이 있어 삭제할 수 없습니다.");
-        }
+        // 2) 이 카테고리를 참조하는 아이템들을 먼저 soft delete
+        itemRepository.softDeleteByCategoryId(categoryId);
 
-        // 3) 소프트 삭제 (@SQLDelete가 update 실행)
-        customerCategoryRepository.delete(cat);
+        // 3) 부모 카테고리 soft delete (@SQLDelete -> is_deleted = true)
+        customerCategoryRepository.deleteById(categoryId);
     }
+
 }
