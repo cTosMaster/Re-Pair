@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom"; // ✅ 추가
 import { useAuth } from "../../hooks/useAuth";
 
 // 기존 컴포넌트 유지
@@ -15,25 +15,26 @@ import { getRepairRequest, listEngineers } from "../../services/customerAPI";
 
 // 상태 맵
 import { RepairStatusMap } from "../../constants/repairStatus";
+// ✅ 상태→세그먼트 공용 유틸
+import { segmentForStatus } from "../../routes/statusRoute";
 
 /** 백엔드 상태 → 프론트 UI 상태 변환 */
 const toUiStatus = (s) =>
-({
-  PENDING: "PENDING_APPROVAL",
-  CANCELED: "CANCELLED",
-  WAITING_FOR_REPAIR: "WAITING_FOR_REPAIR",
-  IN_PROGRESS: "IN_PROGRESS",
-  WAITING_FOR_PAYMENT: "WAITING_FOR_PAYMENT",
-  WAITING_FOR_DELIVERY: "WAITING_FOR_DELIVERY",
-  COMPLETED: "COMPLETED",
-}[s] ?? s);
+  ({
+    PENDING: "PENDING_APPROVAL",
+    CANCELED: "CANCELLED",
+    WAITING_FOR_REPAIR: "WAITING_FOR_REPAIR",
+    IN_PROGRESS: "IN_PROGRESS",
+    WAITING_FOR_PAYMENT: "WAITING_FOR_PAYMENT",
+    WAITING_FOR_DELIVERY: "WAITING_FOR_DELIVERY",
+    COMPLETED: "COMPLETED",
+  }[s] ?? s);
 
 /** 이력 배열 → 현재 상태/취소 여부/사유 도출 */
 const deriveStatusFromHistory = (history = []) => {
   if (!Array.isArray(history) || history.length === 0) {
     return { statusCode: "PENDING_APPROVAL", isCancelled: false, cancelReason: null };
   }
-  // ✅ 백엔드/프론트 혼용 대비: 전체를 UI 코드로 정규화
   const norm = history.map((h) => ({
     ...h,
     previousStatus: toUiStatus(h?.previousStatus),
@@ -52,6 +53,8 @@ const deriveStatusFromHistory = (history = []) => {
 export default function PendingApprovalPage() {
   const { requestId: _rid } = useParams(); // 라우터에서 :requestId 받는다고 가정
   const requestId = _rid ?? "";
+  const location = useLocation();            // ✅ 추가
+  const navigate = useNavigate();            // ✅ 추가
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // 화면 상태
@@ -64,8 +67,8 @@ export default function PendingApprovalPage() {
   const [categoryData, setCategoryData] = useState(null);
   const [engineerList, setEngineerList] = useState([]);
 
-  // 역할 안전 계산
-  const role = useMemo(() => user?.role ?? "GUEST", [user]);
+  // 역할 안전 계산(대문자 통일)
+  const role = useMemo(() => String(user?.role || "GUEST").toUpperCase(), [user]);
   const isUser = role === "USER";
   const isCustomer = role === "CUSTOMER";
   const isEngineer = role === "ENGINEER";
@@ -90,6 +93,14 @@ export default function PendingApprovalPage() {
         setIsCancelled(d.isCancelled);
         setCancelReason(d.cancelReason);
 
+        // ✅ 현재 URL 세그먼트와 실제 상태 세그먼트가 다르면 올바른 경로로 교정
+        const expectedSeg = segmentForStatus(d.statusCode);
+        const endsWithExpected = location.pathname.endsWith(`/${expectedSeg}`);
+        if (!endsWithExpected) {
+          navigate(`/repair-requests/${encodeURIComponent(requestId)}/${expectedSeg}`, { replace: true });
+          return; // 경로가 바뀌면 해당 페이지가 다시 로드되므로 이하 호출 생략
+        }
+
         // 2) 요청 상세 (프리뷰용)
         const { data: detail } = await getRepairRequest(requestId, { signal: ac.signal });
         setCategoryData({
@@ -101,7 +112,6 @@ export default function PendingApprovalPage() {
         });
 
         // 3) 기사 목록
-        //  └ 현재 listEngineers가 params만 받는 시그니처라 signal은 제외(A안)
         const { data: engRes } = await listEngineers({ page: 0, size: 20 });
         const engineers = Array.isArray(engRes?.items) ? engRes.items : engRes ?? [];
         setEngineerList(
@@ -122,7 +132,8 @@ export default function PendingApprovalPage() {
     })();
 
     return () => ac.abort();
-  }, [requestId]);
+    // ✅ navigate/location 의존성도 포함 (경로 교정 시 재평가)
+  }, [requestId, location.pathname, navigate]);
 
   // 스텝 비교 (취소면 과거단계 분기보다 우선)
   const currentStep = RepairStatusMap["PENDING_APPROVAL"];
@@ -144,20 +155,12 @@ export default function PendingApprovalPage() {
     <div className="p-6 space-y-6">
       {isPastStep ? (
         <div className="space-y-6 text-gray-600">
-          <RepairProgress
-            statusCode={statusCode}
-            isCancelled={isCancelled}
-            requestId={requestId}     // ✅ 추가
-          />
+          <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
           <RepairRequestPreview categoryData={categoryData || {}} />
         </div>
       ) : isCancelled ? (
         <div className="space-y-6 text-gray-600">
-          <RepairProgress
-            statusCode={statusCode}
-            isCancelled={true}
-            requestId={requestId}     // ✅ 추가
-          />
+          <RepairProgress statusCode={statusCode} isCancelled={true} requestId={requestId} />
           <RepairRequestPreview categoryData={categoryData || {}} />
           <RejectReasonBox reason={cancelReason} />
         </div>
@@ -165,11 +168,7 @@ export default function PendingApprovalPage() {
         <>
           {isUser && (
             <div className="space-y-6">
-              <RepairProgress
-                statusCode={statusCode}
-                isCancelled={isCancelled}
-                requestId={requestId}   // ✅ 추가
-              />
+              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
               <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
                 접수 대기 상태입니다.
               </div>
@@ -178,11 +177,7 @@ export default function PendingApprovalPage() {
 
           {isCustomer && (
             <div className="space-y-6">
-              <RepairProgress
-                statusCode={statusCode}
-                isCancelled={isCancelled}
-                requestId={requestId}   // ✅ 추가
-              />
+              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
               <RepairRequestPreview categoryData={categoryData || {}} />
               <EngineerSelectList engineerList={engineerList} />
               <ApprovalActions />
@@ -191,11 +186,7 @@ export default function PendingApprovalPage() {
 
           {isEngineer && (
             <div className="space-y-6">
-              <RepairProgress
-                statusCode={statusCode}
-                isCancelled={isCancelled}
-                requestId={requestId}   // ✅ 추가
-              />
+              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
               <RepairRequestPreview categoryData={categoryData || {}} />
               <EngineerSelectList engineerList={engineerList} />
               <ApprovalActions />
@@ -204,22 +195,14 @@ export default function PendingApprovalPage() {
 
           {isAdmin && (
             <div className="space-y-6">
-              <RepairProgress
-                statusCode={statusCode}
-                isCancelled={isCancelled}
-                requestId={requestId}   // ✅ 추가
-              />
+              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
               <RepairRequestPreview categoryData={categoryData || {}} />
             </div>
           )}
 
           {!isUser && !isCustomer && !isEngineer && !isAdmin && (
             <div className="space-y-6">
-              <RepairProgress
-                statusCode={statusCode}
-                isCancelled={isCancelled}
-                requestId={requestId}   // ✅ 추가
-              />
+              <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
               <div className="h-48 flex items-center justify-center text-gray-600 text-sm text-center">
                 권한을 확인 중입니다…
               </div>
