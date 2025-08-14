@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { RepairStepLabels, RepairStatusMap } from "../../../constants/repairStatus";
+import { segmentForStatus } from "../../../routes/statusRoute"; // 경로는 네 프로젝트 구조에 맞춰 유지
 
 /**
  * 요청 상세 단계 진행바
@@ -14,23 +15,23 @@ function RepairProgress({ statusCode, isCancelled = false, requestId }) {
   const currentStep = RepairStatusMap[statusCode] ?? 0;
   const totalSteps = RepairStepLabels.length; // 6개 (취소는 별도 표시)
 
-  // ✅ 스텝 인덱스(0~5) → 실제 라우트
-  const routeFor = (idx) => {
-    const base = `/repair-requests/${requestId}`;
-    switch (idx) {
-      case 0: return `${base}/pending-approval`;
-      case 1: return `${base}/waiting-for-repair`;
-      case 2: return `${base}/in-progress`;
-      case 3: return `${base}/waiting-for-payment`;
-      case 4: return `${base}/waiting-for-delivery`;
-      case 5: return `${base}/completed`;
-      default: return base;
-    }
-  };
+  // ✅ 스텝 인덱스(0~5) → UI 상태코드 → 세그먼트
+  const statusByIndex = [
+    "PENDING_APPROVAL",
+    "WAITING_FOR_REPAIR",
+    "IN_PROGRESS",
+    "WAITING_FOR_PAYMENT",
+    "WAITING_FOR_DELIVERY",
+    "COMPLETED",
+  ];
 
   const handleClick = (idx, clickable) => {
     if (!clickable || !requestId) return;
-    navigate(routeFor(idx));
+    const uiCode = statusByIndex[idx] ?? "PENDING_APPROVAL";
+    const seg = segmentForStatus(uiCode);
+    navigate(`/repair-requests/${encodeURIComponent(requestId)}/${seg}?peek=1`, {
+      state: { peek: true },
+    });
   };
 
   return (
@@ -42,17 +43,19 @@ function RepairProgress({ statusCode, isCancelled = false, requestId }) {
         {/* 6개 스텝 */}
         {RepairStepLabels.map((label, index) => {
           const step = index + 1; // 1~6
-          // 과거/현재 스텝 클릭 허용, 미래 스텝은 비활성
+          // 과거/현재 스텝 클릭 허용, 미래 스텝은 비활성 (디자인/동작 유지)
           const clickable = step <= currentStep && !isCancelled;
 
-          // 색상 결정
+          // 색상 결정 (디자인 그대로 유지)
           let fillColor = "bg-white"; // 기본
           if (step < currentStep) {
             fillColor = "bg-green-500"; // 완료
           } else if (step === currentStep) {
             fillColor = isCancelled
-              ? "bg-red-500"     // (취소면 아래의 전용 점으로 표시하므로 사실상 안 씀)
-              : (step === totalSteps ? "bg-green-500" : "bg-yellow-400"); // 현재
+              ? "bg-red-500" // (취소면 아래 전용 점으로 표시, 여긴 사실상 안 씀)
+              : step === totalSteps
+              ? "bg-green-500"
+              : "bg-yellow-400"; // 현재
           }
 
           const interactiveClasses = clickable
@@ -66,7 +69,7 @@ function RepairProgress({ statusCode, isCancelled = false, requestId }) {
               className={`absolute z-10 w-6 h-6 rounded-full border-4 border-gray-300 ${fillColor} ${interactiveClasses}`}
               style={{
                 left: `${(index / (totalSteps - 1)) * 100}%`,
-                transform: "translateX(-50%)"
+                transform: "translateX(-50%)",
               }}
               title={label}
               aria-label={label}

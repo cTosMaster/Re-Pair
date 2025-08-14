@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom"; // ✅ 추가
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 // 기존 컴포넌트 유지
@@ -15,7 +15,8 @@ import { getRepairRequest, listEngineers } from "../../services/customerAPI";
 
 // 상태 맵
 import { RepairStatusMap } from "../../constants/repairStatus";
-// ✅ 상태→세그먼트 공용 유틸
+
+// 상태→라우트 유틸 (경로는 실제 위치에 맞추세요)
 import { segmentForStatus } from "../../routes/statusRoute";
 
 /** 백엔드 상태 → 프론트 UI 상태 변환 */
@@ -51,10 +52,10 @@ const deriveStatusFromHistory = (history = []) => {
 };
 
 export default function PendingApprovalPage() {
-  const { requestId: _rid } = useParams(); // 라우터에서 :requestId 받는다고 가정
+  const { requestId: _rid } = useParams();
   const requestId = _rid ?? "";
-  const location = useLocation();            // ✅ 추가
-  const navigate = useNavigate();            // ✅ 추가
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   // 화면 상태
@@ -67,7 +68,7 @@ export default function PendingApprovalPage() {
   const [categoryData, setCategoryData] = useState(null);
   const [engineerList, setEngineerList] = useState([]);
 
-  // 역할 안전 계산(대문자 통일)
+  // 역할 안전 계산
   const role = useMemo(() => String(user?.role || "GUEST").toUpperCase(), [user]);
   const isUser = role === "USER";
   const isCustomer = role === "CUSTOMER";
@@ -79,12 +80,7 @@ export default function PendingApprovalPage() {
     (async () => {
       try {
         setLoading(true);
-
-        if (!requestId) {
-          console.warn("Missing requestId in route params");
-          setLoading(false);
-          return;
-        }
+        if (!requestId) return;
 
         // 1) 상태 이력 조회
         const history = await getRequestHistory(requestId, { signal: ac.signal });
@@ -93,15 +89,22 @@ export default function PendingApprovalPage() {
         setIsCancelled(d.isCancelled);
         setCancelReason(d.cancelReason);
 
-        // ✅ 현재 URL 세그먼트와 실제 상태 세그먼트가 다르면 올바른 경로로 교정
-        const expectedSeg = segmentForStatus(d.statusCode);
-        const endsWithExpected = location.pathname.endsWith(`/${expectedSeg}`);
-        if (!endsWithExpected) {
-          navigate(`/repair-requests/${encodeURIComponent(requestId)}/${expectedSeg}`, { replace: true });
-          return; // 경로가 바뀌면 해당 페이지가 다시 로드되므로 이하 호출 생략
+        // ✅ 자동 교정 (peek이면 스킵)
+        const isPeek =
+          location.state?.peek === true ||
+          new URLSearchParams(location.search).has("peek");
+        if (!isPeek) {
+          const expectedSeg = segmentForStatus(d.statusCode);
+          const endsWithExpected = location.pathname.endsWith(`/${expectedSeg}`);
+          if (!endsWithExpected) {
+            navigate(`/repair-requests/${encodeURIComponent(requestId)}/${expectedSeg}`, {
+              replace: true,
+            });
+            return;
+          }
         }
 
-        // 2) 요청 상세 (프리뷰용)
+        // 2) 요청 상세(프리뷰 표시용)
         const { data: detail } = await getRepairRequest(requestId, { signal: ac.signal });
         setCategoryData({
           title: detail?.title ?? "",
@@ -120,7 +123,7 @@ export default function PendingApprovalPage() {
             name: e.name || e.username || e.email || "이름없음",
             email: e.email ?? "",
             phone: e.phone ?? "",
-            status: !!e.assigned, // 필요 시 실제 필드명 맞게 조정
+            status: !!e.assigned,
             profileImage: e.imageUrl ?? null,
           }))
         );
@@ -132,7 +135,6 @@ export default function PendingApprovalPage() {
     })();
 
     return () => ac.abort();
-    // ✅ navigate/location 의존성도 포함 (경로 교정 시 재평가)
   }, [requestId, location.pathname, navigate]);
 
   // 스텝 비교 (취소면 과거단계 분기보다 우선)
