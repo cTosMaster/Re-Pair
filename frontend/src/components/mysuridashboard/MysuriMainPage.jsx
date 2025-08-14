@@ -5,6 +5,7 @@ import MysuriRequestList from './MysuriRequestList';
 import MysuriRequestManage from './MysuriRequestManage';
 import Surigisamanage from './Surigisamanage';
 import RepairgoodsManagement from './RepairgoodsManagement';
+import CategoryManagement from './CategoryManagement'
 import PresetList from './PresetList';
 
 
@@ -20,6 +21,8 @@ const MysuriMainPage = () => {
         return <MysuriRequestManage />;
       case "수리 기사 관리":
         return <Surigisamanage />;
+      case "수리 카테고리 관리":
+        return <CategoryManagement />;
       case "수리 물품 관리":
         return <RepairgoodsManagement />;
       case "요금 정책(프리셋)":
