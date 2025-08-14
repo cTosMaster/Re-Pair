@@ -19,18 +19,15 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.*;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 
 @Entity
 @Table(name = "repairable_items")
 @SQLDelete(sql = "UPDATE repairable_items SET is_deleted = true WHERE item_id = ?")
 @Where(clause = "is_deleted = false")
 @Getter
-@Setter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class RepairableItem {
 
 	@Id
@@ -59,10 +56,6 @@ public class RepairableItem {
 
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
-	
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
-	
 
 	@Column(name="is_deleted", nullable=false)
 	private boolean deleted;

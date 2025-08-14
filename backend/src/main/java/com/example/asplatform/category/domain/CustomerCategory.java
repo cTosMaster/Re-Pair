@@ -25,7 +25,7 @@ import org.hibernate.annotations.Where;
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @Builder
 public class CustomerCategory {
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_id")
     private Long id;
@@ -40,10 +40,10 @@ public class CustomerCategory {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-    
+
     @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
-    
+    private boolean deleted;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -54,4 +54,3 @@ public class CustomerCategory {
         this.name = name;
     }
 }
-

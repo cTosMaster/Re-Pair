@@ -32,6 +32,15 @@ public class RepairableItemService {
 
     // 🔹 수리 항목 등록
     public void createItem(Long customerId, RepairableItemRequest request) {
+        CustomerCategory category = customerCategoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "삭제되었거나 존재하지 않는 카테고리입니다. id=" + request.getCategoryId()
+                ));
+
+        if (!category.getCustomerId().equals(customerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "다른 고객사의 카테고리입니다.");
+        }
+
         RepairableItem item = RepairableItem.builder()
                 .customer(Customer.builder().id(customerId).build())
                 .category(CustomerCategory.builder().id(request.getCategoryId()).build())
