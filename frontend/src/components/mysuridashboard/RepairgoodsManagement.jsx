@@ -97,7 +97,7 @@ const RepairgoodsManagement = () => {
 
         {/* 상단 헤더 */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-[#9fc87b]">모든 수리물품</h2>
+          <h2 className="text-xl font-bold text-[#9fc87b]">물품 관리</h2>
 
           <div className="flex items-center gap-2">
             <input

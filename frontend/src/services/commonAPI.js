@@ -29,6 +29,10 @@ export const getRequestHistory = async (requestId, options = {}) => {
   }));
 };
 
+//수리기사 상세 조회
+export const getEngineer = (engineerId, options = {}) =>
+  api.get(`/engineers/${encodeURIComponent(engineerId)}`, { signal: options.signal });
+
 /**
  * 상태 변경 알림 전송 (관리자/기사/백오피스 공용)
  * POST /api/notify/status-update

@@ -3,6 +3,7 @@ const MysuriSidebar = ({ selectedMenu, setSelectedMenu }) => {
     "수리 요청 관리", //RequestList + RequestCard
     "수리 현황 관리", //RequestManage
     "수리 기사 관리",
+    "수리 카테고리 관리",
     "수리 물품 관리",
     "요금 정책(프리셋)",
     "결제 관리",
