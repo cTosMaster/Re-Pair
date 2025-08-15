@@ -41,6 +41,9 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+						
+						//쿠버네티스 프로브 허용 설정
+						.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
 
 						// 인증·회원가입 API 열어두기
 						.requestMatchers(
