@@ -29,6 +29,7 @@ import UserDashboard from "./pages/user/UserDashboard.jsx";
 import CompleteList from "./components/dashboard/user/CompleteList.jsx";
 import AuthDebugPage from "./context/AuthDebugPage.jsx";
 import EngineerDashboard from "./pages/engineer/EngineerDashboard.jsx";
+import UserMypage from "./mypage/UserMypage.jsx";
 
 function App() {
   return (
@@ -51,6 +52,8 @@ function App() {
       {/* ✅ USER 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["USER"]} />}>
         <Route path="/user/main" element={<UserMainPage />} />
+        <Route path="/user/mypage" element={<UserMypage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/user/dash" element={<DashboardLayout />}>
           <Route index element={<UserDashboard />} />
           <Route path="completed" element={<CompleteList />} />

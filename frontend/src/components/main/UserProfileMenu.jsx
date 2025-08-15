@@ -56,13 +56,13 @@ export default function UserProfileMenu({ user, onLogout }) {
           className="absolute right-0 mt-2 w-40 rounded-xl border bg-white shadow-lg overflow-hidden z-50"
         >
           <Link
-            to="/mypage"
-            role="menuitem"
-            onClick={() => setOpen(false)}
-            className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 text-center"
-          >
-            마이페이지
-          </Link>
+          to="/user/mypage"   // 변경된 경로
+          role="menuitem"
+          onClick={() => setOpen(false)}
+          className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 text-center"
+        >
+          마이페이지
+        </Link>
           <button
             onClick={onLogout}
             className="w-full px-4 py-2 text-sm font-semibold text-white bg-green-500 hover:bg-green-600 text-center"
