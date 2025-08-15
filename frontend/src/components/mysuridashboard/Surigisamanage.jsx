@@ -16,24 +16,30 @@ const Surigisamanage = () => {
   const [editingSurigisa, setEditingSurigisa] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
 
-  const fetchEngineers = useCallback(async () => {
-    if (!user?.customerId) return;
-    try {
-      const res = await listEngineers({ customerId: user.customerId });
-      setData(Array.isArray(res.data?.content) ? res.data.content : []);
-    } catch (error) {
-      console.error("수리기사 목록 불러오기 실패:", error);
-      alert("수리기사 목록을 불러오지 못했습니다.");
-    }
-  }, [user?.customerId]);
-
+  const fetchEngineers = useCallback(async (page = 0, size = 20) => {
+  try {
+    const res = await listEngineers({ page, size }); // page, size 쿼리 전달
+    setData(Array.isArray(res.data?.content) ? res.data.content : []);
+  } catch (error) {
+    console.error("수리기사 목록 불러오기 실패:", error);
+    alert("수리기사 목록을 불러오지 못했습니다.");
+  }
+}, []);
   // useEffect 안에서 async 함수 호출
   useEffect(() => {
+    if (!user) return; // user 로딩 중이면 실행 X
+
     const fetchData = async () => {
-      await fetchEngineers();
+      if (!user.customerId) return;
+      try {
+        await fetchEngineers();
+      } catch (error) {
+        console.error(error);
+      }
     };
-    fetchData();
-  }, [fetchEngineers]);
+
+  fetchData();
+}, [user, fetchEngineers]);
 
   const handleRefresh = () => fetchEngineers();
 
@@ -91,6 +97,7 @@ const Surigisamanage = () => {
         {/* 헤더 */}
         <div className="flex justify-between mb-4">
           <h2 className="text-xl font-bold text-[#9fc87b]">수리 기사 관리</h2>
+          
           <div className="flex items-center gap-2">
             <input
               type="text"
