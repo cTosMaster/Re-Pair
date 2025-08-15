@@ -1,6 +1,5 @@
 package com.example.asplatform.repairRequest.controller;
 
-import com.example.asplatform.engineer.repository.EngineerRepository;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestSimpleResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,7 +9,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +26,9 @@ import com.example.asplatform.repairRequest.dto.requestDTO.ManualStatusChangeReq
 import com.example.asplatform.repairRequest.dto.requestDTO.RepairRequestCreateDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.DeleteRepairRequestsResponseDto;
+import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestDetailResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestListDto;
+import com.example.asplatform.repairRequest.service.RepairRequestDetailService;
 import com.example.asplatform.repairRequest.service.RepairRequestService;
 import com.example.asplatform.user.domain.User;
 
@@ -37,7 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import lombok.RequiredArgsConstructor;
 
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -47,7 +46,7 @@ public class RepairRequestController {
 
 	private final RepairRequestService repairRequestService;
 	private final RepairStatusManager repairStatusManager;
-	private final EngineerRepository engineerRepository;
+    private final RepairRequestDetailService detailService;
 
 	/**
 	 * 수리 요청 등록
@@ -142,6 +141,24 @@ public class RepairRequestController {
 		}
 		return repairRequestService.getCustomerRequestList(customerId, keyword, categoryId, status, pageable);
 	}
+	
+
+	/**
+	 * 수리요청 상세페이지 : 데이터 + 권한 플래그 + 단계 + 히스토리(사유)
+	 * 
+	 * @param id
+	 * @param user
+	 * @return
+	 */
+    @GetMapping("/{requestId}/detail")
+    public ResponseEntity<RepairRequestDetailResponseDto> getDetail(
+            @PathVariable Long requestId,
+            @AuthenticationPrincipal CustomUserDetails principal // Security에서 꺼낸 도메인 User
+    ) {
+    	User user = principal.getUser();
+        return ResponseEntity.ok(detailService.getDetail(requestId, user));
+    }
+	
 
 	/**
 	 * 수리 상태 수동 변경
@@ -175,6 +192,8 @@ public class RepairRequestController {
 		User user = principal.getUser();
 		return ResponseEntity.ok(repairRequestService.deleteRequests(request, user));
 	}
+	
+	
 
 	// 수리기사의 경우 engineer배정해야함. 수리기사의 경우 자동 배정
 	@PatchMapping("/{requestId}/accept")

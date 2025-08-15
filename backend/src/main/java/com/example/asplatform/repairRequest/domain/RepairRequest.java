@@ -1,6 +1,9 @@
 package com.example.asplatform.repairRequest.domain;
 
 import java.time.LocalDateTime;
+
+import org.hibernate.annotations.Where;
+
 import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.item.domain.RepairableItem;
 import com.example.asplatform.user.domain.User;
@@ -22,6 +25,7 @@ import lombok.*;
 
 @Entity
 @Table(name = "repair_requests")
+@Where(clause = "is_deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

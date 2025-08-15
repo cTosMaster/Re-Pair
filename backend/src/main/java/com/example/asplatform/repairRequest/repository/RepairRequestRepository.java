@@ -20,7 +20,7 @@ import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairReques
 
 @Repository
 public interface RepairRequestRepository extends JpaRepository<RepairRequest, Long> {
-	
+
 	/**
 	 * 로그인한 고객의 수리 요청 목록을 상태(status) 그룹과 키워드로 필터링하여 페이징 조회.
 	 * 
@@ -137,9 +137,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			Pageable pageable);
 
 	/**
-	 * 삭제할 수 있는 대상 선별: - 내 customerId 소속
-	 * - 아직 삭제되지 않음
-	 * - 상태: CANCELED or COMPLETED
+	 * 삭제할 수 있는 대상 선별: - 내 customerId 소속 - 아직 삭제되지 않음 - 상태: CANCELED or COMPLETED
 	 * 
 	 * @param ids
 	 * @param customerId
@@ -182,10 +180,8 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			@Param("allowed") Collection<RepairStatus> allowed);
 
 	/**
-	 * 로그인한 엔지니어가 자신의 요청(requestId)을 작성 가능한 상태(수리대기)일 때만 조회
-	 * - 엔지니어 소유(= 배정됨)
-	 * - 현재 상태가 WAITING_FOR_REPAIR
-	 * - is_delete = false
+	 * 로그인한 엔지니어가 자신의 요청(requestId)을 작성 가능한 상태(수리대기)일 때만 조회 - 엔지니어 소유(= 배정됨) - 현재
+	 * 상태가 WAITING_FOR_REPAIR - is_delete = false
 	 * 
 	 * @param requestId
 	 * @param engineerId
@@ -205,5 +201,38 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			@Param("waiting") RepairStatus waiting /* RepairStatus.WAITING_FOR_REPAIR */);
 
 	boolean existsByEngineer_IdAndStatusIn(Long engineerId, Collection<RepairStatus> statuses);
+
+	/**
+	 * 수리 요청 상세 조회 - N+1 방지용 fetch join 메서드
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@Query("""
+			  select rr from RepairRequest rr
+			  left join fetch rr.user u
+			  left join fetch u.address adr
+			  left join fetch u.customer uc
+			  left join fetch rr.engineer e
+			  left join fetch rr.repairableItem ri
+			  left join fetch ri.customer ric
+			  left join fetch ri.category cat
+			    where rr.requestId = :requestId
+			""")
+	Optional<RepairRequest> findByIdWithAllRelations(@Param("requestId") Long requestId);
+	
+	/**
+	 * 수리 요청 조회 - N+1 방지용 fetch join 메서드
+	 * 
+	 * @param requestId
+	 * @return
+	 */
+	@Query("""
+			  select rr from RepairRequest rr
+			  left join fetch rr.repairableItem ri
+			  left join fetch ri.customer c
+			  where rr.requestId = :requestId
+			""")
+			Optional<RepairRequest> findByIdWithItemAndCustomer(@Param("requestId") Long requestId);
 
 }

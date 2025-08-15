@@ -182,6 +182,7 @@ public class EstimateService {
 
 		int presetTotal = est.getPresetTotal() == null ? 0 : est.getPresetTotal();
 		int manualAmt = est.getManualAmount() == null ? 0 : est.getManualAmount();
+		
 
 		return new EstimateReadResponseDto(est.getEstimateId(), est.getRequestId(), presetTotal, manualAmt,
 				est.getPrice(), est.getDescription(), est.getCreatedAt(), presetIds.size(), presetBriefs);
