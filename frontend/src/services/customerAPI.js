@@ -4,9 +4,9 @@ import api from './api';
 export const getRepairRequests = (params = { statusGroup: 'IN_PROGRESS', page: 0, size: 20 }) =>
   api.get('/repair-requests', { params });
 
-/** 회사 전용 전체 목록 */
-export const getCompanyRepairRequests = (params = { statusGroup: 'ALL', page: 0, size: 20 }) =>
-  api.get('/repair-requests/company', { params });
+/** 상태별 수리 항목 조회 */
+export const getCompanyRepairRequests = (params = { status: '', page: 0, size: 20 }) =>
+  api.get('/repair-requests/customer-my', { params });
 
 /** 상세 조회 */
 export const getRepairRequest = (requestId, options = {}) =>
