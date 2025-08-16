@@ -34,6 +34,7 @@ import com.example.asplatform.user.domain.User;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 
@@ -246,5 +247,6 @@ public ResponseEntity<RepairRequestSimpleResponse> completeTest(
     return ResponseEntity.ok(
         repairRequestService.completeForTest(requestId, me.getUser(), memo)
     );
+}
 }
 
