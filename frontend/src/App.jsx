@@ -117,6 +117,7 @@ function App() {
           path="/repair-requests/:requestId/completed"
           element={<CompletedPage />}
         />
+        
         <Route path="/authdebug" element={<AuthDebugPage />} />
       </Route>
 

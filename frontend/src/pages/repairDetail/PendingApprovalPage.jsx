@@ -62,7 +62,7 @@ export default function PendingApprovalPage() {
   const [loading, setLoading] = useState(true);
   const [statusCode, setStatusCode] = useState("PENDING_APPROVAL");
   const [isCancelled, setIsCancelled] = useState(false);
-  const [cancelReason, setCancelReason] = useState(null);
+  const [cancelReason, setCancelReason] = useState();
 
   // 프리뷰/기사 리스트
   const [categoryData, setCategoryData] = useState(null);
@@ -114,7 +114,13 @@ export default function PendingApprovalPage() {
           phone: req?.phone ?? '',
           content: req?.content ?? '',
         });
-
+        
+        // 취소 사유: 최상위(status.lastReasons.cancel)를 우선 사용
+        const statusObj = data?.status ?? req?.status ?? null;
+        const lastCancelReason = statusObj?.lastReasons?.cancel ?? null;
+        if (lastCancelReason != null && lastCancelReason !== "") {
+          setCancelReason(lastCancelReason);
+        }
 
         // 3) 기사 목록
         const { data: engRes } = await listEngineers({ page: 0, size: 20 });

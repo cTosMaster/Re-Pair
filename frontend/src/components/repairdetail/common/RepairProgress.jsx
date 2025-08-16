@@ -90,7 +90,7 @@ function RepairProgress({ statusCode, isCancelled = false, requestId }) {
             title="취소됨"
             aria-label="취소됨"
           >
-            <div className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-semibold text-red-600 whitespace-nowrap select-none">
+            <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-xs font-semibold text-red-600 whitespace-nowrap select-none">
               취소됨
             </div>
           </div>
