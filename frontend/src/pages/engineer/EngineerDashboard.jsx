@@ -12,8 +12,8 @@ const STATUS_FILTERS = [
     { label: "수리중", value: "IN_PROGRESS" },
     { label: "결제대기", value: "WAITING_FOR_PAYMENT" },   // ✅ 추가
     { label: "배송대기", value: "WAITING_FOR_DELIVERY" },  // ✅ 추가
+    { label: "배송완료", value: "COMPLETED" },
     { label: "취소", value: "CANCELED" },                  // ⚠️ 백엔드 표기
-    { label: "완료", value: "COMPLETED" },
 ];
 
 /** UI 코드 ↔ 한국어 라벨 (UI 내부 표준: CANCELLED) */
@@ -23,8 +23,8 @@ const toKr = (uiCode) =>
     IN_PROGRESS: "수리중",
     WAITING_FOR_PAYMENT: "결제대기",     // ✅ 추가
     WAITING_FOR_DELIVERY: "배송대기",    // ✅ 추가
+    COMPLETED: "배송완료",
     CANCELLED: "취소",
-    COMPLETED: "완료",
 }[uiCode] ?? uiCode);
 
 /** 한국어 라벨 → UI 코드 (UI 내부 표준: CANCELLED) */
@@ -34,8 +34,8 @@ const fromKrToUi = (kr) =>
     수리중: "IN_PROGRESS",
     결제대기: "WAITING_FOR_PAYMENT",     // ✅ 추가
     배송대기: "WAITING_FOR_DELIVERY",    // ✅ 추가
+    배송완료: "COMPLETED",
     취소: "CANCELLED",
-    완료: "COMPLETED",
 }[kr] ?? "WAITING_FOR_REPAIR");
 
 /** 백엔드 코드 → UI 코드 */
@@ -120,10 +120,7 @@ export default function EngineerDashboard() {
         const id =
             r.requestid ??
             r.requestId ??
-            r.request_id ??
-            r.id ??
-            r.repairRequestId ??
-            r.repair_request_id;
+            r.id;
 
         // 백엔드가 한국어(status)로 주거나, enum(statusCode)로 줄 수 있으니 모두 흡수
         const uiCode = r.statusCode
@@ -263,7 +260,7 @@ export default function EngineerDashboard() {
                     : rows.length === 0
                         ? (
                             <div className="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400">
-                                배정된 수리가 없습니다.
+                                조회된 항목이 없습니다.
                             </div>
                         )
                         : rows.map((r, i) => (
