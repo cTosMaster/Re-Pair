@@ -11,7 +11,7 @@ import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBo
 
 // 서비스(API)
 import { getRequestHistory } from "../../services/commonAPI";
-import { getRepairRequest, listEngineers } from "../../services/customerAPI";
+import { getCustomerRepairRequestDetail, listEngineers } from "../../services/customerAPI";
 
 // 상태 맵
 import { RepairStatusMap } from "../../constants/repairStatus";
@@ -21,15 +21,15 @@ import { segmentForStatus } from "../../routes/statusRoute";
 
 /** 백엔드 상태 → 프론트 UI 상태 변환 */
 const toUiStatus = (s) =>
-  ({
-    PENDING: "PENDING_APPROVAL",
-    CANCELED: "CANCELLED",
-    WAITING_FOR_REPAIR: "WAITING_FOR_REPAIR",
-    IN_PROGRESS: "IN_PROGRESS",
-    WAITING_FOR_PAYMENT: "WAITING_FOR_PAYMENT",
-    WAITING_FOR_DELIVERY: "WAITING_FOR_DELIVERY",
-    COMPLETED: "COMPLETED",
-  }[s] ?? s);
+({
+  PENDING: "PENDING_APPROVAL",
+  CANCELED: "CANCELLED",
+  WAITING_FOR_REPAIR: "WAITING_FOR_REPAIR",
+  IN_PROGRESS: "IN_PROGRESS",
+  WAITING_FOR_PAYMENT: "WAITING_FOR_PAYMENT",
+  WAITING_FOR_DELIVERY: "WAITING_FOR_DELIVERY",
+  COMPLETED: "COMPLETED",
+}[s] ?? s);
 
 /** 이력 배열 → 현재 상태/취소 여부/사유 도출 */
 const deriveStatusFromHistory = (history = []) => {
@@ -105,14 +105,16 @@ export default function PendingApprovalPage() {
         }
 
         // 2) 요청 상세(프리뷰 표시용)
-        const { data: detail } = await getRepairRequest(requestId, { signal: ac.signal });
+        const { data } = await getCustomerRepairRequestDetail(requestId);
+        const req = data?.request ?? data;
         setCategoryData({
-          title: detail?.title ?? "",
-          category: detail?.categoryName ?? "",
-          product: detail?.productName ?? "",
-          phone: detail?.contactPhone ?? "",
-          content: detail?.description ?? "",
+          title: req?.title ?? '',
+          category: req?.category?.name ?? '',
+          product: req?.item?.name ?? '',
+          phone: req?.phone ?? '',
+          content: req?.content ?? '',
         });
+
 
         // 3) 기사 목록
         const { data: engRes } = await listEngineers({ page: 0, size: 20 });

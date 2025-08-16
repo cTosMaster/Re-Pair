@@ -40,10 +40,8 @@ export const updateEngineer = (engineerId, data) =>
   api.put(`/engineers/${encodeURIComponent(engineerId)}`, data);
 
 /** 수리기사 전체 목록 조회 (필요시 페이징 파라미터 추가) */
-export const listEngineers = ({ customerId, page = 0, size = 20 }) =>
-  api.get("/engineers", {
-    params: { customerId, page, size },
-  });
+export const listEngineers = (params = { page: 0, size: 20 }) =>
+  api.get("/engineers", { params });
 
 /** 기사 재배정: 특정 수리(repairId)에 engineer 재할당 */
 export const reassignEngineer = (repairId, engineerId, body = {}) =>
@@ -69,7 +67,7 @@ export const deleteRepairItem = (id) =>
   api.delete(`/repair-items/${encodeURIComponent(id)}`);
 
 /** 수리 상태 수동 취소 */
-export const cancelRepairRequest = (requestId, body = {},  options = {}) =>
+export const cancelRepairRequest = (requestId, body = {}, options = {}) =>
   api.patch(`/repair-requests/${encodeURIComponent(requestId)}/cancel`, body, {
     signal: options.signal,
   });
@@ -162,6 +160,11 @@ export const getCustomPricing = (clientId, options = {}) =>
   api.get(`/custom-pricing/${encodeURIComponent(clientId)}`, {
     signal: options.signal,
   });
+
+/** 고객사 수리요청 내용 상세조회 */
+export const getCustomerRepairRequestDetail = (requestId) =>
+  api.get(`/repair-requests/${encodeURIComponent(requestId)}/detail`
+  );
 
 /**
  * 고객사 등록 폼 제출

@@ -150,17 +150,7 @@ const CompanyInfoForm = ({ onNext }) => {
       alert("주소를 입력(검색)해주세요.");
       return;
     }
-    // DTO는 lat/lng 필수이므로, 좌표 못구했을 때 막고 싶으면 주석 해제
-    // if (form.lat == null || form.lng == null) {
-    //   alert("주소 좌표를 확인해주세요. 주소검색 후 다시 시도해주세요.");
-    //   return;
-    // }
 
-    // 컨테이너로 전달 → 2단계에서 이어서 작성
-    // 컨테이너에서 DTO 매핑:
-    //  - registrationNumber -> companyNumber
-    //  - ceoName -> contactName
-    //  - phone -> contactPhone
     onNext?.({ ...form });
   };
 
