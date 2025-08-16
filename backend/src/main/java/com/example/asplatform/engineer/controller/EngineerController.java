@@ -70,15 +70,6 @@ public class EngineerController {
         return ResponseEntity.ok(engineerService.getEngineer(engineerId));
     }
 
-    /** 수리기사 목록 (페이징) **/
-    @GetMapping
-    public Page<EngineerResponse> list(@ParameterObject Pageable pageable) {
-        // 정렬 무시 (Unsorted)
-        Pageable p = PageRequest.of(
-                Math.max(0, pageable.getPageNumber()),
-                pageable.getPageSize() > 0 ? pageable.getPageSize() : 20
-        );
-        return engineerService.list(p);
-    }
+
 
 }

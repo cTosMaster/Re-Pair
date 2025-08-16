@@ -45,9 +45,13 @@ public class EngineerService {
         Customer customer = customerRepository.findById(req.getCustomerId())
                 .orElseThrow(() -> new IllegalArgumentException("고객사를 찾을 수 없습니다. id=" + req.getCustomerId()));
 
-        // 1) 이메일 중복 체크
+        // 1) 이메일 중복 , 비밀번호  체크
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+        }
+
+        if (!req.getPassword().equals(req.getPasswordcheck())) {
+            throw new IllegalArgumentException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
         }
 
         // 2) users 생성 (ROLE=ENGINEER)
@@ -68,7 +72,7 @@ public class EngineerService {
                 .assigned(false)
                 .build();
         engineerRepository.save(engineer);
-
+        engineer.setUser(user); // NPE 문제
         return EngineerResponse.from(engineer);
     }
 
@@ -106,6 +110,7 @@ public class EngineerService {
                 .orElseThrow(() -> new IllegalArgumentException("수리기사를 찾을 수 없습니다. id=" + engineerId));
         return EngineerResponse.from(eng);
     }
+
 
     /** 수리기사 목록 조회*/
     @Transactional(readOnly = true)

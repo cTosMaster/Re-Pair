@@ -155,15 +155,6 @@ public class TossApiClient {
         return Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     }
     
-    /**
-     * ✅ secret-key 로그 찍히는지 확인하기
-     */
-    @PostConstruct
-    public void init() {
-    	System.out.println("✅ Toss Secret Key = " + secretKey);
-    	System.out.println("✅ Toss API URL = "+ tossApiUrl);
-    	System.out.println("✅ Toss Authorization Header = " + "Basic " + encodeSecretKey(secretKey));
-    }
     
     /**
      * ✅ verify api 연결을 위한 메소드 ( PaymentService에서 콜백 부분)

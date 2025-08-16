@@ -8,8 +8,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.enums.PaymentStatus;
 import com.example.asplatform.payment.domain.Payments;
 import com.example.asplatform.payment.dto.requestDTO.PaymentRequestDto;
@@ -18,6 +24,8 @@ import com.example.asplatform.payment.dto.responseDTO.TossCallbackDto;
 import com.example.asplatform.payment.dto.responseDTO.TossResponse;
 import com.example.asplatform.payment.dto.responseDTO.WebhookEventData;
 import com.example.asplatform.payment.repository.PaymentsRepository;
+import com.example.asplatform.preset.domain.Preset;
+import com.example.asplatform.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
 
@@ -168,33 +176,38 @@ public class PaymentService {
     
     
     /**
-     * ✅ 4. 전체 결제 내역 조회하기
+     * ✅ 4. 전체 결제 내역 조회하기 (자신의 고객사 결제 내역만 볼 수 있음 )
      * @return
      */
-    public List<PaymentResponseDto> getAllPayments() {
-        return paymentRepository.findAll().stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<PaymentResponseDto> getAllPayments(int page) {
+        Long customerId = getCurrentCustomerId();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), 10);
+
+        Page<Payments> paymentsPage = paymentRepository.findByCustomerId(customerId, pageable);
+        return paymentsPage.map(this::toResponseDto);
     }
     
     /**
-     * ✅ 5. 상태별 결제 목록 조회하기 (READY)
+     * ✅ 5. 상태별 결제 목록 조회하기 (READY) - 자신의 고객사 결제 내역만 볼 수 있음 
      * @param status
      * @return
      */
-    public List<PaymentResponseDto> getPaymentsByStatus(PaymentStatus status) {
-        return paymentRepository.findByStatus(status).stream()
-                .map(this::toResponseDto)
-                .toList();
+    public Page<PaymentResponseDto> getPaymentsByStatus(PaymentStatus status , int page) {
+        Long customerId = getCurrentCustomerId();
+        Pageable pageable = PageRequest.of(Math.max(0, page - 1), 10);
+	    
+        Page<Payments> paymentsPage = paymentRepository.findByCustomerIdAndStatus(customerId, status, pageable);
+        return paymentsPage.map(this::toResponseDto);
     }
     
     /**
-     * ✅ 6. 결제 ID로 상세 조회하기
+     * ✅ 6. 결제 ID로 상세 조회하기 
      * @param requestId
      * @return
      */
     public Payments getPaymentById(Long requestId) {
-        return paymentRepository.findById(requestId)
+    	Long currentCustomerId = getCurrentCustomerId();
+        return paymentRepository.findByPaymentIdAndCustomerId(requestId, currentCustomerId)
                 .orElseThrow(() -> new IllegalArgumentException("결제 요청이 존재하지 않습니다."));
     }
     
@@ -223,6 +236,14 @@ public class PaymentService {
                 payment.getAmount(),
                 payment.getStatus()
         );
+    }
+    
+    private Long getCurrentCustomerId() {
+    	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    	if(auth == null || !(auth.getPrincipal() instanceof CustomUserDetails userDetails)) {
+    		throw new IllegalStateException("로그인된 사용자 정보를 가져올 수 없습니다.");
+    	}
+    	return userDetails.getCustomerId();
     }
     
     public void updatePaymentStatus(WebhookEventData data) {

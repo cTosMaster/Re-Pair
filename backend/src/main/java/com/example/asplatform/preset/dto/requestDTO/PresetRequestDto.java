@@ -8,6 +8,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PresetRequestDto {
+	@NotNull(message = "Customer ID is required.")
+    private Long customerId;
+	
     @NotNull(message = "Category ID is required.")
     private Long categoryId;
 

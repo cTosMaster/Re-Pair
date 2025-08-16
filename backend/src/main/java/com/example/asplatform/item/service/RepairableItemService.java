@@ -11,6 +11,7 @@ import com.example.asplatform.item.dto.responseDTO.RepairableItemResponse;
 import com.example.asplatform.item.repository.RepairableItemRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class RepairableItemService {
 
@@ -30,6 +32,15 @@ public class RepairableItemService {
 
     // 🔹 수리 항목 등록
     public void createItem(Long customerId, RepairableItemRequest request) {
+        CustomerCategory category = customerCategoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "삭제되었거나 존재하지 않는 카테고리입니다. id=" + request.getCategoryId()
+                ));
+
+        if (!category.getCustomerId().equals(customerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "다른 고객사의 카테고리입니다.");
+        }
+
         RepairableItem item = RepairableItem.builder()
                 .customer(Customer.builder().id(customerId).build())
                 .category(CustomerCategory.builder().id(request.getCategoryId()).build())
@@ -51,25 +62,24 @@ public class RepairableItemService {
         item.update(category, request.getName(), request.getPrice());
     }
 
+    // soft delete
     @Transactional
     public void deleteItem(Long itemId) {
-        try {
-            // 존재하지 않으면 EmptyResultDataAccessException 발생
-            repairableItemRepository.deleteById(itemId);
-            // FK 제약 위반을 즉시 감지(트랜잭션 종료까지 미루지 않도록)
-            repairableItemRepository.flush();
-        } catch (EmptyResultDataAccessException e) {
-            // id 없음 → 404
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "해당 수리 항목이 존재하지 않습니다. id=" + itemId, e);
-        } catch (DataIntegrityViolationException e) {
-            // 참조 중 → 409
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "해당 수리용품은 다른 데이터에서 사용 중이라 삭제할 수 없습니다.", e);
+        Boolean deleted = repairableItemRepository.selectIsDeleted(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 항목입니다. id=" + itemId));
+
+        if (Boolean.TRUE.equals(deleted)) {
+            log.warn("삭제 거부: 이미 소프트 삭제된 항목 itemId={}", itemId); // ← 콘솔/로그
+            throw new ResponseStatusException(HttpStatus.GONE, "이미 삭제된 항목입니다.");
         }
+
+        // 살아있는 경우에만 soft delete (@SQLDelete가 is_deleted=true로 업데이트)
+        repairableItemRepository.deleteById(itemId);
     }
 
+
     // 전체 수리물품 조회
+    @Transactional(readOnly = true)
     public List<RepairableItemResponse> getAllItems() {
         return repairableItemRepository.findAll().stream()
                 .map(RepairableItemResponse::from)

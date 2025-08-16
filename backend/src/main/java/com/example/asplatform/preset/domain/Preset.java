@@ -3,8 +3,11 @@ package com.example.asplatform.preset.domain;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import com.example.asplatform.admin.domain.PlatformCategory;
+import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.item.domain.RepairableItem;
 
 import jakarta.persistence.Column;
@@ -22,6 +25,8 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "presets")
+@SQLDelete(sql = "UPDATE presets SET is_deleted = true WHERE preset_id = ?")
+@Where(clause = "is_deleted = false")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,6 +36,10 @@ public class Preset {
     @Column(name = "preset_id")
     private Long presetId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false) // 외래 키 컬럼 이름 명시
     private PlatformCategory category;
@@ -51,4 +60,8 @@ public class Preset {
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
+    
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
 }
