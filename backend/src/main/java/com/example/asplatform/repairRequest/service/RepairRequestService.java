@@ -80,7 +80,7 @@ public class RepairRequestService {
 
 		// 3. 상태 변경 이력 저장
 		RepairHistory history = RepairHistory.builder().repairRequest(repairRequest)
-				.previousStatus(RepairStatus.PENDING).newStatus(RepairStatus.PENDING).changedBy(user) // User엔티티 직접 전달
+				.previousStatus(RepairStatus.PENDING).newStatus(RepairStatus.PENDING).changedBy(user)
 				.memo("관리자 접수/반려 선택 전 상태").build();
 
 		repairHistoryRepository.save(history);
