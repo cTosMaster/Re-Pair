@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Header from '../../layouts/Header';
 import MysuriSidebar from './MysuriSidebar';
 import MysuriRequestList from './MysuriRequestList';
-import MysuriRequestManage from './MysuriRequestManage';
+import EngineerDashboard from '../../pages/engineer/EngineerDashboard';
 import Surigisamanage from './Surigisamanage';
 import RepairgoodsManagement from './RepairgoodsManagement';
 import CategoryManagement from './CategoryManagement'
@@ -18,7 +18,7 @@ const MysuriMainPage = () => {
       case "수리 요청 관리":
         return <MysuriRequestList />;
       case "수리 현황 관리":
-        return <MysuriRequestManage />;
+        return <EngineerDashboard/>;
       case "수리 기사 관리":
         return <Surigisamanage />;
       case "수리 카테고리 관리":
