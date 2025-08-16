@@ -19,6 +19,10 @@ export const createCustomerCategory = (customerId, data) =>
 export const getCustomerCategories = (customerId) =>
   api.get(`/customer-categories/${encodeURIComponent(customerId)}`);
 
+/** 고객사 수리물품 목록 조회 */
+export const getCustomerItems = () =>
+  api.get('/repair-items');
+
 /** 카테고리 이름/정보 수정 (부분 수정) */
 export const updateCustomerCategory = (categoryId, data) =>
   api.patch(`/customer-categories/${encodeURIComponent(categoryId)}`, data);
@@ -26,3 +30,4 @@ export const updateCustomerCategory = (categoryId, data) =>
 /** 고객사 카테고리 삭제 */
 export const deleteCustomerCategory = (categoryId) =>
   api.delete(`/customer-categories/${encodeURIComponent(categoryId)}`);
+

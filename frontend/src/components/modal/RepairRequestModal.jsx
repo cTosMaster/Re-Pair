@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { getCustomerCategories } from '../../services/centerAPI';
-import { listRepairItems } from '../../services/customerAPI';
+import { getCustomerItems } from '../../services/centerAPI';
 import { createRepairRequest } from '../../services/userAPI';
 
 export default function RepairRequestModal({
@@ -63,7 +63,7 @@ export default function RepairRequestModal({
     try {
       // ⛔ 예전: listRepairItems({ page: 0, size: 100, customerId, categoryId })
       // ✅ 변경: 고객사 전용 비페이징 API로 전체를 불러온 뒤 프론트에서 카테고리 필터
-      const resp = await listRepairItems(cid);
+      const resp = await getCustomerItems();
       const raw = resp?.data ?? [];
 
       const mapped = raw.map(it => ({
