@@ -1,12 +1,53 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCompanyRepairRequests } from "../../services/customerAPI";
-import { Search, UserRound } from "lucide-react";
-// 경로는 프로젝트 구조에 맞게 조정
-import MysuriPagination from "./MysuriPagination";
+import { Search, UserRound, ChevronDown } from "lucide-react";
+import { fromApiToUi, fromKoToUi, segmentForStatus } from "../../routes/statusRoute";
 
 const PAGE_SIZE = 10;
-const FIXED_STATUS = "PENDING"; // 접수대기만
+
+/** 드롭다운(백엔드 enum 그대로) */
+const STATUS_FILTERS = [
+  { label: "전체", value: "ALL" },
+  { label: "수리대기", value: "WAITING_FOR_REPAIR" },
+  { label: "수리중", value: "IN_PROGRESS" },
+  { label: "결제대기", value: "WAITING_FOR_PAYMENT" },
+  { label: "배송대기", value: "WAITING_FOR_DELIVERY" },
+  { label: "배송완료", value: "COMPLETED" },
+  { label: "취소", value: "CANCELED" }, // 백엔드 표기
+];
+
+/** UI 코드 → 한국어 표기 (요구사항: 취소=수리취소) */
+const toKr = (ui) =>
+  ({
+    PENDING_APPROVAL: "접수대기",
+    WAITING_FOR_REPAIR: "수리대기",
+    IN_PROGRESS: "수리중",
+    WAITING_FOR_PAYMENT: "결제대기",
+    WAITING_FOR_DELIVERY: "배송대기",
+    COMPLETED: "배송완료",
+    CANCELLED: "수리취소", // ← 여기!
+  }[ui] ?? ui);
+
+/** 상태 배지 스타일 (UI 코드 기준) */
+const statusPillByUi = (ui) => {
+  switch (ui) {
+    case "IN_PROGRESS":
+      return "bg-green-700 text-white";
+    case "WAITING_FOR_REPAIR":
+      return "border border-green-700 text-green-700";
+    case "WAITING_FOR_PAYMENT":
+      return "border border-amber-500 text-amber-600";
+    case "WAITING_FOR_DELIVERY":
+      return "border border-sky-500 text-sky-600";
+    case "CANCELLED":
+      return "border border-red-500 text-red-600";
+    case "COMPLETED":
+      return "border border-gray-400 text-gray-600";
+    default:
+      return "border border-gray-300 text-gray-600";
+  }
+};
 
 /** 날짜 포맷 (YYYY-MM-DD → YYYY.MM.DD) */
 const fmtDate = (v) => {
@@ -19,28 +60,31 @@ const fmtDate = (v) => {
     .replace(/\.$/, "");
 };
 
-export default function MysuriRequestList() {
+export default function MysuriCurrentList() {
   const navigate = useNavigate();
 
-  // 목록/페이징/검색
+  // 목록/페이징/필터 상태
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(0); // ← 0-based (API 전송용)
-  const [totalItems, setTotalItems] = useState(0); // ← MysuriPagination용 총 아이템 수
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [keyword, setKeyword] = useState("");
+  const [status, setStatus] = useState("ALL"); // 백엔드 enum 그대로
 
   // 체크 상태
   const [checked, setChecked] = useState({});
   const checkedCount = useMemo(() => Object.values(checked).filter(Boolean).length, [checked]);
 
   const mapRow = useCallback((r) => {
-    const id =
-      r.requestid ??
-      r.requestId ??
-      r.request_id ??
-      r.id ??
-      r.repairRequestId ??
-      r.repair_request_id;
+    const id = r.requestid ?? r.requestId ?? r.id;
+
+    // 백엔드가 섞어서 줄 수 있음:
+    // - r.statusCode: 영문 ENUM
+    // - r.status: 영문 ENUM 또는 한글 라벨
+    // 우선 영문 형태면 fromApiToUi, 아니면 fromKoToUi
+    const rawStatus = r.statusCode ?? r.status;
+    const looksLikeEnum = typeof rawStatus === "string" && /^[A-Z_]+$/.test(rawStatus);
+    const uiCode = looksLikeEnum ? fromApiToUi(rawStatus) : fromKoToUi(rawStatus);
 
     return {
       id,
@@ -48,6 +92,8 @@ export default function MysuriRequestList() {
       category: r.category ?? "",
       item: r.item ?? "",
       createdAt: r.createdAt ?? r.created_at,
+      statusUi: uiCode,                 // 라우팅/스타일용(UI 코드)
+      statusKr: toKr(uiCode),           // 표시용 한글
       userName: r.userName ?? r.user_name ?? r.name ?? "",
       userPhone: r.userPhone ?? r.contact_phone ?? r.phone ?? "",
     };
@@ -57,44 +103,39 @@ export default function MysuriRequestList() {
     setLoading(true);
     try {
       const res = await getCompanyRepairRequests({
-        status: FIXED_STATUS,     // 항상 접수대기만
-        page,                     // 0-based
+        status, // 그대로 전달 (ALL/WAITING_FOR_REPAIR/.../CANCELED)
+        page,
         size: PAGE_SIZE,
         keyword: keyword || undefined,
       });
-
       const data = res?.data ?? {};
       const content = data.content ?? data.items ?? data.data ?? [];
       const list = Array.isArray(content) ? content.map(mapRow) : [];
       setRows(list);
-
-      // 총 개수 산정: 우선 순위 totalElements > totalCount > total_items > (totalPages * size)
-      const totalPages = typeof data.totalPages === "number" ? data.totalPages : undefined;
-      const totalsFromData =
-        data.totalElements ?? data.totalCount ?? data.total_items ?? undefined;
-      setTotalItems(
-        typeof totalsFromData === "number"
-          ? totalsFromData
-          : totalPages
-          ? totalPages * PAGE_SIZE
-          : 0
-      );
-
+      setTotalPages(typeof data.totalPages === "number" ? data.totalPages : 0);
       setChecked({});
     } finally {
       setLoading(false);
     }
-  }, [page, keyword, mapRow]);
+  }, [status, page, keyword, mapRow]);
 
   useEffect(() => {
     fetchList();
   }, [fetchList]);
 
+  const pageNumbers = useMemo(() => {
+    const tp = totalPages || 0;
+    if (tp <= 7) return [...Array(tp)].map((_, i) => i);
+    const set = new Set([0, 1, page - 1, page, page + 1, tp - 2, tp - 1].filter((n) => n >= 0 && n < tp));
+    return [...set].sort((a, b) => a - b);
+  }, [page, totalPages]);
+
   const goDetail = (row) => {
     const id = row?.id;
     if (!id) return;
-    // 접수대기 상세만 사용
-    navigate(`/repair-requests/${encodeURIComponent(id)}/pending-approval`);
+    // statusRoute의 세그먼트 유틸만 사용
+    const seg = segmentForStatus(row.statusUi);
+    navigate(`/repair-requests/${encodeURIComponent(id)}/${seg}`);
   };
 
   const toggleAll = (e) => {
@@ -112,10 +153,11 @@ export default function MysuriRequestList() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">수리 요청 관리</h1>
+      <h1 className="text-2xl font-bold text-gray-800">수리 현황 관리</h1>
 
-      {/* 상단 검색 바 */}
+      {/* 상단 검색/필터 바 */}
       <div className="bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between">
+        {/* 검색 */}
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -128,7 +170,29 @@ export default function MysuriRequestList() {
             }}
           />
         </div>
-        <span className="text-sm text-gray-500">상태 : 접수대기</span>
+
+        {/* 상태 드롭다운 */}
+        <div className="relative">
+          <div className="flex items-center gap-2 border rounded-lg px-3 py-2 cursor-pointer">
+            <span className="text-sm text-gray-700">상태</span>
+            <ChevronDown size={16} className="text-gray-500" />
+            <select
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              value={status}
+              onChange={(e) => {
+                setPage(0);
+                setStatus(e.target.value);
+              }}
+              aria-label="상태 필터"
+            >
+              {STATUS_FILTERS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* 헤더 라인 */}
@@ -188,10 +252,10 @@ export default function MysuriRequestList() {
                     {r.category && <span className="ml-1 text-xs text-gray-500">{r.category}</span>}
                   </div>
 
-                  {/* 상태 배지: 고정 '접수대기' */}
+                  {/* 상태 배지 */}
                   <div className="col-span-2">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border border-amber-500 text-amber-600">
-                      접수대기
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${statusPillByUi(r.statusUi)}`}>
+                      {r.statusKr}
                     </span>
                   </div>
 
@@ -221,13 +285,41 @@ export default function MysuriRequestList() {
           요청 삭제
         </button>
 
-        {/* ✅ MysuriPagination 적용 (컴포넌트는 1-based 페이지 인덱스 사용) */}
-        <MysuriPagination
-          totalItems={totalItems}
-          itemsPerPage={PAGE_SIZE}
-          currentPage={page + 1}                 // 0-based → 1-based 변환
-          onPageChange={(p) => setPage(p - 1)}   // 1-based → 0-based 변환
-        />
+        <div className="flex items-center gap-2">
+          <button
+            className="px-3 py-1 rounded hover:bg-gray-100 disabled:opacity-30"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={loading || page === 0}
+            aria-label="이전"
+          >
+            &lt;
+          </button>
+
+          {pageNumbers.map((p, idx, arr) => {
+            const prev = arr[idx - 1];
+            const needDots = prev != null && p - prev > 1;
+            return (
+              <span key={`page-${p}`} className="flex">
+                {needDots && <span className="px-2 py-1 text-gray-400">…</span>}
+                <button
+                  onClick={() => setPage(p)}
+                  className={`px-3 py-1 rounded ${p === page ? "bg-gray-900 text-white" : "hover:bg-gray-100"}`}
+                >
+                  {p + 1}
+                </button>
+              </span>
+            );
+          })}
+
+          <button
+            className="px-3 py-1 rounded hover:bg-gray-100 disabled:opacity-30"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={loading || (totalPages ? page + 1 >= totalPages : true)}
+            aria-label="다음"
+          >
+            &gt;
+          </button>
+        </div>
       </div>
     </div>
   );
