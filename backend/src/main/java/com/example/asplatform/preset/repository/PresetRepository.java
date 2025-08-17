@@ -14,7 +14,7 @@ import com.example.asplatform.preset.domain.Preset;
 public interface PresetRepository extends JpaRepository<Preset , Long> {
 	
 	// 특정 카테고리의 아이템으로 프리셋 조회 메소드
-	Page<Preset> findByCategory_CategoryIdAndItem_ItemId(Long categoryId , Long itemId, Pageable pageable);
+	Page<Preset> findByCategory_IdAndItem_ItemId(Long categoryId , Long itemId, Pageable pageable);
 	
 	// 프리셋 id로 단일 프리셋 조회하는 메소드
 	Preset findByPresetId(Long presetId);
@@ -23,5 +23,10 @@ public interface PresetRepository extends JpaRepository<Preset , Long> {
 	Page<Preset> findByCustomer_Id(Long cusotmerId , Pageable pageable);
 	
 	//고객사 아이디 카테고리 아이디 , 제품 아이디로 조회하기
-	Page<Preset> findByCustomer_IdAndCategory_CategoryIdAndItem_ItemId(Long customerId , Long categoryId , Long itemId , Pageable pageable);
+	Page<Preset> findByCustomer_IdAndCategory_IdAndItem_ItemId(Long customerId , Long categoryId , Long itemId , Pageable pageable);
+
+	//soft delete 한 목록 조회
+    Page<Preset> findByDeletedTrue(Pageable pageable);
+    
+    Page<Preset> findByCustomer_IdAndDeletedTrue(Long customerId, Pageable pageable);
 }

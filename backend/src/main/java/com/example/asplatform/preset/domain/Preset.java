@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.example.asplatform.admin.domain.PlatformCategory;
+import com.example.asplatform.category.domain.CustomerCategory;
 import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.item.domain.RepairableItem;
 
@@ -37,8 +37,8 @@ public class Preset {
     private Customer customer;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false) // 외래 키 컬럼 이름 명시
-    private PlatformCategory category;
+    @JoinColumn(name = "category_id", nullable = false)
+    private CustomerCategory category;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false) // 외래 키 컬럼 이름 명시
@@ -52,6 +52,9 @@ public class Preset {
 
     @Column(name = "price", nullable = false)
     private Integer price;
+    
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp

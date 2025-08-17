@@ -71,9 +71,20 @@ public class SecurityConfig {
 				        .requestMatchers(HttpMethod.POST, "/api/presets").hasRole("CUSTOMER")
 				        .requestMatchers(HttpMethod.PUT, "/api/presets/**").hasRole("CUSTOMER")
 				        .requestMatchers(HttpMethod.DELETE, "/api/presets/**").hasRole("CUSTOMER")
+				        .requestMatchers(HttpMethod.POST, "/api/presets/restore/**").hasRole("CUSTOMER")
 					 
 
-					 
+				     // 최종 견적서 등록 (수리기사만 가능)
+		             .requestMatchers(HttpMethod.POST, "/api/repair/*/final-estimate").hasRole("ENGINEER")
+
+		             // 최종 견적서 수정 (수리기사만 가능)
+		             .requestMatchers(HttpMethod.PATCH, "/api/repair/*/final-estimate").hasRole("ENGINEER")
+
+		             // 최종 견적서 조회 (수리기사, 고객사 관리자, 플랫폼 관리자)
+		            .requestMatchers(HttpMethod.GET, "/api/repair/*/final-estimate")
+	                .hasAnyRole("CUSTOMER", "ENGINEER", "USER")
+	                .requestMatchers(HttpMethod.GET, "/api/repair/final-estimates")
+	                    .hasAnyRole("CUSTOMER", "ENGINEER", "USER")
 				
 					// 인증 처리가 필요한 API ( CUSTOMER 권한을 가진 사용자만 결제 부분에 접근 가능 ) 
 					.requestMatchers(

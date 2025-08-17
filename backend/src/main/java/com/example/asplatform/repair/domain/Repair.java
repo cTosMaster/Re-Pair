@@ -2,15 +2,21 @@ package com.example.asplatform.repair.domain;
 
 import com.example.asplatform.repairRequest.domain.RepairRequest;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "repairs")
 @Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Repair {
 
     @Id
@@ -36,6 +42,9 @@ public class Repair {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+    
+    @Column(name = "is_deleted", nullable = false)
+    private boolean deleted = false;
 
     @PrePersist
     protected void onCreate() {
@@ -47,4 +56,5 @@ public class Repair {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+ 
 }
