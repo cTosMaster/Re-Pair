@@ -102,7 +102,7 @@ public class RepairStatusManager {
     private String getAutoMemo(RepairStatus from, RepairStatus to) {
         return switch (to) {
             case WAITING_FOR_REPAIR -> "수리 요청이 승인되어 기사 배정 상태";
-            case IN_PROGRESS -> "수리기사 1차 견적 작성 완료되어 수리 중 상태";
+            case IN_PROGRESS -> "1차 견적서 등록 완료";
             case WAITING_FOR_PAYMENT -> "수리가 완료되어 입금 대기 상태";
             case WAITING_FOR_DELIVERY -> "입금이 확인되어 발송 대기 상태";
             case COMPLETED -> "배송이 완료되어 수리 완료 상태";

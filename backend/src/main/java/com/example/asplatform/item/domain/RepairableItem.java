@@ -2,6 +2,9 @@ package com.example.asplatform.item.domain;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
+
 import com.example.asplatform.category.domain.CustomerCategory;
 import com.example.asplatform.customer.domain.Customer;
 
@@ -19,11 +22,12 @@ import lombok.*;
 
 @Entity
 @Table(name = "repairable_items")
+@SQLDelete(sql = "UPDATE repairable_items SET is_deleted = true WHERE item_id = ?")
+@Where(clause = "is_deleted = false")
 @Getter
-@Setter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class RepairableItem {
 
 	@Id
@@ -53,6 +57,9 @@ public class RepairableItem {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
+	@Column(name="is_deleted", nullable=false)
+	private boolean deleted;
+
 	@PrePersist
 	public void prePersist() {
 		this.createdAt = LocalDateTime.now();
@@ -66,5 +73,4 @@ public class RepairableItem {
 		this.name = name;
 		this.price = price != null ? price : 0;
 	}
-
 }

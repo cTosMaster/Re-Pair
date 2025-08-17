@@ -1,10 +1,12 @@
 package com.example.asplatform.category.controller;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.category.dto.requestDTO.CustomerCategoryRequest;
 import com.example.asplatform.category.dto.responseDTO.CustomerCategoryResponse;
 import com.example.asplatform.category.service.CustomerCategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,8 +42,8 @@ public class CustomerCategoryController {
 
     // 카테고리 삭제
     @DeleteMapping("/{categoryId}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long categoryId) {
+    public ResponseEntity<Void> delete(@PathVariable Long categoryId) {
         customerCategoryService.deleteCategory(categoryId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }

@@ -31,9 +31,6 @@ public class RepairHistoryController {
 
         RepairStatusHistoryWrapperDTO response = repairHistoryService.getRepairStatusHistory(repairRequestId);
         return ResponseEntity.ok(response);
-    }
-    
-    
-    
+    }   
     
 }

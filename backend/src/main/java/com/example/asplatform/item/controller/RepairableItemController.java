@@ -1,11 +1,13 @@
 package com.example.asplatform.item.controller;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.customer.repository.CustomerRepository;
 import com.example.asplatform.item.dto.requestDTO.RepairableItemRequest;
 import com.example.asplatform.item.dto.responseDTO.RepairableItemResponse;
 import com.example.asplatform.item.service.RepairableItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +28,7 @@ public class RepairableItemController {
         return ResponseEntity.ok("수리 항목이 등록되었습니다.");
     }
 
-    // 수리물품 삭제
+    // 수리물품 소프트 삭제
     @DeleteMapping("/{itemId}")
     public ResponseEntity<Void> deleteItem(@PathVariable Long itemId) {
         repairableItemService.deleteItem(itemId);
@@ -34,7 +36,6 @@ public class RepairableItemController {
     }
 
     // 전체 항목 조회 (고객사 전용)
-    @Transactional(readOnly = true)
     @GetMapping
     public ResponseEntity<List<RepairableItemResponse>> getAllItems() {
         return ResponseEntity.ok(repairItemService.getAllItems());

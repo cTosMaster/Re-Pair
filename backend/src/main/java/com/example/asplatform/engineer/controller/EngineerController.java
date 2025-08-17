@@ -70,15 +70,27 @@ public class EngineerController {
         return ResponseEntity.ok(engineerService.getEngineer(engineerId));
     }
 
-    /** 수리기사 목록 (페이징) **/
-    @GetMapping
-    public Page<EngineerResponse> list(@ParameterObject Pageable pageable) {
-        // 정렬 무시 (Unsorted)
-        Pageable p = PageRequest.of(
-                Math.max(0, pageable.getPageNumber()),
-                pageable.getPageSize() > 0 ? pageable.getPageSize() : 20
-        );
-        return engineerService.list(p);
+    /** 수리기사 전체 조회 (페이지네이션) */
+    @GetMapping("/all")
+    public ResponseEntity<Page<EngineerResponse>> getAllEngineersPublic(
+            @ParameterObject
+            @PageableDefault(size = 20, sort = "userId", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(engineerService.getAllEngineers(pageable));
     }
+
+    /** [CUSTOMER 전용] 내 고객사 엔지니어 목록 */
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @GetMapping("/my")
+    public ResponseEntity<Page<EngineerResponse>> getMyCustomerEngineers(
+            @ParameterObject
+            @PageableDefault(size = 20, sort = "userId", direction = Sort.Direction.DESC) Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return ResponseEntity.ok(engineerService.getEngineersForCustomer(pageable, user));
+    }
+
+
+
 
 }

@@ -60,4 +60,3 @@ node_modules/
 ### Config / Secret ###
 .env
 .env.*
-/.metadata/

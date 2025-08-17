@@ -13,6 +13,7 @@ import lombok.Setter;
 @Builder
 public class RepairRequestListDto {
 	private Long requestid;
+	private Long engineerid;
 	private String title;
 	private String category;
 	private String item;
@@ -28,7 +29,9 @@ public class RepairRequestListDto {
 	private String detailAddress;
 
 	public static RepairRequestListDto from(RepairRequest entity) {
-		return RepairRequestListDto.builder().requestid(entity.getRequestId()).title(entity.getTitle())
+		return RepairRequestListDto.builder().requestid(entity.getRequestId())
+				.engineerid(entity.getEngineer() != null ? entity.getEngineer().getId() : null)
+				.title(entity.getTitle())
 				.category(entity.getRepairableItem().getCategory().getName()).item(entity.getRepairableItem().getName())
 				.createdAt(entity.getCreatedAt().toLocalDate().toString()).status(entity.getStatus().getLabel())
 				.statusGroup(StatusGroupMapper.toGroup(entity.getStatus()).getLabel())
