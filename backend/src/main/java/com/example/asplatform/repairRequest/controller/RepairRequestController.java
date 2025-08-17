@@ -192,19 +192,19 @@ public class RepairRequestController {
 		User user = principal.getUser();
 		return ResponseEntity.ok(repairRequestService.deleteRequests(request, user));
 	}
-	
-	
+
+
 
 	// 수리기사의 경우 engineer배정해야함. 수리기사의 경우 자동 배정
 	@PatchMapping("/{requestId}/accept")
 	@PreAuthorize("hasAnyRole('CUSTOMER','ENGINEER')")
 	public ResponseEntity<RepairRequestSimpleResponse> accept(
 			@PathVariable("requestId") Long requestId,
-			@AuthenticationPrincipal CustomUserDetails me,
+			@AuthenticationPrincipal CustomUserDetails user,
 			@RequestParam(required = false) Long engineerId,
 			@RequestParam(required = false) String memo) {
 		return ResponseEntity.ok(
-				repairRequestService.accept(requestId, me.getUser(), engineerId, memo));
+				repairRequestService.accept(requestId, user.getUser(), engineerId, memo));
 	}
 
 	// 관리자,수리기사 수리요청 거절/ reason 필요함
