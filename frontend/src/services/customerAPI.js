@@ -41,7 +41,7 @@ export const updateEngineer = (engineerId, data) =>
 
 /** 수리기사 전체 목록 조회 (필요시 페이징 파라미터 추가) */
 export const listEngineers = (params = { page: 0, size: 20 }) =>
-  api.get("/engineers", { params });
+  api.get("/engineers/my", { params });
 
 /** 기사 재배정: 특정 수리(repairId)에 engineer 재할당 */
 export const reassignEngineer = (repairId, engineerId, body = {}) =>
