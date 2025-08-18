@@ -1,179 +1,166 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import MySurigisaaddModal from "../modal/MySurigisaaddModal";
-import MysuriPagination from "./MysuriPagination";
-import { listEngineers, deleteEngineer } from "../../services/customerAPI";
-import { useAuth } from "../../hooks/useAuth";
+import MySurigisaEditModal from "../modal/MySurigisaEditModal";
+import { listEngineers } from "../../services/customerAPI";
 
-const ITEMS_PER_PAGE = 5;
+const PAGE_SIZE = 5;
 
 const Surigisamanage = () => {
-  const { user } = useAuth();
-  const [data, setData] = useState([]);
-  const [search, setSearch] = useState("");
-  const [sortOption, setSortOption] = useState("이름");
-  const [currentPage, setCurrentPage] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSurigisa, setEditingSurigisa] = useState(null);
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEngineer, setSelectedEngineer] = useState(null);
 
-  const fetchEngineers = useCallback(async (page = 0, size = 20) => {
-  try {
-    const res = await listEngineers({ page, size }); // page, size 쿼리 전달
-    setData(Array.isArray(res.data?.content) ? res.data.content : []);
-  } catch (error) {
-    console.error("수리기사 목록 불러오기 실패:", error);
-    alert("수리기사 목록을 불러오지 못했습니다.");
-  }
-}, []);
-  // useEffect 안에서 async 함수 호출
-  useEffect(() => {
-    if (!user) return; // user 로딩 중이면 실행 X
+  const [engineers, setEngineers] = useState([]);
+  const [keyword, setKeyword] = useState(""); // 입력 중인 검색어
+  const [searchTerm, setSearchTerm] = useState(""); // 실제 API에 전달되는 검색어
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-    const fetchData = async () => {
-      if (!user.customerId) return;
-      try {
-        await fetchEngineers();
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-  fetchData();
-}, [user, fetchEngineers]);
-
-  const handleRefresh = () => fetchEngineers();
-
-  const handleSelect = (engineerId) => {
-    setSelectedIds((prev) =>
-      prev.includes(engineerId)
-        ? prev.filter((id) => id !== engineerId)
-        : [...prev, engineerId]
-    );
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedIds.length === 0) return alert("삭제할 기사를 선택해주세요.");
-    if (!window.confirm("선택한 수리기사를 삭제하시겠습니까?")) return;
-
+  // 목록 조회
+  const fetchEngineers = async () => {
     try {
-      for (let id of selectedIds) await deleteEngineer(id);
-      alert("선택한 수리기사가 삭제되었습니다.");
-      setSelectedIds([]);
-      fetchEngineers();
-    } catch (error) {
-      console.error("삭제 실패:", error);
-      alert("삭제에 실패했습니다.");
+      const res = await listEngineers({ page, size: PAGE_SIZE, keyword: searchTerm });
+      const content = res.data?.content ?? [];
+      const pages = res.data?.totalPages ?? 1;
+      setEngineers(content);
+      setTotalPages(pages);
+    } catch (err) {
+      console.error("수리기사 목록 불러오기 실패:", err);
+      setEngineers([]);
     }
   };
 
-  const filteredList = useMemo(() => {
-    let list = data.filter(
-      (item) =>
-        item.name.includes(search) ||
-        item.email.includes(search) ||
-        (item.registeredAt && item.registeredAt.includes(search))
-    );
+  useEffect(() => {
+    fetchEngineers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, searchTerm]);
 
-    if (sortOption === "이름") list.sort((a, b) => a.name.localeCompare(b.name));
-    if (sortOption === "등록일")
-      list.sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+  // 모달 닫기 시 갱신
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setIsEditModalOpen(false);
+    setSelectedEngineer(null);
+    fetchEngineers();
+  };
 
-    return list;
-  }, [data, search, sortOption]);
+  // 수정 버튼 클릭
+  const handleEditOpen = (engineer) => {
+    setSelectedEngineer(engineer);
+    setIsEditModalOpen(true);
+  };
 
-  const totalPages = Math.max(1, Math.ceil(filteredList.length / ITEMS_PER_PAGE));
-  const currentItems = useMemo(() => {
-    const start = currentPage * ITEMS_PER_PAGE;
-    return filteredList.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredList, currentPage]);
+  // 페이지 번호 계산
+  const totalPagesCalc = Math.max(1, totalPages);
+  const pageNumbers = (() => {
+    const windowSize = 5;
+    const start = Math.max(0, page - Math.floor(windowSize / 2));
+    const end = Math.min(totalPagesCalc - 1, start + windowSize - 1);
+    const realStart = Math.max(0, end - windowSize + 1);
+    return Array.from({ length: end - realStart + 1 }, (_, i) => realStart + i);
+  })();
 
   const goPage = (p) => {
-    if (p >= 0 && p < totalPages) setCurrentPage(p);
+    if (p >= 0 && p < totalPagesCalc) setPage(p);
+  };
+
+  // 검색 실행 (버튼/Enter)
+  const handleSearch = () => {
+    setPage(0);
+    setSearchTerm(keyword); // keyword → searchTerm 반영 → useEffect 트리거
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSearch();
   };
 
   return (
-    <div className="w-full px-10 mt-10">
-      <div className="mx-auto max-w-5xl bg-white shadow-md rounded-xl p-6">
-        {/* 헤더 */}
-        <div className="flex justify-between mb-4">
+    <div className="w-full px-4 sm:px-6 lg:px-10 mt-10">
+      <div className="mx-auto w-full max-w-5xl rounded-xl bg-white shadow-lg ring-1 ring-black/5 p-6">
+        {/* 상단 헤더 */}
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-[#9fc87b]">수리 기사 관리</h2>
-          
+
           <div className="flex items-center gap-2">
             <input
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="이름/이메일 검색"
-              className="h-10 w-64 border border-gray-300 rounded-lg px-3"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="이름/이메일/전화 검색"
+              className="h-10 w-56 border border-gray-300 rounded-lg px-3"
             />
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="h-10 px-3 border border-gray-300 rounded-lg"
+            <button
+              onClick={handleSearch}
+              className="h-10 px-4 rounded-lg bg-[#9fc87b] text-white font-semibold hover:brightness-90 transition"
             >
-              <option>이름</option>
-              <option>등록일</option>
-            </select>
+              검색
+            </button>
           </div>
         </div>
 
         {/* 테이블 */}
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
-          <table className="min-w-full table-fixed text-sm">
+        <div className="rounded-xl border border-gray-200 max-h-96 overflow-y-auto overflow-x-auto">
+          <table className="min-w-full text-sm table-fixed">
             <colgroup>
-              <col className="w-1/12" />
-              <col className="w-4/12" />
-              <col className="w-3/12" />
-              <col className="w-4/12" />
+              <col className="w-2/5" /> {/* 이름/이메일/전화 */}
+              <col className="w-1/5" /> {/* 상태 */}
+              <col className="w-1/5" /> {/* 등록일자 */}
+              <col className="w-1/5" /> {/* 관리 */}
             </colgroup>
-            <thead className="bg-gray-50 sticky top-0 z-10 text-gray-600">
-              <tr>
-                <th className="px-6 py-3 text-left">선택</th>
-                <th className="px-6 py-3 text-left">이름 / 이메일 / 전화</th>
-                <th className="px-6 py-3 text-left">상태</th>
-                <th className="px-6 py-3 text-left">등록일</th>
+            <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
+              <tr className="border-b border-gray-200/70">
+                <th className="text-left px-6 py-3 font-medium">이름 / 이메일 / 전화</th>
+                <th className="text-center px-6 py-3 font-medium">상태</th>
+                <th className="text-center px-6 py-3 font-medium">등록일자</th>
+                <th className="text-center px-6 py-3 font-medium">관리</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-gray-100">
-              {currentItems.map((item) => (
+              {engineers.map((item) => (
                 <tr
                   key={item.engineerId}
-                  className="odd:bg-white even:bg-gray-50 hover:bg-[#f4f8ef] cursor-pointer transition"
-                  onClick={() => {
-                    setEditingSurigisa(item);
-                    setIsModalOpen(true);
-                  }}
+                  className="odd:bg-white even:bg-gray-50 hover:bg-[#f4f8ef] transition-colors"
                 >
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(item.engineerId)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleSelect(item.engineerId);
-                      }}
-                    />
-                  </td>
+                  {/* 이름/이메일/전화 */}
                   <td className="px-6 py-4">
                     <div className="font-semibold">{item.name}</div>
                     <div className="text-sm text-gray-500">{item.email}</div>
                     <div className="text-sm text-gray-500">{item.phone}</div>
                   </td>
-                  <td className="px-6 py-4">
-                    {item.status === "수리중" ? (
+
+                  {/* 상태 */}
+                  <td className="px-6 py-4 text-center">
+                    {item.statusLabel === "수리중" ? (
                       <span className="px-3 py-1 bg-[#6A8B4E] text-white rounded-[10px] text-sm">
-                        수리중
+                        {item.statusLabel}
                       </span>
                     ) : (
                       <span className="px-3 py-1 bg-white text-[#6A8B4E] border border-[#6A8B4E] rounded-[10px] text-sm">
-                        수리대기
+                        {item.statusLabel}
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4">{new Date(item.registeredAt).toLocaleDateString()}</td>
+
+                  {/* 등록일자 */}
+                  <td className="px-6 py-4 text-center text-gray-500 font-mono tabular-nums">
+                    {item.registeredAt?.slice?.(0, 10) || "-"}
+                  </td>
+
+                  {/* 관리 */}
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      type="button"
+                      onClick={() => handleEditOpen(item)}
+                      className="h-7 px-3 text-xs rounded border border-blue-200 hover:bg-blue-50 text-blue-600"
+                    >
+                      수정
+                    </button>
+                  </td>
                 </tr>
               ))}
-              {currentItems.length === 0 && (
+
+              {engineers.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-6 py-16 text-center text-gray-400">
                     표시할 항목이 없습니다.
@@ -184,45 +171,63 @@ const Surigisamanage = () => {
           </table>
         </div>
 
-        {/* 버튼 영역 */}
-        <div className="flex justify-between mt-4">
-          <button
-            onClick={() => {
-              setEditingSurigisa(null);
-              setIsModalOpen(true);
-            }}
-            className="px-5 py-2 rounded-lg bg-[#9fc87b] text-white font-bold hover:brightness-90 transition"
-          >
-            + 수리기사 등록
-          </button>
-          <button
-            onClick={handleDeleteSelected}
-            className="px-5 py-2 rounded-lg bg-red-500 text-white font-bold hover:brightness-90 transition"
-          >
-            선택 삭제
-          </button>
-        </div>
+        {/* 페이징 + 등록 버튼 */}
+        <div className="mt-6 flex items-center">
+          <div className="flex-1" />
 
-        {/* 페이지네이션 */}
-        <div className="mt-4 flex justify-center">
-          <MysuriPagination
-            totalPages={totalPages}
-            currentPage={currentPage}
-            onPageChange={goPage}
-          />
-        </div>
+          {/* 페이지네이션 */}
+          <div className="flex items-center gap-2 justify-center">
+            <button onClick={() => goPage(0)} disabled={page === 0}
+              className={`px-3 h-9 rounded border ${page === 0 ? "text-gray-300 border-gray-200" : "hover:bg-gray-100"}`} title="첫 페이지">
+              «
+            </button>
+            <button onClick={() => goPage(page - 1)} disabled={page === 0}
+              className={`px-3 h-9 rounded border ${page === 0 ? "text-gray-300 border-gray-200" : "hover:bg-gray-100"}`} title="이전">
+              ‹
+            </button>
 
-        {/* 모달 */}
-        {isModalOpen && (
-          <MySurigisaaddModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onSubmit={handleRefresh}
-            initialData={editingSurigisa}
-            customerId={user?.customerId}
-          />
-        )}
+            {pageNumbers.map((p) => (
+              <button key={p} onClick={() => goPage(p)}
+                className={`px-3 h-9 rounded border ${p === page ? "bg-[#9fc87b] text-white border-[#9fc87b]" : "hover:bg-gray-100"}`}>
+                {p + 1}
+              </button>
+            ))}
+
+            <button onClick={() => goPage(page + 1)} disabled={page >= totalPagesCalc - 1}
+              className={`px-3 h-9 rounded border ${page >= totalPagesCalc - 1 ? "text-gray-300 border-gray-200" : "hover:bg-gray-100"}`} title="다음">
+              ›
+            </button>
+            <button onClick={() => goPage(totalPagesCalc - 1)} disabled={page >= totalPagesCalc - 1}
+              className={`px-3 h-9 rounded border ${page >= totalPagesCalc - 1 ? "text-gray-300 border-gray-200" : "hover:bg-gray-100"}`} title="마지막 페이지">
+              »
+            </button>
+          </div>
+
+          {/* 등록 버튼 */}
+          <div className="flex-1 flex justify-end">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-5 h-10 rounded-lg bg-[#9fc87b] text-white font-bold hover:brightness-90 transition"
+            >
+              + 수리기사 등록
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* 등록 모달 */}
+      {isModalOpen && (
+        <MySurigisaaddModal isOpen={isModalOpen} onClose={handleCloseModal} />
+      )}
+
+      {/* 수정 모달 */}
+      {isEditModalOpen && selectedEngineer && (
+        <MySurigisaEditModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseModal}
+          engineer={selectedEngineer}
+        />
+      )}
     </div>
   );
 };
