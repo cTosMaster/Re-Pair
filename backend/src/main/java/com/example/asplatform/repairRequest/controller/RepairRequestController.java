@@ -34,6 +34,7 @@ import com.example.asplatform.user.domain.User;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
 
@@ -230,13 +231,22 @@ public class RepairRequestController {
 
 	// RepairRequestCommandController.java
 	// 완료 버튼
-	@PatchMapping("/{requestId}/complete-test")
-	@PreAuthorize("hasAnyAuthority('ENGINEER','CUSTOMER')") // 임시로 둘 다 허용
-	public ResponseEntity<RepairRequestSimpleResponse> completeTest(
-			@PathVariable("requestId") Long requestId,
-			@AuthenticationPrincipal CustomUserDetails me,
-			@RequestParam(required = false) String memo) {
-		return ResponseEntity.ok(repairRequestService.completeForTest(requestId, me.getUser(), memo));
-	}
 
+	@PatchMapping("/{requestId}/complete-for-test")
+@PreAuthorize("hasAnyAuthority('ROLE_ENGINEER','ROLE_CUSTOMER'") // 또는 hasAnyRole('ROLE_ENGINEER','ROLE_CUSTOMER')
+public ResponseEntity<RepairRequestSimpleResponse> completeTest(
+    @PathVariable Long requestId,
+    @AuthenticationPrincipal CustomUserDetails me,
+    @RequestParam(value = "memo", required = false) String memoParam,
+    @RequestBody(required = false) Map<String, Object> body
+) {
+    String memo = (memoParam != null && !memoParam.isBlank())
+            ? memoParam
+            : (body != null && body.get("memo") != null ? String.valueOf(body.get("memo")) : null);
+
+    return ResponseEntity.ok(
+        repairRequestService.completeForTest(requestId, me.getUser(), memo)
+    );
 }
+}
+
