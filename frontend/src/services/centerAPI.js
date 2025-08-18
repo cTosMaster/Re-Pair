@@ -8,6 +8,9 @@ export const getCustomers = (params = { page: 0, size: 10, keyword: '' }) =>
 export const getCustomerById = (customerId) =>
   api.get(`/customers/${encodeURIComponent(customerId)}`);
 
+/** 수리물품 전체 조회 (필터/페이징 옵션) */
+
+
 /**
  * 고객사 카테고리 생성
  * body 예시: { name: '냉장고', description: '...' }
@@ -20,8 +23,9 @@ export const getCustomerCategories = (customerId) =>
   api.get(`/customer-categories/${encodeURIComponent(customerId)}`);
 
 /** 고객사 수리물품 목록 조회 */
-export const getCustomerItems = () =>
-  api.get('/repair-items');
+export const getCustomerItems  = (customerId) =>
+  api.get(`/repair-items/customer/${encodeURIComponent(customerId)}`);
+
 
 /** 카테고리 이름/정보 수정 (부분 수정) */
 export const updateCustomerCategory = (categoryId, data) =>
@@ -30,4 +34,3 @@ export const updateCustomerCategory = (categoryId, data) =>
 /** 고객사 카테고리 삭제 */
 export const deleteCustomerCategory = (categoryId) =>
   api.delete(`/customer-categories/${encodeURIComponent(categoryId)}`);
-

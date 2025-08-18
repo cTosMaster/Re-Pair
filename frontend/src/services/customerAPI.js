@@ -60,8 +60,8 @@ export const reassignEngineer = (repairId, engineerId, body = {}) =>
   });
 
 /** 수리물품 전체 조회 (필터/페이징 옵션) */
-export const listRepairItems = (params = { page: 0, size: 20, categoryId: undefined, keyword: '' }) =>
-  api.get('/repair-items', { params });
+export const listRepairItems = (customerId) =>
+  api.get(`/repair-items/customer/${encodeURIComponent(customerId)}`);
 
 /** 수리물품 등록 */
 export const createRepairItem = (data) =>
