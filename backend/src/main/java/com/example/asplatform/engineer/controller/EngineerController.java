@@ -70,6 +70,25 @@ public class EngineerController {
         return ResponseEntity.ok(engineerService.getEngineer(engineerId));
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<Page<EngineerResponse>> getAllEngineersPublic(
+            @RequestParam(required = false) String keyword,
+            @ParameterObject
+            @PageableDefault(size = 20, sort = "userId", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(engineerService.getAllEngineers(keyword, pageable));
+    }
 
-
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @GetMapping("/my")
+    public ResponseEntity<Page<EngineerResponse>> getMyCustomerEngineers(
+            @RequestParam(required = false) String keyword,
+            @ParameterObject
+            @PageableDefault(size = 20, sort = "userId", direction = Sort.Direction.DESC)
+            Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return ResponseEntity.ok(engineerService.getEngineersForCustomer(keyword, pageable, user));
+    }
 }

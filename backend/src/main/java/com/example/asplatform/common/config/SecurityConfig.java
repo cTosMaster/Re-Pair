@@ -43,7 +43,7 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						
 						//쿠버네티스 프로브 허용 설정
-						.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+						.requestMatchers("/api/actuator/health", "/api/actuator/health/**").permitAll()
 
 						// 인증·회원가입 API 열어두기
 						.requestMatchers(
@@ -71,7 +71,7 @@ public class SecurityConfig {
 						// 파일 업로드 api
 						.requestMatchers("/api/files/initiate", "/api/files/complete").permitAll()
 						// (추가) 플랫폼 관리자, 고객사 관리자 둘다 플랫폼 카테고리 조회가능해야 함.
-						.requestMatchers("/api/admin/platform-categories").hasAnyRole("ADMIN", "CUSTOMER")
+						.requestMatchers("/api/admin/platform-categories").hasAnyRole("ADMIN", "CUSTOMER", "USER")
 						// 상대방 쪽에서 있던 관리자 대시보드 ADMIN 접근 제한 유지
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 

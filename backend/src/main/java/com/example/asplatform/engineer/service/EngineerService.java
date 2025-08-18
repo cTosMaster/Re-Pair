@@ -112,10 +112,27 @@ public class EngineerService {
     }
 
 
-    /** 수리기사 목록 조회*/
     @Transactional(readOnly = true)
-    public Page<EngineerResponse> list(Pageable pageable) {
-        return engineerRepository.findAll(pageable)
-                .map(EngineerResponse::from);
+    public Page<EngineerResponse> getAllEngineers(String keyword, Pageable pageable) {
+        String kw = keyword == null ? "" : keyword.trim();
+        Page<Engineer> page = kw.isEmpty()
+                ? engineerRepository.findAllBy(pageable)
+                : engineerRepository
+                .findDistinctByUser_NameContainingIgnoreCaseOrUser_EmailContainingIgnoreCaseOrUser_PhoneContainingIgnoreCase(
+                        kw, kw, kw, pageable);
+        return page.map(EngineerResponse::from);
     }
+
+    @Transactional(readOnly = true)
+    public Page<EngineerResponse> getEngineersForCustomer(String keyword, Pageable pageable, CustomUserDetails user) {
+        String kw = keyword == null ? "" : keyword.trim();
+        Long customerId = user.getCustomerId();
+        Page<Engineer> page = kw.isEmpty()
+                ? engineerRepository.findByCustomerId(customerId, pageable)
+                : engineerRepository
+                .findDistinctByCustomerIdAndUser_NameContainingIgnoreCaseOrCustomerIdAndUser_EmailContainingIgnoreCaseOrCustomerIdAndUser_PhoneContainingIgnoreCase(
+                        customerId, kw, customerId, kw, customerId, kw, pageable);
+        return page.map(EngineerResponse::from);
+    }
+
 }
