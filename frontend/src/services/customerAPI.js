@@ -82,20 +82,17 @@ export const cancelRepairRequest = (requestId, body = {}, options = {}) =>
   });
 
 /** 1차 견적 등록/조회 (요청 단위) */
-export const createPreEstimate = (requestId, data) =>
-  api.post(`/repair-requests/${encodeURIComponent(requestId)}/pre-estimate`, data);
+export const createFirstEstimate = (payload) =>
+  api.post('/repair-estimates/first', payload); // payload는 { requestId, price, description, ... }
 
-export const getPreEstimate = (requestId, options = {}) =>
-  api.get(`/repair-requests/${encodeURIComponent(requestId)}/pre-estimate`, {
+export const getFirstEstimate = (requestId, options = {}) =>
+  api.get(`/repair-estimates/first/${encodeURIComponent(requestId)}`, {
     signal: options.signal,
   });
 
 /** 최종 견적서 등록/수정/조회 (수리건 단위) */
 export const createFinalEstimate = (repairId, data) =>
   api.post(`/repairs/${encodeURIComponent(repairId)}/final-estimate`, data);
-
-export const updateFinalEstimate = (repairId, data) =>
-  api.patch(`/repairs/${encodeURIComponent(repairId)}/final-estimate`, data);
 
 export const getFinalEstimate = (repairId, options = {}) =>
   api.get(`/repairs/${encodeURIComponent(repairId)}/final-estimate`, {
