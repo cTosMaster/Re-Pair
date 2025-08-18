@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import MySurigisaaddModal from "../modal/MySurigisaaddModal";
 import MySurigisaEditModal from "../modal/MySurigisaEditModal";
 import { listEngineers } from "../../services/customerAPI";
@@ -11,14 +11,15 @@ const Surigisamanage = () => {
   const [selectedEngineer, setSelectedEngineer] = useState(null);
 
   const [engineers, setEngineers] = useState([]);
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeyword] = useState(""); // 입력 중인 검색어
+  const [searchTerm, setSearchTerm] = useState(""); // 실제 API에 전달되는 검색어
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
   // 목록 조회
   const fetchEngineers = async () => {
     try {
-      const res = await listEngineers({ page, size: PAGE_SIZE });
+      const res = await listEngineers({ page, size: PAGE_SIZE, keyword: searchTerm });
       const content = res.data?.content ?? [];
       const pages = res.data?.totalPages ?? 1;
       setEngineers(content);
@@ -32,7 +33,7 @@ const Surigisamanage = () => {
   useEffect(() => {
     fetchEngineers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, searchTerm]);
 
   // 모달 닫기 시 갱신
   const handleCloseModal = () => {
@@ -48,19 +49,7 @@ const Surigisamanage = () => {
     setIsEditModalOpen(true);
   };
 
-  // 검색 필터
-  const filtered = useMemo(() => {
-    const q = keyword.trim().toLowerCase();
-    if (!q) return engineers;
-    return engineers.filter(
-      (e) =>
-        (e.name ?? "").toLowerCase().includes(q) ||
-        (e.email ?? "").toLowerCase().includes(q) ||
-        (e.phone ?? "").toLowerCase().includes(q)
-    );
-  }, [engineers, keyword]);
-
-  // 페이지 번호
+  // 페이지 번호 계산
   const totalPagesCalc = Math.max(1, totalPages);
   const pageNumbers = (() => {
     const windowSize = 5;
@@ -72,6 +61,16 @@ const Surigisamanage = () => {
 
   const goPage = (p) => {
     if (p >= 0 && p < totalPagesCalc) setPage(p);
+  };
+
+  // 검색 실행 (버튼/Enter)
+  const handleSearch = () => {
+    setPage(0);
+    setSearchTerm(keyword); // keyword → searchTerm 반영 → useEffect 트리거
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSearch();
   };
 
   return (
@@ -86,12 +85,13 @@ const Surigisamanage = () => {
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="이름/이메일/전화 검색"
               className="h-10 w-56 border border-gray-300 rounded-lg px-3"
             />
             <button
+              onClick={handleSearch}
               className="h-10 px-4 rounded-lg bg-[#9fc87b] text-white font-semibold hover:brightness-90 transition"
-              onClick={() => setPage(0)}
             >
               검색
             </button>
@@ -117,7 +117,7 @@ const Surigisamanage = () => {
             </thead>
 
             <tbody className="divide-y divide-gray-100">
-              {filtered.map((item) => (
+              {engineers.map((item) => (
                 <tr
                   key={item.engineerId}
                   className="odd:bg-white even:bg-gray-50 hover:bg-[#f4f8ef] transition-colors"
@@ -160,7 +160,7 @@ const Surigisamanage = () => {
                 </tr>
               ))}
 
-              {filtered.length === 0 && (
+              {engineers.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-6 py-16 text-center text-gray-400">
                     표시할 항목이 없습니다.
@@ -173,7 +173,7 @@ const Surigisamanage = () => {
 
         {/* 페이징 + 등록 버튼 */}
         <div className="mt-6 flex items-center">
-          <div className="flex-1" /> {/* 왼쪽 spacer */}
+          <div className="flex-1" />
 
           {/* 페이지네이션 */}
           <div className="flex items-center gap-2 justify-center">
