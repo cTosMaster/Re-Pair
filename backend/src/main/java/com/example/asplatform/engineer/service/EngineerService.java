@@ -112,18 +112,27 @@ public class EngineerService {
     }
 
 
-    /**  전체 엔지니어 목록 */
     @Transactional(readOnly = true)
-    public Page<EngineerResponse> getAllEngineers(Pageable pageable) {
-        return engineerRepository.findAll(pageable)
-                .map(EngineerResponse::from);
+    public Page<EngineerResponse> getAllEngineers(String keyword, Pageable pageable) {
+        String kw = keyword == null ? "" : keyword.trim();
+        Page<Engineer> page = kw.isEmpty()
+                ? engineerRepository.findAllBy(pageable)
+                : engineerRepository
+                .findDistinctByUser_NameContainingIgnoreCaseOrUser_EmailContainingIgnoreCaseOrUser_PhoneContainingIgnoreCase(
+                        kw, kw, kw, pageable);
+        return page.map(EngineerResponse::from);
     }
 
-    /** [CUSTOMER 전용] 내 고객사 엔지니어 목록 */
     @Transactional(readOnly = true)
-    public Page<EngineerResponse> getEngineersForCustomer(Pageable pageable, CustomUserDetails user) {
-        Long customerId = user.getCustomerId(); // 로그인한 고객사의 ID
-        return engineerRepository.findByCustomerId(customerId, pageable)
-                .map(EngineerResponse::from);
+    public Page<EngineerResponse> getEngineersForCustomer(String keyword, Pageable pageable, CustomUserDetails user) {
+        String kw = keyword == null ? "" : keyword.trim();
+        Long customerId = user.getCustomerId();
+        Page<Engineer> page = kw.isEmpty()
+                ? engineerRepository.findByCustomerId(customerId, pageable)
+                : engineerRepository
+                .findDistinctByCustomerIdAndUser_NameContainingIgnoreCaseOrCustomerIdAndUser_EmailContainingIgnoreCaseOrCustomerIdAndUser_PhoneContainingIgnoreCase(
+                        customerId, kw, customerId, kw, customerId, kw, pageable);
+        return page.map(EngineerResponse::from);
     }
+
 }
