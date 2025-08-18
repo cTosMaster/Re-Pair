@@ -1,22 +1,30 @@
 import api from './api';
 
-/** 회사 범위 전체/필터 목록 */
+/*****************************************/
+/**************** 수리요청 관리 *************/
+/*****************************************/
+/** 회사 기준 수리 전체 목록조회 */
 export const getRepairRequests = (params = { statusGroup: 'IN_PROGRESS', page: 0, size: 20 }) =>
   api.get('/repair-requests', { params });
+
+/** 수리요청 기준 수리 상세조회 */
+export const getRepairRequest = (requestId, options = {}) =>
+  api.get(`/repair-requests/${encodeURIComponent(requestId)}/detail`, { signal: options.signal });
 
 /** 상태별 수리 항목 조회 */
 export const getCompanyRepairRequests = (params = { status: '', page: 0, size: 20 }) =>
   api.get('/repair-requests/customer-my', { params });
 
-/** 상세 조회 */
-export const getRepairRequest = (requestId, options = {}) =>
-  api.get(`/repair-requests/${encodeURIComponent(requestId)}/detail`, { signal: options.signal });
+/** 고객사 수리요청 내용 상세조회 */
+export const getCustomerRepairRequestDetail = (requestId) =>
+  api.get(`/repair-requests/${encodeURIComponent(requestId)}/detail`
+  );
 
 /** 소프트 딜리트(다중) */
 export const softDeleteRepairRequests = (ids) =>
   api.patch('/repair-requests/delete', { ids: Array.isArray(ids) ? ids : [ids] });
 
-/** 접수/반려 처리 (관리자도 사용) */
+/** 수리 접수 처리 (관리자도 사용) */
 export const acceptRepairRequest = (requestId, { engineerId, memo } = {}) => {
   const params = {};
   if (engineerId != null) params.engineerId = engineerId; // 선택된 기사 id (고객일 때만 보낼 수도)
@@ -29,9 +37,22 @@ export const acceptRepairRequest = (requestId, { engineerId, memo } = {}) => {
   );
 };
 
+/** 수리 반려 처리 */
 export const rejectRepairRequest = (requestId, body) =>
   api.patch(`/repair-requests/${encodeURIComponent(requestId)}/reject`, body);
 
+/*****************************************/
+/**************** 수리처리 *************/
+/*****************************************/
+/** 수리 도중 취소처리 */
+export const cancelRepairRequest = (requestId, body = {}, options = {}) =>
+  api.patch(`/repair-requests/${encodeURIComponent(requestId)}/status`, body, {
+    signal: options.signal,
+  });
+
+/*****************************************/
+/**************** 수리기사 관리 *************/
+/*****************************************/
 /** 수리기사 등록 */
 export const createEngineer = (data) =>
   api.post('/engineers', data);
@@ -59,6 +80,9 @@ export const reassignEngineer = (repairId, engineerId, body = {}) =>
     ...body, // 메모/사유 등 추가 필드가 있으면 body로 함께 보냄
   });
 
+/*****************************************/
+/**************** 수리물품 관리 *************/
+/*****************************************/
 /** 수리물품 전체 조회 (필터/페이징 옵션) */
 export const listRepairItems = (customerId) =>
   api.get(`/repair-items/customer/${encodeURIComponent(customerId)}`);
@@ -75,18 +99,19 @@ export const updateRepairItem = (id, data) =>
 export const deleteRepairItem = (id) =>
   api.delete(`/repair-items/${encodeURIComponent(id)}`);
 
-/** 수리 상태 수동 취소 */
-export const cancelRepairRequest = (requestId, body = {}, options = {}) =>
-  api.patch(`/repair-requests/${encodeURIComponent(requestId)}/cancel`, body, {
+/*****************************************/
+/**************** 견적서 관리 *************/
+/*****************************************/
+/** ✅ 1차 견적 등록 */
+export const createFirstEstimate = (payload, options = {}) =>
+  api.post("/repair-estimates/first", payload, {
     signal: options.signal,
+    headers: { "Content-Type": "application/json" },
   });
 
-/** 1차 견적 등록/조회 (요청 단위) */
-export const createFirstEstimate = (payload) =>
-  api.post('/repair-estimates/first', payload); // payload는 { requestId, price, description, ... }
-
+/** ✅ 1차 견적 조회 */
 export const getFirstEstimate = (requestId, options = {}) =>
-  api.get(`/repair-estimates/first/${encodeURIComponent(requestId)}`, {
+  api.get(`/repair-estimates/first/${requestId}`, {
     signal: options.signal,
   });
 
@@ -99,23 +124,30 @@ export const getFinalEstimate = (repairId, options = {}) =>
     signal: options.signal,
   });
 
+
+/*****************************************/
+/**************** 프리셋 관리 *************/
+/*****************************************/
 /** 프리셋 목록 조회 (필터/페이징) */
-export const listPresets = (params = { page: 0, size: 20, categoryId: undefined, productId: undefined, keyword: '' }) =>
-  api.get('/presets', { params });
+export const listPresets = (params = {}, options = {}) =>
+  api.get("/presets", {
+    params,
+    signal: options.signal, // ✅ signal은 config로
+  });
 
-/** 카테고리·제품별 프리셋 필터 조회 (전용 호출이 필요하면 사용) */
-export const filterPresets = (categoryId, productId, extra = {}) =>
-  api.get('/presets', { params: { categoryId, productId, ...extra } });
+/** 카테고리·아이템별 프리셋 필터 조회 */
+export const filterPresets = (categoryId, itemId, extra = {}) =>
+  api.get('/presets', { params: { categoryId, itemId, ...extra } });
 
-/** 프리셋 금액 자동 계산 */
-export const calculatePresetAmount = (data) =>
-  api.post('/presets/calculate', data); // 예: { presetId, quantity, overrides: {...} }
+/** 프리셋 금액 자동 계산 (배열 형태로 전송) */
+export const calculatePresetAmount = (presetIds) =>
+  api.post('/presets/calculate', Array.isArray(presetIds) ? presetIds : [presetIds]);
 
-/** 단일 프리셋 견적 미리 보기 */
+/** 단일 프리셋 견적 미리 보기 (POST /presets/{presetId}) */
 export const previewPreset = (presetId, data = {}) =>
-  api.post(`/presets/${encodeURIComponent(presetId)}`, data); // 필요시 수량/옵션 전달
+  api.post(`/presets/${encodeURIComponent(presetId)}`, data);
 
-/** 프리셋 등록 */
+/** 프리셋 등록 — DTO: { customerId, categoryId, itemId, name, description, price } */
 export const createPreset = (data) =>
   api.post('/presets', data);
 
@@ -127,6 +159,9 @@ export const updatePreset = (presetId, data) =>
 export const deletePreset = (presetId) =>
   api.delete(`/presets/${encodeURIComponent(presetId)}`);
 
+/*****************************************/
+/**************** 후기 관리 *************/
+/*****************************************/
 /** 고객사 기준 후기 조회 */
 export const getReviewsByCustomer = (
   customerId,
@@ -149,6 +184,9 @@ export const getReviewsByRepair = (
     signal: options.signal,
   });
 
+/*****************************************/
+/**************** 요금정책 관리 *************/
+/*****************************************/
 /** 요금 정책 등록 */
 export const createCustomPricing = (data) =>
   api.post('/custom-pricing', data);
@@ -166,11 +204,6 @@ export const getCustomPricing = (clientId, options = {}) =>
   api.get(`/custom-pricing/${encodeURIComponent(clientId)}`, {
     signal: options.signal,
   });
-
-/** 고객사 수리요청 내용 상세조회 */
-export const getCustomerRepairRequestDetail = (requestId) =>
-  api.get(`/repair-requests/${encodeURIComponent(requestId)}/detail`
-  );
 
 /**
  * 고객사 등록 폼 제출

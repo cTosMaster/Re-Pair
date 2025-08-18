@@ -50,6 +50,7 @@ export default function MysuriRequestList() {
       createdAt: r.createdAt ?? r.created_at,
       userName: r.userName ?? r.user_name ?? r.name ?? "",
       userPhone: r.userPhone ?? r.contact_phone ?? r.phone ?? "",
+      roadAddress: r.roadAddress ?? r.address ?? "",
     };
   }, []);
 
@@ -178,7 +179,7 @@ export default function MysuriRequestList() {
                     </div>
                     <div>
                       <div className="font-semibold text-gray-900">{r.userName || "-"}</div>
-                      <div className="text-xs text-gray-500">{r.userPhone || "-"}</div>
+                      <div className="text-xs text-gray-500">{r.roadAddress || "-"}</div>
                     </div>
                   </div>
 

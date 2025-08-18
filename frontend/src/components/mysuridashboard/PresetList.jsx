@@ -1,223 +1,228 @@
-import { useState } from "react";
-import MysuriPagination from "./MysuriPagination";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { listPresets, deletePreset } from "../../services/customerAPI";
 import PresetModal from "../modal/PresetModal";
+import MysuriPagination from "./MysuriPagination"; // 경로는 프로젝트에 맞게 조정
 
-const PresetList = () => {
-  const [selectedIds, setSelectedIds] = useState([]);
+/** 기본 페이지 크기 (백엔드 Page size와 맞춰 사용) */
+const DEFAULT_PAGE_SIZE = 10;
 
-  const [items, setItems] = useState([
-  { id: 1, category:"UMPC", name: "UMPC", desc: "CPU [모델 - X650 스냅드래곤]", price: "25,000", date: "2025.01.12" },
-  { id: 2, category:"휴대폰", name: "갤럭시", desc: "프리셋 내용", price: "25,000", date: "2025.01.12" },
-  { id: 3, category:"전자시계", name: "갤럭시워치", desc: "CPU [모델 - X650 스냅드래곤]", price: "25,000", date: "2025.01.12" },
-  { id: 4, category:"노트북", name: "맥북", desc: "CPU [모델 - X650 스냅드래곤]", price: "25,000", date: "2025.01.12" },
-  { id: 5, category:"콘솔게임기", name: "콘솔게", desc: "CPU [모델 - X650 스냅드래곤]", price: "25,000", date: "2025.01.12" }
-]);
+/** 가격 포맷: 20,000 */
+const fmtPrice = (v) => {
+  const n = Number(v ?? 0);
+  if (Number.isNaN(n)) return String(v ?? "-");
+  return new Intl.NumberFormat("ko-KR").format(n);
+};
 
-  const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortOption, setSortOption] = useState("제품명");
-  const [isModalOpen, setIsModalOpen] = useState(false);//생성 모달 추가
-  const [editingPreset, setEditingPreset] = useState(null); // 수정할 데이터
+/** 날짜 포맷: 2025-08-18 */
+const fmtDate = (v) => {
+  if (!v) return "-";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return String(v);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
 
-  const ITEMS_PER_PAGE = 5;
-  
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setCurrentPage(1);
+/** Page 응답에서 content 안전추출 */
+const pickContent = (data) =>
+  Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : [];
+
+/** 응답 → UI 행 매핑 (방어적으로 필드 흡수) */
+const mapRow = (r) => {
+  const id = r?.presetId ?? r?.id ?? r?.preset_id ?? null;
+  return {
+    id,
+    name: r?.name ?? "(이름 없음)",
+    description: r?.description ?? r?.desc ?? "",
+    price: r?.price ?? 0,
+    createdAt: r?.createdAt ?? r?.created_at ?? r?.createdDate ?? null,
   };
+};
 
-  // 검색 필터링
-  const filteredList = items.filter(
-  (item) => item.name.includes(search) || item.desc.includes(search)
-);
+export default function PresetList() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // 정렬
-  const sortedList = filteredList.slice().sort((a, b) => {
-  if (sortOption === "프리셋명") {
-    return a.name.localeCompare(b.name);
-  } else if (sortOption === "등록일자") {
-    const dateA = new Date(a.date.replace(/\./g, "-"));
-    const dateB = new Date(b.date.replace(/\./g, "-"));
-    return dateB - dateA;  // 최신순: 최신 날짜가 먼저 오도록 내림차순 정렬
-  }
-  return 0;
-});
+  // 서버 페이징 상태 (스프링 Page 기반)
+  const [page, setPage] = useState(0);                 // 0-base
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [totalItems, setTotalItems] = useState(0);     // totalElements
 
-  // 페이지네이션
-  const totalItems = sortedList.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentItems = sortedList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    
-  // 목록 클릭 시
-  const handleItemClick = (item) => {
-    setEditingPreset(item); // 수정할 아이템 저장
-    setIsModalOpen(true);
-  };
+  // 검색(클라 필터)
+  const [keyword, setKeyword] = useState("");
 
-  // 저장 시 - 새로 추가인지 수정인지 구분
-  const handleSavePreset = (preset) => {
-    if (editingPreset) {
-      // 수정 모드
-      setItems(items.map(it => it.id === editingPreset.id ? { ...it, ...preset } : it));
-    } else {
-      // 생성 모드
-      const newItem = {
-        id: items.length + 1,
-        category: preset.category,
-        name: preset.name,
-        desc: preset.content,
-        price: preset.price,
-        date: new Date().toISOString().split("T")[0].replace(/-/g, ".")
-      };
-      setItems([...items, newItem]);
+  // 모달
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const fetchPage = useCallback(async (p = 0) => {
+    setLoading(true);
+    try {
+      const res = await listPresets({ page: p, size: pageSize || DEFAULT_PAGE_SIZE });
+      const data = res?.data ?? {};
+      const list = pickContent(data).map(mapRow);
+
+      setRows(list);
+      setPage(typeof data?.number === "number" ? data.number : p);
+
+      // Page 메타 반영
+      const sizeFromBackend = typeof data?.size === "number" ? data.size : (pageSize || DEFAULT_PAGE_SIZE);
+      setPageSize(sizeFromBackend);
+
+      const totalElements =
+        typeof data?.totalElements === "number"
+          ? data.totalElements
+          : (typeof data?.totalPages === "number" ? data.totalPages : 0) * sizeFromBackend;
+      setTotalItems(totalElements);
+      
+    } finally {
+      setLoading(false);
     }
-    setEditingPreset(null); // 모드 초기화
-  };
+  }, [pageSize]);
 
-   // 삭제 함수
-  const handleDeleteSelected = () => {
-    setItems(items.filter(item => !selectedIds.includes(item.id)));
-    setSelectedIds([]); // 삭제 후 선택 초기화
-  };
-  // 체크박스 토글 함수
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+  useEffect(() => {
+    fetchPage(0);
+  }, [fetchPage]);
+
+  // 검색 필터 (현재 페이지 내에서만 필터링)
+  const filtered = useMemo(() => {
+    if (!keyword) return rows;
+    const q = keyword.trim().toLowerCase();
+    return rows.filter(
+      (r) =>
+        String(r.name).toLowerCase().includes(q) ||
+        String(r.description).toLowerCase().includes(q)
     );
+  }, [rows, keyword]);
+
+  // 삭제
+  const handleDelete = async (id) => {
+    if (!id) return;
+    const ok = window.confirm("해당 프리셋을 삭제할까요?");
+    if (!ok) return;
+    setLoading(true);
+    try {
+      await deletePreset(id);
+      // 현재 페이지에서 모두 지워졌다면 이전 페이지로 당겨오기
+      if (filtered.length <= 1 && page > 0) {
+        await fetchPage(page - 1);
+      } else {
+        await fetchPage(page);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-
+  // MysuriPagination은 1-base를 기대하므로 어댑터 제공
+  const handlePageChange1Based = (nextPage1) => {
+    const totalPagesByItems = Math.ceil((totalItems || 0) / (pageSize || DEFAULT_PAGE_SIZE));
+    const clamped = Math.max(1, Math.min(nextPage1, totalPagesByItems || 1));
+    fetchPage(clamped - 1); // 1-base → 0-base
+  };
 
   return (
     <div className="w-full px-10 mt-10">
       <div className="p-10 bg-white rounded-xl shadow-md w-[1000px] mx-auto mt-10">
         {/* 제목 */}
-        <h1 className="text-xl font-bold mb-6">프리셋 목록</h1>
+        <h1 className="text-xl font-bold mb-6">프리셋 관리</h1>
 
-        {/* 검색 & 정렬 */}
-        <div className="flex justify-end w-full mb-4">
-          <div className="flex items-center space-x-4">
-            <input
-              type="text"
-              value={search}
-              onChange={handleSearchChange}
-              placeholder="Search"
-              className="px-4 py-2 border border-gray-300 rounded-lg w-64"
-            />
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              <option>프리셋명</option>
-              <option>등록일자</option>
-            </select>
-          </div>
+        {/* 검색/등록 바 */}
+        <div className="flex justify-between items-center mb-4">
+          <input
+            className="px-4 py-2 border border-gray-300 rounded-lg w-80"
+            placeholder="프리셋명/설명 검색"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+          <button
+            type="button"
+            className="px-4 py-2 rounded-lg bg-[#9fc87b] text-white"
+            onClick={() => setIsModalOpen(true)}
+          >
+            + 프리셋 등록
+          </button>
         </div>
 
-        {/* 테이블 헤더 */}
-        <div className="grid grid-cols-8 text-gray-500 text-sm border-b pb-2 mb-2">
-          <div className="flex justify-center items-center font-semibold pl-5 col-span-1">체크박스</div>
-          <div className="font-semibold pl-5 col-span-1">프리셋명</div>
-          <div className="col-span-3 font-semibold pl-2">내용</div>
-          <div className="font-semibold col-span-1">기본단가</div>
-          <div className="font-semibold col-span-1">등록일시</div>
+        {/* 헤더 */}
+        <div className="grid grid-cols-12 text-gray-600 text-sm border-b pb-2 mb-2">
+          <div className="col-span-5 font-semibold pl-2">프리셋명</div>
+          <div className="col-span-3 font-semibold">설명</div>
+          <div className="col-span-2 font-semibold text-right pr-6">기본 단가</div>
+          <div className="col-span-2 font-semibold text-right pr-2">등록일시 / 삭제</div>
         </div>
-
 
         {/* 리스트 */}
-      {currentItems.map((item) => (
-        <div key={item.id} className="flex items-center mb-3 gap-4">
-          {/* 체크박스 컬럼 - 독립된 div */}
-          <div className="w-12 flex justify-center items-center">
-            <input
-              type="checkbox"
-              checked={selectedIds.includes(item.id)}
-              onChange={(e) => {
-                e.stopPropagation(); // 체크박스 클릭 시 행 클릭 이벤트 방지
-                toggleSelect(item.id);
-              }}
-            />
-          </div>
-
-          {/* 리스트 행 - 클릭 시 모달 열림 */}
-          <div
-            style={{ height: "99px" }}
-            className={`grid grid-cols-5 items-center gap-4 p-4 rounded-xl border cursor-pointer flex-1 ${
-              selectedIds.includes(item.id)
-                ? "border-green-500 bg-green-50"
-                : "border-gray-300"
-            }`}
-            onClick={() => handleItemClick(item)}
-          >
-            <div className="col-span-1 font-bold">{item.name}</div>
-            <div className="col-span-2 text-gray-600">
-              {item.desc.length > 20 ? item.desc.slice(0, 10) + "..." : item.desc}
+        {loading && rows.length === 0 ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-xl border p-4 mb-3 animate-pulse">
+              <div className="h-4 bg-gray-200 w-1/3 mb-2" />
+              <div className="h-4 bg-gray-200 w-2/3" />
             </div>
-            <div className="col-span-1 font-semibold">{item.price}</div>
-            <div className="col-span-1 text-gray-500">{item.date}</div>
+          ))
+        ) : filtered.length === 0 ? (
+          <div className="rounded-xl border border-dashed p-10 text-center text-gray-400">
+            조회된 프리셋이 없습니다.
           </div>
-        </div>
-      ))}
+        ) : (
+          filtered.map((r) => (
+            <div
+              key={r.id ?? `${r.name}-${r.createdAt}`}
+              className="grid grid-cols-12 items-center gap-2 rounded-xl border p-4 mb-3"
+            >
+              <div className="col-span-5 pl-2">
+                <div className="font-semibold text-gray-900">{r.name}</div>
+                {r.description && (
+                  <div className="text-xs text-gray-500 mt-1 line-clamp-1">
+                    {r.description}
+                  </div>
+                )}
+              </div>
 
-        {/* 빈 행 추가 */}
-        {Array.from({ length: ITEMS_PER_PAGE - currentItems.length }).map((_, idx) => (
-          <div
-            key={`empty-${idx}`}
-            className="grid grid-cols-5 items-center gap-4 mb-3 p-4 rounded-xl border border-transparent"
-            style={{ visibility: "hidden" }}
-          >
-            <div className="col-span-2">&nbsp;</div>
-            <div className="col-span-2">&nbsp;</div>
-            <div>&nbsp;</div>
-            <div>&nbsp;</div>
-          </div>
-        ))}
+              <div className="col-span-3 text-gray-700">
+                <div className="hidden sm:block text-sm line-clamp-2">
+                  {r.description || "-"}
+                </div>
+              </div>
 
-        {/* 삭제/생성 버튼 */}
-        <div className="flex justify-end space-x-4 mt-6">
-        <button
-          type="button"
-          className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
-          onClick={() => {
-            setEditingPreset(null);
-            setIsModalOpen(true);
-          }}
-        >
-          생성
-        </button>
-        <button
-          type="button"
-          className={`px-6 py-2 text-white rounded-md transition ${
-            selectedIds.length > 0 ? "bg-red-500 hover:bg-red-600" : "bg-gray-300 cursor-not-allowed"
-          }`}
-          onClick={handleDeleteSelected}
-          disabled={selectedIds.length === 0}
-        >
-          삭제
-        </button>
-        </div>
+              <div className="col-span-2 text-right pr-6">
+                <span className="font-bold">{fmtPrice(r.price)}</span>
+              </div>
 
-        {/* 페이지네이션 */}
+              {/* 등록일시(상) + 삭제(하) - 세로 배치 */}
+              <div className="col-span-2 text-right pr-2 flex flex-col items-end gap-2">
+                <span className="text-sm text-gray-600">{fmtDate(r.createdAt)}</span>
+                <button
+                  onClick={() => handleDelete(r.id)}
+                  className="px-3 py-1.5 text-sm rounded-lg border border-red-300 text-red-600 hover:bg-red-50"
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+
+        {/* ✅ MysuriPagination 사용 */}
         <MysuriPagination
-          totalPages={totalPages}
-          currentPage={currentPage}
-          onPageChange={setCurrentPage}
+          totalItems={totalItems}
+          itemsPerPage={pageSize || DEFAULT_PAGE_SIZE}
+          currentPage={(page || 0) + 1}          
+          onPageChange={handlePageChange1Based}
         />
       </div>
 
-      {/* 모달 */}
+      {/* ✅ 프리셋 등록 모달 */}
       {isModalOpen && (
         <PresetModal
           isOpen={isModalOpen}
-          onClose={() => { setIsModalOpen(false); setEditingPreset(null); }}
-          onSubmit={handleSavePreset} //프리셋 추가
-          initialData={editingPreset} //수정모달확인
+          onClose={() => setIsModalOpen(false)}
+          onCreated={() => {
+            setIsModalOpen(false);
+            fetchPage(page); // 현재 페이지 새로고침
+          }}
         />
       )}
     </div>
   );
-};
-
-export default PresetList;
+}
