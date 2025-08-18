@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.common.enums.Role;
@@ -53,6 +54,7 @@ public class RepairRequestService {
 	private final RepairableItemRepository repairableItemRepository;
 	private final UserAddressRepository userAddressRepository;
 	private final EngineerRepository engineerRepository;
+	private final ApplicationEventPublisher publisher;
 
 	@PersistenceContext
 	private EntityManager em;
@@ -84,6 +86,13 @@ public class RepairRequestService {
 				.memo("관리자 접수/반려 선택 전 상태").build();
 
 		repairHistoryRepository.save(history);
+
+		publisher.publishEvent(new com.example.asplatform.notify.event.RepairRequestCreatedEvent(
+  		repairRequest.getRequestId(),
+  		user.getId(),
+  		"수리 요청이 접수되었습니다",
+		String.format("요청 #%d이(가) 접수되었습니다. 담당자 배정까지 잠시만 기다려주세요.", repairRequest.getRequestId())
+));
 
 		return repairRequest.getRequestId();
 	}
@@ -262,6 +271,29 @@ public class RepairRequestService {
 				.changedBy(currentUser)
 				.memo(memo)
 				.build());
+		
+		String engName = (rr.getEngineer()!=null && rr.getEngineer().getName()!=null)
+  		? rr.getEngineer().getName() : "담당자";
+
+		// 🔔 요청자에게
+		publisher.publishEvent(new com.example.asplatform.notify.event.StatusChangedEvent(
+		rr.getRequestId(),
+  		rr.getUser().getId(),
+  		prev.name(),
+  		RepairStatus.WAITING_FOR_REPAIR.name(),
+		"담당자가 배정되었습니다",
+  		String.format("요청 #%d이 기사(%s)에게 배정되었습니다.", rr.getRequestId(), engName)
+));
+
+		// 🔔 배정 기사에게
+		publisher.publishEvent(new com.example.asplatform.notify.event.StatusChangedEvent(
+  		rr.getRequestId(),
+  		rr.getEngineer().getId(),
+  		prev.name(),
+  		RepairStatus.WAITING_FOR_REPAIR.name(),
+		"새 작업이 배정되었습니다",
+  		String.format("요청 #%d이 배정되었습니다. 작업을 시작해주세요.", rr.getRequestId())
+));
 
 		Long newEngineerId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
 		if (newEngineerId != null) refreshEngineerAssignedFlag(newEngineerId);
@@ -307,6 +339,16 @@ public class RepairRequestService {
 				.memo(reason)
 				.build());
 
+		publisher.publishEvent(new com.example.asplatform.notify.event.StatusChangedEvent(
+  		rr.getRequestId(),
+  		rr.getUser().getId(),
+  		prev.name(),
+  		RepairStatus.CANCELED.name(),
+  		"수리 요청이 반려되었습니다",
+		String.format("요청 #%d이(가) 반려되었습니다. 사유: %s", rr.getRequestId(), reason)
+));
+
+		if (prevEngineerId != null) refreshEngineerAssignedFlag(prevEngineerId);
 		if (prevEngineerId != null)
 			refreshEngineerAssignedFlag(prevEngineerId);
 
@@ -340,7 +382,15 @@ public class RepairRequestService {
 				.changedBy(currentUser)
 				.memo("작업 시작")
 				.build());
-
+		
+		publisher.publishEvent(new com.example.asplatform.notify.event.StatusChangedEvent(
+  		rr.getRequestId(),
+  		rr.getUser().getId(),
+  		prev.name(),
+  		RepairStatus.IN_PROGRESS.name(),
+  		"1차 견적/작업이 시작되었습니다",
+  		String.format("요청 #%d 작업을 시작했습니다.", rr.getRequestId())
+));
 		refreshEngineerAssignedFlag(currentUser.getId());
 
 		return RepairRequestSimpleResponse.builder()
@@ -372,6 +422,15 @@ public class RepairRequestService {
 				.changedBy(currentUser)
 				.memo(memo != null ? memo : "테스트 완료 처리")
 				.build());
+
+		publisher.publishEvent(new com.example.asplatform.notify.event.StatusChangedEvent(
+  		rr.getRequestId(),
+  		rr.getUser().getId(),
+  		prev.name(),
+  		RepairStatus.COMPLETED.name(),
+  		"수리가 완료되었습니다",
+  		String.format("요청 #%d 처리가 완료되었습니다. 이용해 주셔서 감사합니다.", rr.getRequestId())
+));
 
 		// 기사 배정 캐시 갱신 (활성 건 없으면 is_assigned=0)
 		Long engId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
