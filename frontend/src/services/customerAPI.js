@@ -10,15 +10,24 @@ export const getCompanyRepairRequests = (params = { status: '', page: 0, size: 2
 
 /** 상세 조회 */
 export const getRepairRequest = (requestId, options = {}) =>
-  api.get(`/repair-requests/${encodeURIComponent(requestId)}`, { signal: options.signal });
+  api.get(`/repair-requests/${encodeURIComponent(requestId)}/detail`, { signal: options.signal });
 
 /** 소프트 딜리트(다중) */
 export const softDeleteRepairRequests = (ids) =>
   api.patch('/repair-requests/delete', { ids: Array.isArray(ids) ? ids : [ids] });
 
 /** 접수/반려 처리 (관리자도 사용) */
-export const acceptRepairRequest = (requestId, body) =>
-  api.patch(`/repair-requests/${encodeURIComponent(requestId)}/accept`, body);
+export const acceptRepairRequest = (requestId, { engineerId, memo } = {}) => {
+  const params = {};
+  if (engineerId != null) params.engineerId = engineerId; // 선택된 기사 id (고객일 때만 보낼 수도)
+  if (memo != null && memo !== "") params.memo = memo;     // 메모(선택)
+
+  return api.patch(
+    `/repair-requests/${encodeURIComponent(requestId)}/accept`,
+    null,                         // ← body 없음
+    { params }                    // ← 쿼리스트링으로 전송
+  );
+};
 
 export const rejectRepairRequest = (requestId, body) =>
   api.patch(`/repair-requests/${encodeURIComponent(requestId)}/reject`, body);
@@ -41,7 +50,7 @@ export const updateEngineer = (engineerId, data) =>
 
 /** 수리기사 전체 목록 조회 (필요시 페이징 파라미터 추가) */
 export const listEngineers = (params = { page: 0, size: 20 }) =>
-  api.get("/engineers", { params });
+  api.get("/engineers/my", { params });
 
 /** 기사 재배정: 특정 수리(repairId)에 engineer 재할당 */
 export const reassignEngineer = (repairId, engineerId, body = {}) =>

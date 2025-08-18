@@ -2,31 +2,32 @@ import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { acceptRepairRequest, rejectRepairRequest } from "../../../services/customerAPI";
 import { segmentForStatus } from "../../../routes/statusRoute";
-import RejectReasonModal from "./RejectReasonModal"; // visible, submitting, onClose, onSubmit(reason) 가정
+import RejectReasonModal from "./RejectReasonModal";
 
 /**
- * 상세보기 경로 예: /repair-requests/:id/pending-approval
- * - 일부 라우팅에서 파라미터명이 requestId일 수도 있어 둘 다 대응
+ * @param {number|string|null} engineerId        선택한 기사 ID
+ * @param {boolean}            requireEngineerId  고객처럼 기사 선택이 필수면 true
  */
-function ApprovalActions() {
+function ApprovalActions({ engineerId, requireEngineerId = false }) {
   const navigate = useNavigate();
   const params = useParams();
-  const requestId = params.id ?? params.requestId; // URL 파라미터에서 획득
+  const requestId = params.id ?? params.requestId;
+
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const isValidEngineerId = engineerId != null && engineerId !== "" && Number.isFinite(Number(engineerId));
+
   const handleAccept = useCallback(async () => {
-    if (!requestId) {
-      alert("요청 ID를 찾을 수 없습니다.");
-      return;
-    }
+    if (!requestId) return alert("요청 ID를 찾을 수 없습니다.");
+    if (requireEngineerId && !isValidEngineerId) return alert("배정할 수리기사를 선택해주세요.");
     if (!window.confirm("이 요청을 승인할까요?")) return;
 
     setSubmitting(true);
     try {
-      // 필요 시 payload 추가 가능: { note, approvedBy, ... }
-      await acceptRepairRequest(requestId, {});
-      // 승인 후 다음 단계(수리대기) 화면으로 이동
+      await acceptRepairRequest(requestId, {
+        engineerId: isValidEngineerId ? Number(engineerId) : undefined,
+      });
       const nextSeg = segmentForStatus("WAITING_FOR_REPAIR");
       navigate(`/repair-requests/${encodeURIComponent(requestId)}/${nextSeg}`, { replace: true });
     } catch (err) {
@@ -35,30 +36,24 @@ function ApprovalActions() {
     } finally {
       setSubmitting(false);
     }
-  }, [requestId, navigate]);
+  }, [requestId, engineerId, isValidEngineerId, requireEngineerId, navigate]);
 
   const handleRejectOpen = useCallback(() => {
-    if (!requestId) {
-      alert("요청 ID를 찾을 수 없습니다.");
-      return;
-    }
+    if (!requestId) return alert("요청 ID를 찾을 수 없습니다.");
     setShowRejectModal(true);
   }, [requestId]);
 
   const handleRejectSubmit = useCallback(
     async (reason) => {
       if (!requestId) return;
+      const v = String(reason ?? "").trim();
+      if (!v) return alert("반려 사유를 입력해주세요.");
 
       setSubmitting(true);
       try {
-        await rejectRepairRequest(requestId, { reason: reason.trim() });
+        await rejectRepairRequest(requestId, { reason: v });
         setShowRejectModal(false);
-        // 반려 후 목록으로 복귀 (히스토리가 없으면 안전 경로로)
-        try {
-          navigate(-1);
-        } catch {
-          navigate("/repair-requests"); // 안전 경로
-        }
+        navigate(-1);
       } catch (err) {
         console.error(err);
         alert("반려 처리 중 오류가 발생했습니다.");
@@ -71,12 +66,12 @@ function ApprovalActions() {
 
   return (
     <div className="relative mt-8">
-      {/* 승인 / 반려 버튼 */}
       <div className="flex justify-center gap-4">
         <button
           className="px-6 py-2 rounded-md bg-[#A5CD82] text-white font-semibold hover:bg-[#94bb71] disabled:opacity-50"
           onClick={handleAccept}
-          disabled={!requestId || submitting}
+          disabled={!requestId || submitting || (requireEngineerId && !isValidEngineerId)}
+          title={requireEngineerId && !isValidEngineerId ? "배정할 수리기사를 선택해주세요." : undefined}
         >
           {submitting ? "처리 중..." : "승인"}
         </button>
@@ -90,12 +85,11 @@ function ApprovalActions() {
         </button>
       </div>
 
-      {/* 반려 사유 모달 */}
       <RejectReasonModal
         visible={showRejectModal}
         submitting={submitting}
         onClose={() => setShowRejectModal(false)}
-        onSubmit={handleRejectSubmit} // (reason) => void
+        onSubmit={handleRejectSubmit}
       />
     </div>
   );

@@ -1,7 +1,15 @@
 import { useState } from "react";
 
-function EngineerSelectList({ engineerList = [] }) {
-  const [selectedId, setSelectedId] = useState(null);
+function EngineerSelectList({ engineerList = [], selectedId, onChange }) {
+  const isControlled = typeof selectedId !== "undefined" && typeof onChange === "function";
+  const [localId, setLocalId] = useState(null);
+  const value = isControlled ? selectedId : localId;
+
+  const handleToggle = (eng) => {
+    if (eng.status) return; // 배정된 기사면 선택 불가
+    const next = value === eng.id ? null : eng.id;
+    isControlled ? onChange(next) : setLocalId(next);
+  };
 
   return (
     <div className="max-w-3xl mx-auto mt-10 p-6 bg-white rounded-xl shadow-md">
@@ -15,7 +23,7 @@ function EngineerSelectList({ engineerList = [] }) {
         ) : (
           <div className="h-full overflow-y-auto">
             {engineerList.map((eng, i) => {
-              const isSelected = selectedId === eng.id;
+              const isSelected = value === eng.id;
               const isAssigned = eng.status === true;
 
               return (
@@ -29,11 +37,7 @@ function EngineerSelectList({ engineerList = [] }) {
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
                         {eng.profileImage ? (
-                          <img
-                            src={eng.profileImage}
-                            alt="프로필"
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={eng.profileImage} alt="프로필" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xl">👤</div>
                         )}
@@ -46,29 +50,28 @@ function EngineerSelectList({ engineerList = [] }) {
                       </div>
                     </div>
 
-                    {/* 오른쪽: 선택 버튼 또는 배정됨 텍스트 */}
+                    {/* 오른쪽: 선택/해제 or 배정됨 */}
                     <div className="min-w-[80px] text-right">
                       {isAssigned ? (
                         <span className="text-sm font-semibold text-red-500">배정 됨</span>
                       ) : (
                         <button
                           className={`ml-2 px-4 py-1 text-sm rounded font-medium border transition 
-                            ${isSelected
-                              ? "bg-[#94bb71] text-white border-[#94bb71]"
-                              : "bg-[#A5CD82] text-white border-[#A5CD82] hover:bg-[#94bb71] hover:border-[#94bb71]"
+                            ${
+                              isSelected
+                                ? "bg-[#94bb71] text-white border-[#94bb71]"
+                                : "bg-[#A5CD82] text-white border-[#A5CD82] hover:bg-[#94bb71] hover:border-[#94bb71]"
                             }`}
-                          onClick={() => setSelectedId(eng.id)}
+                          onClick={() => handleToggle(eng)}
+                          aria-pressed={isSelected}
                         >
-                          선택
+                          {isSelected ? "해제" : "선택"}
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* 얇고 연한 구분선 (마지막 요소 제외) */}
-                  {i < engineerList.length - 1 && (
-                    <div className="h-px bg-gray-300 w-full" />
-                  )}
+                  {i < engineerList.length - 1 && <div className="h-px bg-gray-300 w-full" />}
                 </div>
               );
             })}
