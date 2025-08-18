@@ -4,10 +4,10 @@ import com.example.asplatform.category.domain.CustomerCategory;
 import com.example.asplatform.category.dto.requestDTO.CustomerCategoryRequest;
 import com.example.asplatform.category.dto.responseDTO.CustomerCategoryResponse;
 import com.example.asplatform.category.repository.CustomerCategoryRepository;
+import com.example.asplatform.customer.domain.Customer;
+import com.example.asplatform.customer.repository.CustomerRepository;
 import com.example.asplatform.item.repository.RepairableItemRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,13 +29,10 @@ public class CustomerCategoryService {
         customerCategoryRepository.save(category);
     }
 
-    @Transactional(readOnly = true)
-    public Page<CustomerCategoryResponse> getCustomerCategories(Long customerId, String keyword, Pageable pageable) {
-        String kw = (keyword == null) ? "" : keyword.trim();
-        Page<CustomerCategory> page = kw.isEmpty()
-                ? customerCategoryRepository.findByCustomerId(customerId, pageable)
-                : customerCategoryRepository.findByCustomerIdAndNameContainingIgnoreCase(customerId, kw, pageable);
-        return page.map(CustomerCategoryResponse::from);
+    public List<CustomerCategoryResponse> getCustomerCategories(Long customerId) {
+        return customerCategoryRepository.findByCustomerId(customerId).stream()
+                .map(CustomerCategoryResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Transactional
