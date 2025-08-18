@@ -86,7 +86,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 	 */
 	@Query(value = """
 			select new com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto(
-			  rr.id,
+			  rr.requestId,
 			  u.name,
 			  rr.title,
 			  rr.createdAt,
@@ -95,7 +95,9 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			  cat.name,
 			  a.postalCode,
 			  a.roadAddress,
-			  a.detailAddress
+			  a.detailAddress,
+			  e.id,
+			  e.name
 			)
 			from RepairRequest rr
 			  join rr.user u
@@ -103,6 +105,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			  join rr.repairableItem ri
 			  join ri.customer cust
 			  join ri.category cat
+			  left join rr.engineer e
 			where cust.id = :customerId
 			  and rr.isDeleted = false
 			  and (:status     is null or rr.status = :status)
@@ -113,7 +116,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			    or lower(u.name)   like lower(concat('%', :keyword, '%'))
 			  )
 			""", countQuery = """
-			select count(rr.id)
+			select count(rr.requestId)
 			from RepairRequest rr
 			  join rr.user u
 			  join u.address a
@@ -130,7 +133,7 @@ public interface RepairRequestRepository extends JpaRepository<RepairRequest, Lo
 			    or lower(u.name)   like lower(concat('%', :keyword, '%'))
 			  )
 			""")
-	Page<CustomerRepairRequestListDto> findCustomerList(@Param("customerId") Long userId,
+	Page<CustomerRepairRequestListDto> findCustomerList(@Param("customerId") Long customerId,
 			@Param("keyword") String keyword, // null 가능 // 가능
 			@Param("categoryId") Long categoryId, // null 가능
 			@Param("status") RepairStatus status, // null 가능

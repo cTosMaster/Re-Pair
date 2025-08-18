@@ -233,8 +233,8 @@ public class RepairRequestController {
 	// 완료 버튼
 
 	@PatchMapping("/{requestId}/complete-for-test")
-@PreAuthorize("hasAnyAuthority('ROLE_ENGINEER','ROLE_CUSTOMER'") // 또는 hasAnyRole('ROLE_ENGINEER','ROLE_CUSTOMER')
-public ResponseEntity<RepairRequestSimpleResponse> completeTest(
+    @PreAuthorize("hasAnyAuthority('ROLE_ENGINEER','ROLE_CUSTOMER')") // 또는 hasAnyRole('ROLE_ENGINEER','ROLE_CUSTOMER')
+    public ResponseEntity<RepairRequestSimpleResponse> completeTest(
     @PathVariable Long requestId,
     @AuthenticationPrincipal CustomUserDetails me,
     @RequestParam(value = "memo", required = false) String memoParam,
