@@ -1,12 +1,15 @@
 package com.example.asplatform.notify.service;
 
+import org.springframework.stereotype.Service;
+
 import com.example.asplatform.notify.domain.Notification;
 import com.example.asplatform.notify.domain.ReceiverType;
 import com.example.asplatform.notify.dto.requestDTO.NotifyRequest;
-import com.example.asplatform.notify.event.*;
+import com.example.asplatform.notify.event.RepairRequestCreatedEvent;
+import com.example.asplatform.notify.event.StatusChangedEvent;
 import com.example.asplatform.notify.repository.NotificationRepository;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
