@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../../hooks/useAuth";
-import { createEngineer,updateEngineer } from "../../services/customerAPI";
+import { useState } from "react";
 
-const MySurigisaaddModal = ({ isOpen, onClose, onSubmit, initialData }) => {
-  const { user } = useAuth();
-
+const MySurigisaaddModal = ({ isOpen, onClose }) => {
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -13,93 +9,51 @@ const MySurigisaaddModal = ({ isOpen, onClose, onSubmit, initialData }) => {
     phone: "",
   });
 
-  // initialData 변경 시 form에 반영
-  useEffect(() => {
-    if (initialData) {
-      // 수정 모드 → 비밀번호는 숨김
-      setForm({
-        name: initialData.name || "",
-        email: initialData.email || "",
-        password: "",
-        passwordConfirm: "",
-        phone: initialData.phone || "",
-      });
-    } else {
-      // 등록 모드 → 초기화
-      setForm({
-        name: "",
-        email: "",
-        password: "",
-        passwordConfirm: "",
-        phone: "",
-      });
-    }
-  }, [initialData]);
-
   if (!isOpen) return null;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
 
-  const handleSave = async () => {
-    // 수정 모드 → 비밀번호 체크 없음
-    if (initialData) {
-      if (!form.name || !form.email || !form.phone) {
-        alert("이름, 이메일, 연락처를 모두 입력해주세요.");
-        return;
-      }
+    if (name === "phone") {
+      // 연락처: 숫자만 허용 + 최대 11자리
+      const numericValue = value.replace(/[^0-9]/g, "").slice(0, 11);
+      setForm((prev) => ({ ...prev, [name]: numericValue }));
     } else {
-      // 등록 모드 → 비밀번호 포함
-      if (!form.name || !form.email || !form.phone || !form.password || !form.passwordConfirm) {
-        alert("모든 필드를 입력해주세요.");
-        return;
-      }
-
-      if (form.password !== form.passwordConfirm) {
-        alert("비밀번호가 일치하지 않습니다.");
-        return;
-      }
-    }
-
-    try {
-      if (initialData) {
-        // 수정 모드 → updateEngineer 호출
-        await updateEngineer(initialData.engineerId, {
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-        });
-        alert("수리기사 정보가 수정되었습니다.");
-      } else {
-        // 등록 모드 → createEngineer 호출
-        await createEngineer({
-          customerId: user.customerId,
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          password: form.password,
-          passwordcheck: form.passwordConfirm,
-        });
-        alert("수리기사가 성공적으로 등록되었습니다.");
-      }
-
-      if (onSubmit) onSubmit(); // 목록 갱신
-      onClose();
-    } catch (error) {
-      console.error("수리기사 등록/수정 실패:", error);
-      alert("저장에 실패했습니다.");
+      setForm((prev) => ({ ...prev, [name]: value }));
     }
   };
+
+  const isFormValid =
+    form.name.trim() &&
+    form.email.trim() &&
+    form.phone.trim().length === 11 && // 연락처는 11자리
+    form.password.trim() &&
+    form.passwordConfirm.trim() &&
+    form.password === form.passwordConfirm;
+
+  const handleSave = () => {
+    if (!isFormValid) return;
+    console.log("수리기사 등록 값:", form);
+    alert("수리기사가 등록되었습니다. (API 연결 전)");
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-[540px]">
-        <h1 className="text-2xl font-semibold mb-6">
-          {initialData ? "수리기사 수정" : "수리기사 등록"}
-        </h1>
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-[600px] p-8 relative">
+        {/* 닫기 버튼 (우측 상단) */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl"
+        >
+          ✕
+        </button>
+
+        {/* 제목 */}
+        <h1 className="text-2xl font-semibold text-black mb-8">수리기사 등록</h1>
 
         <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          {/* 이름 */}
           <div>
             <label className="block mb-1">이름 *</label>
             <input
@@ -107,10 +61,12 @@ const MySurigisaaddModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               name="name"
               value={form.name}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-4 py-2"
+              className="w-full h-12 border border-gray-300 rounded-lg px-4"
+              placeholder="이름을 입력하세요"
             />
           </div>
 
+          {/* 이메일 */}
           <div>
             <label className="block mb-1">이메일 *</label>
             <input
@@ -118,10 +74,12 @@ const MySurigisaaddModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               name="email"
               value={form.email}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-4 py-2"
+              className="w-full h-12 border border-gray-300 rounded-lg px-4"
+              placeholder="이메일을 입력하세요"
             />
           </div>
 
+          {/* 연락처 */}
           <div>
             <label className="block mb-1">연락처 *</label>
             <input
@@ -129,53 +87,51 @@ const MySurigisaaddModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               name="phone"
               value={form.phone}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-4 py-2"
+              maxLength={11}
+              className="w-full h-12 border border-gray-300 rounded-lg px-4"
+              placeholder="숫자 11자리를 입력하세요 (예: 01012345678)"
             />
           </div>
 
-          {/* 등록 모드일 때만 비밀번호 입력 */}
-          {!initialData && (
-            <>
-              <div>
-                <label className="block mb-1">비밀번호 *</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-4 py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1">비밀번호 확인 *</label>
-                <input
-                  type="password"
-                  name="passwordConfirm"
-                  value={form.passwordConfirm}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-4 py-2"
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex gap-3 justify-end mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-300 text-gray-700 rounded-lg font-semibold px-4 py-2"
-            >
-              닫기
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="bg-[#a3cd7f] text-white rounded-lg font-bold px-4 py-2"
-            >
-              저장
-            </button>
+          {/* 비밀번호 */}
+          <div>
+            <label className="block mb-1">비밀번호 *</label>
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="w-full h-12 border border-gray-300 rounded-lg px-4"
+              placeholder="비밀번호를 입력하세요"
+            />
           </div>
+
+          {/* 비밀번호 확인 */}
+          <div>
+            <label className="block mb-1">비밀번호 확인 *</label>
+            <input
+              type="password"
+              name="passwordConfirm"
+              value={form.passwordConfirm}
+              onChange={handleChange}
+              className="w-full h-12 border border-gray-300 rounded-lg px-4"
+              placeholder="비밀번호를 다시 입력하세요"
+            />
+          </div>
+
+          {/* 등록하기 버튼 (전체 너비, 큰 버튼) */}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!isFormValid}
+            className={`w-full h-12 text-white font-bold rounded-lg transition ${
+              isFormValid
+                ? "bg-[#9fc87b] hover:brightness-90"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
+          >
+            등록하기
+          </button>
         </form>
       </div>
     </div>

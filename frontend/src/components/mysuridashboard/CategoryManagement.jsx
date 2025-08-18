@@ -121,7 +121,7 @@ const CategoryManagement = () => {
             <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>
                 <th className="text-left px-6 py-3 font-medium">카테고리 이름</th>
-                <th className="text-left px-6 py-3 font-medium">생성일자</th>
+                <th className="text-left px-6 py-3 font-medium">등록일자</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
