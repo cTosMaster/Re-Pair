@@ -1,12 +1,10 @@
 package com.example.asplatform.category.controller;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.category.dto.requestDTO.CustomerCategoryRequest;
 import com.example.asplatform.category.dto.responseDTO.CustomerCategoryResponse;
 import com.example.asplatform.category.service.CustomerCategoryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -22,20 +20,14 @@ public class CustomerCategoryController {
 
     // 카테고리 생성
     @PostMapping("/{customerId}")
-    public ResponseEntity<Void> createCategory(@PathVariable Long customerId, @RequestBody CustomerCategoryRequest request) {
+    public ResponseEntity<Void> createCategory( @PathVariable Long customerId, @RequestBody CustomerCategoryRequest request) {
         customerCategoryService.addCustomerCategory(customerId, request);
         return ResponseEntity.ok().build(); // 200 OK 응답
     }
-
     // 고객사 모든 카테고리 조회
     @GetMapping("/{customerId}")
-    public ResponseEntity<Page<CustomerCategoryResponse>> list(
-            @PathVariable Long customerId,
-            @RequestParam(required = false) String keyword,
-            @org.springdoc.core.annotations.ParameterObject
-            @PageableDefault(size = 20, sort = "name") Pageable pageable
-    ) {
-        return ResponseEntity.ok(customerCategoryService.getCustomerCategories(customerId, keyword, pageable));
+    public List<CustomerCategoryResponse> getCategories(@PathVariable Long customerId) {
+        return customerCategoryService.getCustomerCategories(customerId);
     }
 
     //카테고리 이름 수정
