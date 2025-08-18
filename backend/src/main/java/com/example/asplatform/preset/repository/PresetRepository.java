@@ -27,16 +27,16 @@ public interface PresetRepository extends JpaRepository<Preset, Long> {
 	long countByIdIn(@Param("ids") Collection<Long> ids);
 	
 	// 고객사 소속 + 미삭제 프리셋만 카운트
-    long countByPresetIdInAndCustomerIdAndIsDeletedFalse(List<Long> ids, Long customerId);
+    long countByPresetIdInAndCustomerIdAndDeletedFalse(List<Long> ids, Long customerId);
   
     
     // 합계 계산 및 사용내역 저장을 위한 조회도 고객사 한정
-    List<Preset> findByPresetIdInAndCustomerIdAndIsDeletedFalse(List<Long> ids, Long customerId);
+    List<Preset> findByPresetIdInAndCustomerIdAndDeletedFalse(List<Long> ids, Long customerId);
     
 
 	// 고객사 아이디로 조회하기
 
-	Page<Preset> findByCustomer_Id(Long cusotmerId , Pageable pageable);
+	Page<Preset> findByCustomer_Id(Long customerId , Pageable pageable);
 	
 	//고객사 아이디 카테고리 아이디 , 제품 아이디로 조회하기
 	Page<Preset> findByCustomer_IdAndCategory_IdAndItem_ItemId(Long customerId , Long categoryId , Long itemId , Pageable pageable);

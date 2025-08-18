@@ -75,6 +75,7 @@ public class RepairRequestService {
 		RepairRequest repairRequest = RepairRequest.builder().user(user).repairableItem(item).title(dto.getTitle())
 				.description(dto.getDescription()).contactPhone(dto.getContactPhone()).status(RepairStatus.PENDING)
 				.createdAt(LocalDateTime.now()).build();
+		
 
 		repairRequestRepository.save(repairRequest);
 

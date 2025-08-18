@@ -1,5 +1,6 @@
 package com.example.asplatform.repair.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -13,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.enums.Role;
+import com.example.asplatform.customer.domain.Customer;
+import com.example.asplatform.preset.domain.Preset;
 import com.example.asplatform.preset.repository.PresetRepository;
 import com.example.asplatform.repair.domain.Repair;
 import com.example.asplatform.repair.domain.RepairImage;
@@ -22,6 +25,7 @@ import com.example.asplatform.repair.repository.RepairImageRepository;
 import com.example.asplatform.repair.repository.RepairPresetUsageRepository;
 import com.example.asplatform.repair.repository.RepairRepository;
 import com.example.asplatform.repair.requestDto.FinalEstimateRequestDto;
+import com.example.asplatform.repairRequest.domain.RepairRequest;
 import com.example.asplatform.repairRequest.repository.RepairRequestRepository;
 import com.example.asplatform.user.domain.User;
 
@@ -36,7 +40,7 @@ public class FinalEstimateService {
     private final RepairImageRepository repairImageRepository;
     private final RepairPresetUsageRepository repairPresetUsageRepository;
     private final PresetRepository presetRepository;
-    private final S3Uploader s3Uploader;
+    
 
     /**
      * ✅ 1. 최종 견적서 등록하기
@@ -67,7 +71,7 @@ public class FinalEstimateService {
      */
     @Transactional
     public FinalEstimateResponseDto updateFinalEstimate(Long repairId, FinalEstimateRequestDto dto,  CustomUserDetails currentUser) {
-        Repair repair = repairRepository.findByIdAndDeletedFalse(repairId)
+        Repair repair = repairRepository.findById(repairId)
                 .orElseThrow(() -> new IllegalArgumentException("최종 견적서를 찾을 수 없습니다."));
 
         // Repair 엔티티 업데이트
@@ -92,40 +96,59 @@ public class FinalEstimateService {
      */
     @Transactional(readOnly = true)
     public FinalEstimateResponseDto getFinalEstimate(Long repairId, CustomUserDetails currentUser) {
-        Repair repair = repairRepository.findByIdAndDeletedFalse(repairId)
+    	
+    	Repair repair = repairRepository.findById(repairId)
                 .orElseThrow(() -> new IllegalArgumentException("최종 견적서를 찾을 수 없습니다."));
+
+    	RepairRequest rr = repair.getRequest();
+        if (rr == null) {
+            throw new IllegalStateException("RepairRequest가 존재하지 않습니다.");
+        }
+        
+        // 고객사 id 추출하기
+        Long customerId = null;
+        if (rr.getRepairableItem() != null && rr.getRepairableItem().getCustomer() != null) {
+            customerId = rr.getRepairableItem().getCustomer().getId();
+        } else if (rr.getUser() != null && rr.getUser().getCustomer() != null) {
+            customerId = rr.getUser().getCustomer().getId();
+        }
 
         // 권한 추출하기 
         Role role = currentUser.getUser().getRole();
+        User repairUser = repair.getRequest().getUser();
         
         // 1) 수리기사 & 고객사 관리자 -> 같은 고객사만 접근 가능 
         if ( role == Role.ENGINEER || role == Role.CUSTOMER) {
-            if (!Objects.equals(repair.getRequest().getUser().getCustomer().getId(), currentUser.getCustomerId())) {
+            if (customerId == null || !Objects.equals(customerId, currentUser.getCustomerId())) {
                 throw new AccessDeniedException("해당 고객사의 수리 견적서가 아닙니다.");
             }
         }
         
         // 2) 일반 사용자 -> 본인이 요청한 건만 접근 가능 
         if ( role == Role.USER) {
-            if (!Objects.equals(repair.getRequest().getUser().getId(), currentUser.getId())) {
+            if (!Objects.equals(repairUser.getId(), currentUser.getId())) {
                 throw new AccessDeniedException("본인의 수리 견적서만 조회할 수 있습니다.");
             }
         }
         return buildResponseDto(repair);
     }
     
+    /**
+     * ✅ 4. 전체 조회하기
+     * @param page
+     * @param currentUser
+     * @return
+     */
     @Transactional(readOnly = true)
-    public Page<FinalEstimateResponseDto> getAllFinalEstimates(int page , CustomUserDetails currentUser){
+    public Page<FinalEstimateResponseDto> getAllFinalEstimates(int page, CustomUserDetails currentUser) {
         Pageable pageable = PageRequest.of(page, 10);
         Role role = currentUser.getUser().getRole();
         Page<Repair> repairs;
 
-        // 사용자 -> 자기 자신이 쓴 글만 전체 조회 가능 
-        // 수리기사 / 고객사 관리자 -> 자신 고객사의 수리 견적서만 전체 조회 가능
         if (role == Role.USER) {
             repairs = repairRepository.findByRequest_User_Id(currentUser.getId(), pageable);
         } else if (role == Role.ENGINEER || role == Role.CUSTOMER) {
-            repairs = repairRepository.findByRequest_User_Customer_Id(currentUser.getCustomerId(), pageable);
+            repairs = repairRepository.findByCustomerId(currentUser.getCustomerId(), pageable);
         } else {
             throw new AccessDeniedException("권한이 없습니다.");
         }
@@ -146,7 +169,7 @@ public class FinalEstimateService {
         if (dto.getPresetIds() != null && !dto.getPresetIds().isEmpty()) {
             List<RepairPresetUsage> usages = dto.getPresetIds().stream()
                     .map(presetId ->  {
-                        var preset = presetRepository.findById(presetId)
+                        Preset preset = presetRepository.findById(presetId)
                                 .orElseThrow(() -> new IllegalArgumentException("프리셋을 찾을 수 없습니다."));
 
                         // 현재 고객사 확인하기
@@ -157,6 +180,7 @@ public class FinalEstimateService {
                         return RepairPresetUsage.builder()
                                 .repair(repair)
                                 .preset(preset)
+                                .usedAt(LocalDateTime.now())
                                 .build();
                     })
                     .collect(Collectors.toList());
@@ -165,14 +189,13 @@ public class FinalEstimateService {
 
         if (dto.getImages() != null && !dto.getImages().isEmpty()) {
             List<RepairImage> images = dto.getImages().stream()
-                    .map(imgDto -> {
-                        String url = s3Uploader.uploadBase64Image(imgDto.getBase64(), "repair");
-                        return RepairImage.builder()
-                                .repair(repair)
-                                .imageType(imgDto.getImageType())
-                                .imageUrl(url)
-                                .build();
-                    }).collect(Collectors.toList());
+                    .map(imgDto -> RepairImage.builder()
+                            .repair(repair)
+                            .imageType(imgDto.getImageType())
+                            .imageUrl(imgDto.getUrl())  
+                            .createdAt(LocalDateTime.now())
+                            .build())
+                    .collect(Collectors.toList());
             repairImageRepository.saveAll(images);
         }
     }

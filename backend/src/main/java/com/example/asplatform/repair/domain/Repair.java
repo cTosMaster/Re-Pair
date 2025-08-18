@@ -43,8 +43,6 @@ public class Repair {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
     
-    @Column(name = "is_deleted", nullable = false)
-    private boolean deleted = false;
 
     @PrePersist
     protected void onCreate() {

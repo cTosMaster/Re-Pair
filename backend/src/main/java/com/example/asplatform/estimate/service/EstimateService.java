@@ -92,13 +92,13 @@ public class EstimateService {
 
 		if (!presetIds.isEmpty()) {
 			// 존재성/개수 검증
-			long cnt = presetRepository.countByPresetIdInAndCustomerIdAndIsDeletedFalse(presetIds, customerId);
+			long cnt = presetRepository.countByPresetIdInAndCustomerIdAndDeletedFalse(presetIds, customerId);
 			if (cnt != presetIds.size()) {
 				throw new IllegalArgumentException("선택한 프리셋 중 고객사에 속하지 않거나 존재하지 않는 항목이 있습니다.");
 			}
 
 			// 현재 Preset.price 합계 (서버 재계산)
-			var presets = presetRepository.findByPresetIdInAndCustomerIdAndIsDeletedFalse(presetIds, customerId);
+			var presets = presetRepository.findByPresetIdInAndCustomerIdAndDeletedFalse(presetIds, customerId);
 			int sum = presets.stream().mapToInt(Preset::getPrice).sum();
 			presetTotal = sum;
 
@@ -164,7 +164,7 @@ public class EstimateService {
 		// 프리셋 이름 매핑
 		List<PresetBrief> presetBriefs = List.of();
 		if (!presetIds.isEmpty()) {
-			List<Preset> presets = presetRepository.findByPresetIdInAndCustomerIdAndIsDeletedFalse(presetIds,
+			List<Preset> presets = presetRepository.findByPresetIdInAndCustomerIdAndDeletedFalse(presetIds,
 					customerId);
 
 			Map<Long, Preset> presetMap = presets.stream()

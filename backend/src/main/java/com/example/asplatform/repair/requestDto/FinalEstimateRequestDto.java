@@ -12,9 +12,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class FinalEstimateRequestDto {
 	private String description;
 	private Integer finalPrice;
@@ -23,11 +20,8 @@ public class FinalEstimateRequestDto {
 	
 	@Getter
 	@Setter
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@Builder
 	public static class ImageUploadDto {
-		private String base64; // base64 인코딩된 이미지 데이터
+		private String url;
 		private ImageType imageType; // before/ after 구분하기
 	}
 	

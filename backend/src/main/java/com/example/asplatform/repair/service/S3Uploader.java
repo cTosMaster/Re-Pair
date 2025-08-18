@@ -1,4 +1,4 @@
-package com.example.asplatform.repair.service;
+/*package com.example.asplatform.repair.service;
 
 import java.util.Base64;
 
@@ -41,4 +41,4 @@ public class S3Uploader {
         return "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
     }
 
-}
+}*/

@@ -278,7 +278,7 @@ public class RepairRequestDetailService {
 		if (presetIds.isEmpty()) {
 			presetMap = Map.of();
 		} else {
-			List<Preset> presets = presetRepository.findByPresetIdInAndCustomerIdAndIsDeletedFalse(presetIds,
+			List<Preset> presets = presetRepository.findByPresetIdInAndCustomerIdAndDeletedFalse(presetIds,
 					customerId);
 			presetMap = presets.stream().collect(Collectors.toMap(Preset::getPresetId, Function.identity()));
 		}

@@ -25,8 +25,6 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "presets")
-@SQLDelete(sql = "UPDATE presets SET is_deleted = true WHERE preset_id = ?")
-@Where(clause = "is_deleted = false")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -64,7 +62,6 @@ public class Preset {
     @CreationTimestamp
     private LocalDateTime createdAt;
     
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+  
 
 }

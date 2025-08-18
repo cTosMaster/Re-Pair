@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.preset.dto.requestDTO.PresetRequestDto;
 import com.example.asplatform.preset.dto.responseDTO.PresetResponseDto;
 import com.example.asplatform.preset.service.PresetService;
@@ -35,7 +36,7 @@ public class PresetController {
 	 * @return
 	 */
 	@GetMapping(params = {"!categoryId", "!itemId"})
-	public ResponseEntity<Page<PresetResponseDto>> getPresets(@AuthenticationPrincipal UserDetails userDetails, @RequestParam(value = "page", defaultValue = "0") int page){
+	public ResponseEntity<Page<PresetResponseDto>> getPresets(@AuthenticationPrincipal CustomUserDetails user, @RequestParam(value = "page", defaultValue = "0") int page){
 		Page<PresetResponseDto> presets = presetService.getAllPreset(page);
 		return new ResponseEntity<>(presets, HttpStatus.OK);
 		
@@ -48,7 +49,7 @@ public class PresetController {
 	 * @return
 	 */
 	@GetMapping(params = {"categoryId", "itemId"})
-	public ResponseEntity<Page<PresetResponseDto>> filterPresets(@RequestParam Long categoryId , @RequestParam Long itemId, @AuthenticationPrincipal UserDetails userDetails, @RequestParam(value = "page", defaultValue = "0") int page) {
+	public ResponseEntity<Page<PresetResponseDto>> filterPresets(@RequestParam Long categoryId , @RequestParam Long itemId, @AuthenticationPrincipal CustomUserDetails user, @RequestParam(value = "page", defaultValue = "0") int page) {
 		Page<PresetResponseDto> presets = presetService.getPresetsByCategoryAndItem(categoryId, itemId, page);
 		return new ResponseEntity<>(presets, HttpStatus.OK);
 	}
@@ -59,7 +60,7 @@ public class PresetController {
 	 * @return
 	 */
 	@PostMapping
-	public ResponseEntity<PresetResponseDto> createPrest(@RequestBody PresetRequestDto dto, @AuthenticationPrincipal UserDetails userDetails) {
+	public ResponseEntity<PresetResponseDto> createPrest(@RequestBody PresetRequestDto dto, @AuthenticationPrincipal CustomUserDetails user) {
 		PresetResponseDto createdPreset = presetService.createPreset(dto);
 		return new ResponseEntity<>(createdPreset , HttpStatus.CREATED);
 	}
@@ -71,7 +72,7 @@ public class PresetController {
 	 * @return
 	 */
 	@PutMapping("/{presetId}")
-	public ResponseEntity<PresetResponseDto> updatePreset(@PathVariable Long presetId, @RequestBody PresetRequestDto dto, @AuthenticationPrincipal UserDetails userDetails) {
+	public ResponseEntity<PresetResponseDto> updatePreset(@PathVariable Long presetId, @RequestBody PresetRequestDto dto, @AuthenticationPrincipal CustomUserDetails user) {
 		PresetResponseDto updatePreset = presetService.updatePreset(presetId, dto);
 		return new ResponseEntity<>(updatePreset , HttpStatus.OK);
 	}
@@ -82,7 +83,7 @@ public class PresetController {
 	 * @return
 	 */
 	@PostMapping("/calculate")
-	public ResponseEntity<Integer> calculatePrice(@RequestBody List<Long> presetIds, @AuthenticationPrincipal UserDetails userDetails){
+	public ResponseEntity<Integer> calculatePrice(@RequestBody List<Long> presetIds, @AuthenticationPrincipal CustomUserDetails user){
 		int totalPrice = presetService.calculatePrice(presetIds);
 		return new ResponseEntity<>(totalPrice, HttpStatus.OK);
 			
@@ -94,7 +95,7 @@ public class PresetController {
 	 * @return
 	 */
 	@PostMapping("/{presetId}")
-	public ResponseEntity<PresetResponseDto> getPresetPreview(@PathVariable Long presetId, @AuthenticationPrincipal UserDetails userDetails) {
+	public ResponseEntity<PresetResponseDto> getPresetPreview(@PathVariable Long presetId, @AuthenticationPrincipal CustomUserDetails user) {
 		PresetResponseDto preset = presetService.getPresetPreview(presetId);
 		return new ResponseEntity<>(preset, HttpStatus.OK);
 	}
@@ -106,7 +107,7 @@ public class PresetController {
 	 * @return
 	 */
 	@DeleteMapping("/soft/{presetId}")
-	public ResponseEntity<Void> softDeletePreset(@PathVariable Long presetId , @AuthenticationPrincipal UserDetails user) {
+	public ResponseEntity<Void> softDeletePreset(@PathVariable Long presetId , @AuthenticationPrincipal CustomUserDetails user) {
 		presetService.softDeletePreset(presetId);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
@@ -118,7 +119,7 @@ public class PresetController {
 	 * @return
 	 */
 	@DeleteMapping("/hard/{presetId}")
-	public ResponseEntity<Void> hardDeletePreset(@PathVariable Long presetId , @AuthenticationPrincipal UserDetails user) {
+	public ResponseEntity<Void> hardDeletePreset(@PathVariable Long presetId , @AuthenticationPrincipal CustomUserDetails user) {
 		presetService.hardDeletePreset(presetId);
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
@@ -130,7 +131,7 @@ public class PresetController {
 	 * @return
 	 */
 	@GetMapping("/deleted") 
-	public ResponseEntity<Page<PresetResponseDto>> getDeletedPresets(@AuthenticationPrincipal UserDetails userDetails , @RequestParam ( value = "page" , defaultValue="0") int page) {
+	public ResponseEntity<Page<PresetResponseDto>> getDeletedPresets(@AuthenticationPrincipal CustomUserDetails user , @RequestParam ( value = "page" , defaultValue="0") int page) {
 		Page<PresetResponseDto> deletedPresets = presetService.getDeletePresets(page);
 		return new ResponseEntity<>(deletedPresets, HttpStatus.OK);
 	}
@@ -142,7 +143,7 @@ public class PresetController {
 	 * @return
 	 */
 	@PostMapping("/restore/{presetId}")
-	public ResponseEntity<Void> restoredPreset(@PathVariable Long presetId , @AuthenticationPrincipal UserDetails userDetails) {
+	public ResponseEntity<Void> restoredPreset(@PathVariable Long presetId , @AuthenticationPrincipal CustomUserDetails user) {
 	    presetService.restorePreset(presetId);
 	    return new ResponseEntity<>(HttpStatus.OK);
 	}

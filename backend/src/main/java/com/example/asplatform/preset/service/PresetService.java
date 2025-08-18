@@ -182,14 +182,21 @@ public class PresetService {
 	public Integer calculatePrice(List<Long> presetIds) {
 		int totalPrice = 0;
 		Long currentCustomerId = getCurrentCustomerId();
+		boolean admin = isAdmin();
 		
 		for(Long presetId : presetIds) {
 			 Preset preset = presetRepository.findById(presetId)
 			        .orElseThrow(() -> new IllegalArgumentException("프리셋을 찾을 수 없습니다."));
-			        
-			 if (!preset.getCustomer().getId().equals(currentCustomerId)) {
-			      throw new AccessDeniedException("본인 고객사의 프리셋만 계산할 수 있습니다.");
-			 }
+			 
+	         // 관리자일 경우 고객사 제한 없음
+	         if (!admin && !preset.getCustomer().getId().equals(currentCustomerId)) {
+	              throw new AccessDeniedException("본인 고객사의 프리셋만 계산할 수 있습니다.");
+	         }
+
+	         // 소프트 딜리트된 프리셋은 계산 불가
+	         if (preset.isDeleted()) {
+	              throw new IllegalArgumentException("삭제된 프리셋은 계산할 수 없습니다.");
+	         }	         
 
 			 totalPrice += preset.getPrice();
 		}
@@ -205,6 +212,11 @@ public class PresetService {
 		Preset preset = presetRepository.findById(presetId)
 				.orElseThrow(()-> new IllegalArgumentException("프리셋을 찾을 수 없습니다."));
 		
+		// 소프트 딜리트 된 프리셋은 조회 불가함
+	    if (preset.isDeleted()) {
+	        throw new IllegalArgumentException("삭제된 프리셋은 조회할 수 없습니다.");
+	    }
+	    
 		// admin이면 모든 프리셋 접근 가능
 	    if (isAdmin()) {
 	        return convertToResponseDto(preset);
@@ -261,9 +273,15 @@ public class PresetService {
 	 * @return
 	 */
 	public Page<PresetResponseDto> getDeletePresets(int page) {
+		
+		// 권한 확인하기 - 고객사 관리자만 접근 
+	    if (!isCustomer()) {
+	        throw new AccessDeniedException("고객사 관리자만 삭제된 프리셋 목록을 조회할 수 있습니다.");
+	    }
+	    
 		Pageable pageable = PageRequest.of(page,  10);
 		
-		Long customerId = getCurrentCustomerId(); // customer 전용 접근
+		Long customerId = getCurrentCustomerId(); 
 	    Page<Preset> presetPage = presetRepository.findByCustomer_IdAndDeletedTrue(customerId, pageable);
 		
 		return presetPage.map(this::convertToResponseDto);
@@ -328,5 +346,15 @@ public class PresetService {
 	            .stream()
 	            .anyMatch(a -> a.getAuthority().equals("ROLE_CUSTOMER") 
 	                        || a.getAuthority().equals("ROLE_ENGINEER"));
+	}
+	
+	/**
+	 * 고객사 관리자 권한 확인하기
+	 * @return
+	 */
+	private boolean isCustomer() {
+	    return SecurityContextHolder.getContext().getAuthentication().getAuthorities()
+	            .stream()
+	            .anyMatch(a -> a.getAuthority().equals("ROLE_CUSTOMER"));
 	}
 }

@@ -33,7 +33,7 @@ public class FinalEstimateController {
 	 * @param dto
 	 * @return
 	 */
-	@PostMapping("/{reuqestId}/final-estimate") 
+	@PostMapping("/{requestId}/final-estimate") 
 	public ResponseEntity<FinalEstimateResponseDto> createFinalEstimate(@AuthenticationPrincipal CustomUserDetails user, @PathVariable Long requestId , @RequestBody FinalEstimateRequestDto dto){
 		FinalEstimateResponseDto response = repairService.createFinalEstimate(requestId, dto, user);
 		return ResponseEntity.ok(response);
@@ -46,9 +46,9 @@ public class FinalEstimateController {
 	 * @param dto
 	 * @return
 	 */
-	@PutMapping("/{repairsId}/final-estimate")
-	public ResponseEntity<FinalEstimateResponseDto> updateFInalEstimate(@AuthenticationPrincipal CustomUserDetails user , @PathVariable Long repairsId , @RequestBody FinalEstimateRequestDto dto){
-		FinalEstimateResponseDto response = repairService.updateFinalEstimate(repairsId, dto, user);
+	@PutMapping("/{repairId}/final-estimate")
+	public ResponseEntity<FinalEstimateResponseDto> updateFInalEstimate(@AuthenticationPrincipal CustomUserDetails user , @PathVariable Long repairId , @RequestBody FinalEstimateRequestDto dto){
+		FinalEstimateResponseDto response = repairService.updateFinalEstimate(repairId, dto, user);
 		return ResponseEntity.ok(response);
 	}
 	
@@ -69,7 +69,7 @@ public class FinalEstimateController {
 	 * @param page
 	 * @return
 	 */
-	@GetMapping("/final-estimates")
+	@GetMapping("/final-estimate")
 	public ResponseEntity<?> getAllFinalEstimates( @AuthenticationPrincipal CustomUserDetails user , @RequestParam (value = "page" , defaultValue = "0") int page) {
 		return ResponseEntity.ok(repairService.getAllFinalEstimates(page, user));
 	}
