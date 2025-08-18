@@ -213,29 +213,53 @@ public class RepairRequestService {
 	/** 접수: ENGINEER는 본인 자동배정, CUSTOMER는 engineerId 필수 */
 	@Transactional
 	public RepairRequestSimpleResponse accept(Long requestId, User currentUser, Long engineerId, String memo) {
+
 		final var rr = repairRequestRepository.findById(requestId)
 				.orElseThrow(() -> new IllegalArgumentException("요청 없음: " + requestId));
 
 		if (rr.getStatus() == RepairStatus.CANCELED || rr.getStatus() == RepairStatus.COMPLETED)
 			throw new IllegalStateException("종료된 요청은 접수 불가");
 
+		// ★ 요청의 고객사 식별 (모델에 맞게 선택)
+		Long reqCustomerId = rr.getRepairableItem().getCustomer().getId();
+
 		String role = currentUser.getRole().name();
 		Long prevEngineerId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
 
 		if ("ENGINEER".equals(role)) {
+			// ★ 엔지니어의 고객사 확인
+			var meEng = engineerRepository.findById(currentUser.getId())
+					.orElseThrow(() -> new IllegalArgumentException("엔지니어 없음: " + currentUser.getId()));
+			if (!meEng.getCustomerId().equals(reqCustomerId))
+				throw new AccessDeniedException("다른 고객사의 요청은 접수 불가");
+
 			if (rr.getEngineer() == null) {
 				rr.setEngineer(em.getReference(User.class, currentUser.getId()));
 			} else if (!rr.getEngineer().getId().equals(currentUser.getId())) {
 				throw new AccessDeniedException("다른 기사에게 배정된 요청은 접수 불가");
 			}
+
 		} else if ("CUSTOMER".equals(role)) {
+			// ★ 고객사 본인 요청인지 확인
+			Long myCustomerId = currentUser.getCustomer().getId();
+			if (!reqCustomerId.equals(myCustomerId))
+				throw new AccessDeniedException("다른 고객사의 요청은 승인할 수 없습니다.");
+
 			if (engineerId == null)
 				throw new IllegalArgumentException("engineerId는 필수입니다.");
-			if (!engineerRepository.existsById(engineerId))
-				throw new IllegalArgumentException("엔지니어 없음: " + engineerId);
+
+			var eng = engineerRepository.findById(engineerId)
+					.orElseThrow(() -> new IllegalArgumentException("엔지니어 없음: " + engineerId));
+
+			// ★ 같은 고객사 기사만 배정
+			if (!eng.getCustomerId().equals(myCustomerId))
+				throw new AccessDeniedException("다른 고객사 소속 기사는 배정할 수 없습니다.");
+
 			rr.setEngineer(em.getReference(User.class, engineerId));
-		} else
+
+		} else {
 			throw new AccessDeniedException("권한 없음");
+		}
 
 		var prev = rr.getStatus();
 		rr.setStatus(RepairStatus.WAITING_FOR_REPAIR);
@@ -272,10 +296,8 @@ public class RepairRequestService {
 ));
 
 		Long newEngineerId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
-		if (newEngineerId != null)
-			refreshEngineerAssignedFlag(newEngineerId);
-		if (prevEngineerId != null && !prevEngineerId.equals(newEngineerId))
-			refreshEngineerAssignedFlag(prevEngineerId);
+		if (newEngineerId != null) refreshEngineerAssignedFlag(newEngineerId);
+		if (prevEngineerId != null && !prevEngineerId.equals(newEngineerId)) refreshEngineerAssignedFlag(prevEngineerId);
 
 		return RepairRequestSimpleResponse.builder()
 				.requestId(rr.getRequestId())
@@ -284,6 +306,7 @@ public class RepairRequestService {
 				.engineerId(newEngineerId)
 				.build();
 	}
+
 
 	/** 반려: ENGINEER는 자기 배정건만, CUSTOMER는 사유만 필수 */
 	@Transactional

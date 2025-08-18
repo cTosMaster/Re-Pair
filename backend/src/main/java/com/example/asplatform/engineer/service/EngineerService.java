@@ -112,10 +112,18 @@ public class EngineerService {
     }
 
 
-    /** 수리기사 목록 조회*/
+    /**  전체 엔지니어 목록 */
     @Transactional(readOnly = true)
-    public Page<EngineerResponse> list(Pageable pageable) {
+    public Page<EngineerResponse> getAllEngineers(Pageable pageable) {
         return engineerRepository.findAll(pageable)
+                .map(EngineerResponse::from);
+    }
+
+    /** [CUSTOMER 전용] 내 고객사 엔지니어 목록 */
+    @Transactional(readOnly = true)
+    public Page<EngineerResponse> getEngineersForCustomer(Pageable pageable, CustomUserDetails user) {
+        Long customerId = user.getCustomerId(); // 로그인한 고객사의 ID
+        return engineerRepository.findByCustomerId(customerId, pageable)
                 .map(EngineerResponse::from);
     }
 }
