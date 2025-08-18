@@ -63,7 +63,7 @@ export default function RepairRequestModal({
     try {
       // ⛔ 예전: listRepairItems({ page: 0, size: 100, customerId, categoryId })
       // ✅ 변경: 고객사 전용 비페이징 API로 전체를 불러온 뒤 프론트에서 카테고리 필터
-      const resp = await getCustomerItems();
+      const resp = await getCustomerItems(customerId);
       const raw = resp?.data ?? [];
 
       const mapped = raw.map(it => ({

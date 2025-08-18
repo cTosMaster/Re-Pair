@@ -59,7 +59,7 @@ export default function CustomerSalesPage() {
       // 2) 수리 가능 항목(가격) — 고객사 기준 (비페이징)
       let mapped = [];
       try {
-        const ir = await getCustomerItems(); // ✅ 단순 URL 호출
+        const ir = await getCustomerItems(customerId); // ✅ 단순 URL 호출
         const arr = ir?.data ?? [];
         mapped = arr.map((it) => ({
           id: it.id ?? it.itemId,
