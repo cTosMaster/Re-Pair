@@ -11,8 +11,7 @@ import RejectReasonBox from "../../components/repairdetail/common/RejectReasonBo
 
 // 서비스(API)
 import { getRequestHistory, getEngineer } from "../../services/commonAPI";
-import { getRepairRequest } from "../../services/customerAPI";
-import { getPreEstimate, listPresets } from "../../services/engineerAPI";
+import { getRepairRequest, listPresets, getFirstEstimate } from "../../services/customerAPI";
 
 // 상태 맵
 import { RepairStatusMap } from "../../constants/repairStatus";
@@ -21,33 +20,49 @@ import { RepairStatusMap } from "../../constants/repairStatus";
 import { fromApiToUi, segmentForStatus } from "../../routes/statusRoute";
 
 /** 카드 맵핑 (간결 버전) */
-const toEngineerCard = (eng, detail = {}) => (
-  !eng ? null : {
-    name: eng.name ?? eng.username ?? eng.email ?? "배정된 기사",
-    email: eng.email ?? "",
-    phone: eng.phone ?? "",
-    profileImage: eng.imageUrl ?? "",
-    dateText: eng.registeredAt ?? detail.assignedAt ?? detail.updatedAt ?? detail.createdAt ?? "",
-  }
-);
+const toEngineerCard = (eng, detail = {}) =>
+  !eng
+    ? null
+    : {
+        name: eng.name ?? eng.username ?? eng.email ?? "배정된 기사",
+        email: eng.email ?? "",
+        phone: eng.phone ?? "",
+        profileImage: eng.imageUrl ?? "",
+        dateText:
+          eng.registeredAt ??
+          detail.assignedAt ??
+          detail.updatedAt ??
+          detail.createdAt ??
+          "",
+      };
 
 /** 상태 이력 → 현재 상태/취소 여부 도출 */
 const deriveStatusFromHistory = (history = []) => {
   if (!Array.isArray(history) || history.length === 0) {
     return { statusCode: "WAITING_FOR_REPAIR", isCancelled: false, cancelReason: null };
   }
-  const norm = history.map(h => ({
+  const norm = history.map((h) => ({
     ...h,
     previousStatus: fromApiToUi(h?.previousStatus),
     newStatus: fromApiToUi(h?.newStatus),
   }));
   const last = norm[norm.length - 1];
   const statusCode = last?.newStatus ?? "WAITING_FOR_REPAIR";
-  const canceledItem = [...norm].reverse().find(h => h?.newStatus === "CANCELLED");
-  return { statusCode, isCancelled: statusCode === "CANCELLED", cancelReason: canceledItem?.memo ?? null };
+  const canceledItem = [...norm].reverse().find((h) => h?.newStatus === "CANCELLED");
+  return {
+    statusCode,
+    isCancelled: statusCode === "CANCELLED",
+    cancelReason: canceledItem?.memo ?? null,
+  };
 };
 
-const DUMMY_ENGINEER = { name: "김독수리", email: "engineer01@example.com", phone: "010-0000-0000", profileImage: "", dateText: "" };
+const DUMMY_ENGINEER = {
+  name: "김독수리",
+  email: "engineer01@example.com",
+  phone: "010-0000-0000",
+  profileImage: "",
+  dateText: "",
+};
 
 export default function WaitingForRepairPage() {
   const { requestId: _rid } = useParams();
@@ -72,6 +87,9 @@ export default function WaitingForRepairPage() {
   const [engineerCard, setEngineerCard] = useState(null);
   const [estimate, setEstimate] = useState(null);
   const [presetList, setPresetList] = useState([]);
+
+  // 요청 상세에서 categoryId/itemId 추출 → 폼에 내려줌
+  const [itemId, setItemId] = useState(null);
 
   const role = useMemo(() => String(user?.role || "GUEST").toUpperCase(), [user]);
   const isUser = role === "USER";
@@ -111,16 +129,19 @@ export default function WaitingForRepairPage() {
           }
         }
 
-        // 3) 요청 상세 → 엔지니어 카드
+        // 3) 요청 상세 → 엔지니어 카드 + categoryId/itemId 추출
         const { data: detail } = await getRepairRequest(requestId, { signal: ac.signal });
         const fallbackEng = detail?.engineer ?? detail?.assignedEngineer ?? detail?.engineerInfo ?? null;
 
-        const detailEngineerId = detail?.engineerid ?? null; // 👈 서버 응답 키: engineerid
+        const catId = detail?.category?.id ?? detail?.categoryId ?? detail?.request?.category?.id ?? null;
+        const itId  = detail?.item?.id     ?? detail?.itemId     ?? detail?.request?.item?.id     ?? null;
+        setItemId(itId ?? null);
+
+        const detailEngineerId = detail?.engineerid ?? detail?.engineerId ?? null;
         const engineerId = inboundEngineerId ?? detailEngineerId ?? null;
 
         if (engineerId) {
           try {
-            console.log("[WFR] calling getEngineer with", engineerId);
             const { data: eng } = await getEngineer(engineerId, { signal: ac.signal });
             setEngineerCard(toEngineerCard(eng, detail));
           } catch {
@@ -130,27 +151,57 @@ export default function WaitingForRepairPage() {
           setEngineerCard(toEngineerCard(fallbackEng, detail));
         }
 
-        // 4) 1차 견적
+        // 4) 1차 견적 (프리뷰)  — customerAPI로 조회
         try {
-          const { data: pe } = await getPreEstimate(requestId, { signal: ac.signal });
-          const presets = Array.isArray(pe?.presets)
-            ? pe.presets.map(p => ({ id: p.id ?? p.presetId ?? p.code ?? Math.random(), name: p.name ?? p.title ?? "프리셋", price: p.price ?? p.amount ?? 0 }))
+          const { data: fe } = await getFirstEstimate(requestId, { signal: ac.signal });
+          const presets = Array.isArray(fe?.presets)
+            ? fe.presets.map((p) => ({
+                id: p.id ?? p.presetId ?? p.code ?? Math.random(),
+                name: p.name ?? p.title ?? "프리셋",
+                price: p.price ?? p.amount ?? 0,
+              }))
             : [];
           setEstimate({
             presets,
-            extraNote: pe?.description ?? pe?.extraNote ?? "",
-            totalPrice: presets.reduce((s, p) => s + (p.price || 0), 0) + (Number(pe?.extraAmount) || 0),
-            createdAt: pe?.createdAt ?? "",
+            extraNote: fe?.description ?? fe?.extraNote ?? "",
+            totalPrice:
+              (typeof fe?.totalPrice === "number" ? fe.totalPrice : undefined) ??
+              (presets.reduce((s, p) => s + (p.price || 0), 0) + (Number(fe?.extraAmount) || 0)),
+            createdAt: fe?.createdAt ?? "",
           });
         } catch {
           setEstimate(null);
         }
 
-        // 5) 프리셋 목록
+        // 5) 프리셋 목록 (서버 필터: categoryId + itemId)
         if (!d.isCancelled && d.statusCode === "WAITING_FOR_REPAIR" && (isEngineer || isAdmin || isCustomer)) {
-          const { data: presetRes } = await listPresets({ page: 0, size: 50, signal: ac.signal });
-          const items = Array.isArray(presetRes?.items) ? presetRes.items : (Array.isArray(presetRes) ? presetRes : []);
-          setPresetList(items.map(p => ({ id: p.id ?? p.presetId ?? p.code ?? Math.random(), name: p.name ?? p.title ?? "프리셋", price: p.price ?? p.amount ?? 0 })));
+          const { data: presetRes } = await listPresets(
+            {
+              page: 0,
+              size: 50,
+              categoryId: catId ?? undefined,
+              itemId: itId ?? undefined,
+            },
+            { signal: ac.signal }
+          );
+
+          const items = Array.isArray(presetRes?.content)
+            ? presetRes.content
+            : Array.isArray(presetRes?.items)
+            ? presetRes.items
+            : Array.isArray(presetRes)
+            ? presetRes
+            : [];
+
+          setPresetList(
+            items.map((p) => ({
+              id: p.id ?? p.presetId ?? p.code ?? Math.random(),
+              name: p.name ?? p.title ?? "프리셋",
+              price: p.price ?? p.amount ?? 0,
+              itemId: p.itemId ?? p.item?.id ?? null,
+              categoryId: p.categoryId ?? p.category?.id ?? null,
+            }))
+          );
         } else {
           setPresetList([]);
         }
@@ -161,14 +212,39 @@ export default function WaitingForRepairPage() {
       }
     })();
     return () => ac.abort();
-  }, [requestId, location.pathname, navigate, isEngineer, isAdmin, isCustomer, inboundEngineerId]);
+  }, [requestId, location.pathname, navigate, inboundEngineerId, isEngineer, isAdmin, isCustomer]);
+
+  // 등록 후 프리뷰 다시 불러오기
+  const reloadFirstEstimate = async () => {
+    try {
+      const { data: fe } = await getFirstEstimate(requestId);
+      const presets = Array.isArray(fe?.presets)
+        ? fe.presets.map((p) => ({
+            id: p.id ?? p.presetId ?? p.code ?? Math.random(),
+            name: p.name ?? p.title ?? "프리셋",
+            price: p.price ?? p.amount ?? 0,
+          }))
+        : [];
+      setEstimate({
+        presets,
+        extraNote: fe?.description ?? fe?.extraNote ?? "",
+        totalPrice:
+          (typeof fe?.totalPrice === "number" ? fe.totalPrice : undefined) ??
+          (presets.reduce((s, p) => s + (p.price || 0), 0) + (Number(fe?.extraAmount) || 0)),
+        createdAt: fe?.createdAt ?? "",
+      });
+    } catch {
+      setEstimate(null);
+    }
+  };
 
   const currentStep = RepairStatusMap["WAITING_FOR_REPAIR"];
   const userStep = RepairStatusMap[statusCode] ?? 0;
   const isPastStep = !isCancelled && userStep > currentStep;
 
   if (authLoading || loading) return <div className="p-6 text-center text-gray-500">로딩 중...</div>;
-  if (!isAuthenticated || role === "GUEST") return <div className="p-6 text-center text-gray-500">이 페이지는 로그인 후 이용할 수 있습니다.</div>;
+  if (!isAuthenticated || role === "GUEST")
+    return <div className="p-6 text-center text-gray-500">이 페이지는 로그인 후 이용할 수 있습니다.</div>;
   if (!requestId) return <div className="p-6 text-center text-red-500">잘못된 접근입니다. (요청 ID 없음)</div>;
 
   return (
@@ -200,7 +276,17 @@ export default function WaitingForRepairPage() {
           {(isCustomer || isEngineer || isAdmin) && (
             <div className="space-y-6">
               <RepairProgress statusCode={statusCode} isCancelled={isCancelled} requestId={requestId} />
-              <FirstEstimateForm presetList={presetList} initialEngineerId={inboundEngineerId} />
+              {/* ✅ 조회된 견적이 있으면 미리보기, 없으면 등록 폼 노출 */}
+              {estimate ? (
+                <FirstEstimatePreview estimate={estimate} />
+              ) : (
+                <FirstEstimateForm
+                  requestId={Number(requestId)}
+                  presetList={presetList}
+                  itemId={itemId ?? undefined}
+                  onCreated={reloadFirstEstimate}
+                />
+              )}
             </div>
           )}
         </>

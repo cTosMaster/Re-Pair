@@ -8,7 +8,6 @@ const PAGE_SIZE = 10;
 
 /** 드롭다운(백엔드 enum 그대로) */
 const STATUS_FILTERS = [
-  { label: "전체", value: "ALL" },
   { label: "수리대기", value: "WAITING_FOR_REPAIR" },
   { label: "수리중", value: "IN_PROGRESS" },
   { label: "결제대기", value: "WAITING_FOR_PAYMENT" },
@@ -69,7 +68,7 @@ export default function MysuriCurrentList() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [keyword, setKeyword] = useState("");
-  const [status, setStatus] = useState("ALL"); // 백엔드 enum 그대로
+  const [status, setStatus] = useState("WAITING_FOR_REPAIR"); // 백엔드 enum 그대로
 
   // 체크 상태
   const [checked, setChecked] = useState({});
@@ -96,6 +95,7 @@ export default function MysuriCurrentList() {
       statusKr: toKr(uiCode),           // 표시용 한글
       userName: r.userName ?? r.user_name ?? r.name ?? "",
       userPhone: r.userPhone ?? r.contact_phone ?? r.phone ?? "",
+      roadAddress: r.roadAddress ?? r.address ?? "",
     };
   }, []);
 
@@ -242,7 +242,7 @@ export default function MysuriCurrentList() {
                     </div>
                     <div>
                       <div className="font-semibold text-gray-900">{r.userName || "-"}</div>
-                      <div className="text-xs text-gray-500">{r.userPhone || "-"}</div>
+                      <div className="text-xs text-gray-500">{r.roadAddress || "-"}</div>
                     </div>
                   </div>
 

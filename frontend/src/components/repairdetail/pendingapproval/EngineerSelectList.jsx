@@ -6,8 +6,7 @@ function EngineerSelectList({ engineerList = [], selectedId, onChange }) {
   const value = isControlled ? selectedId : localId;
 
   const handleToggle = (eng) => {
-    if (eng.status) return; // 배정된 기사면 선택 불가
-    const next = value === eng.id ? null : eng.id;
+    const next = value === eng.id ? null : eng.id; // 🔁 status 상관없이 토글
     isControlled ? onChange(next) : setLocalId(next);
   };
 
@@ -24,7 +23,6 @@ function EngineerSelectList({ engineerList = [], selectedId, onChange }) {
           <div className="h-full overflow-y-auto">
             {engineerList.map((eng, i) => {
               const isSelected = value === eng.id;
-              const isAssigned = eng.status === true;
 
               return (
                 <div key={eng.id}>
@@ -50,24 +48,20 @@ function EngineerSelectList({ engineerList = [], selectedId, onChange }) {
                       </div>
                     </div>
 
-                    {/* 오른쪽: 선택/해제 or 배정됨 */}
+                    {/* 오른쪽: 선택/해제 버튼만 유지 */}
                     <div className="min-w-[80px] text-right">
-                      {isAssigned ? (
-                        <span className="text-sm font-semibold text-red-500">배정 됨</span>
-                      ) : (
-                        <button
-                          className={`ml-2 px-4 py-1 text-sm rounded font-medium border transition 
-                            ${
-                              isSelected
-                                ? "bg-[#94bb71] text-white border-[#94bb71]"
-                                : "bg-[#A5CD82] text-white border-[#A5CD82] hover:bg-[#94bb71] hover:border-[#94bb71]"
-                            }`}
-                          onClick={() => handleToggle(eng)}
-                          aria-pressed={isSelected}
-                        >
-                          {isSelected ? "해제" : "선택"}
-                        </button>
-                      )}
+                      <button
+                        className={`ml-2 px-4 py-1 text-sm rounded font-medium border transition 
+                          ${
+                            isSelected
+                              ? "bg-[#94bb71] text-white border-[#94bb71]"
+                              : "bg-[#A5CD82] text-white border-[#A5CD82] hover:bg-[#94bb71] hover:border-[#94bb71]"
+                          }`}
+                        onClick={() => handleToggle(eng)}
+                        aria-pressed={isSelected}
+                      >
+                        {isSelected ? "해제" : "선택"}
+                      </button>
                     </div>
                   </div>
 

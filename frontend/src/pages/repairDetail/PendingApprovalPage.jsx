@@ -178,7 +178,7 @@ export default function PendingApprovalPage() {
   // 선택값 유효성 유지 (목록이 바뀌거나 해당 엔지니어가 배정된 경우 해제)
   useEffect(() => {
     if (selectedEngineerId == null) return;
-    const ok = engineerList.some((e) => e.id === selectedEngineerId && !e.status);
+    const ok = engineerList.some((e) => String(e.id) === String(selectedEngineerId));
     if (!ok) setSelectedEngineerId(null);
   }, [engineerList, selectedEngineerId]);
 
