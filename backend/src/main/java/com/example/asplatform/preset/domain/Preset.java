@@ -25,6 +25,8 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "presets")
+@SQLDelete(sql = "UPDATE presets SET is_deleted = true WHERE category_id = ?")
+@Where(clause = "is_deleted = false")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,11 +40,11 @@ public class Preset {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id", nullable = false)
     private CustomerCategory category;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "item_id", nullable = false) // 외래 키 컬럼 이름 명시
     private RepairableItem item;
 
