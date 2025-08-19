@@ -9,6 +9,7 @@ export default function UserProfileMenu({ user, onLogout }) {
   const avatarSrc = user?.imageUrl || user?.image_url || "/src/assets/human.png";
   const name = user?.name || user?.username || "사용자";
   const email = user?.email || "";
+  const role = user?.role || "USER"; // ✅ role 정보 받아오기
 
   useEffect(() => {
     const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -20,6 +21,21 @@ export default function UserProfileMenu({ user, onLogout }) {
       document.removeEventListener("keydown", onEsc);
     };
   }, []);
+
+  // ✅ role별 마이페이지 경로 설정
+  const getMyPagePath = () => {
+    switch (role) {
+      case "CUSTOMER":
+        return "/customer/mypage";
+      case "ADMIN":
+        return "/admin/mypage";
+      case "ENGINEER":
+        return "/engineer/mypage";
+      default: // 일반 사용자
+        return "/user/mypage";
+    }
+  };
+
 
   return (
     <div className="relative" ref={ref}>
@@ -56,7 +72,7 @@ export default function UserProfileMenu({ user, onLogout }) {
           className="absolute right-0 mt-2 w-40 rounded-xl border bg-white shadow-lg overflow-hidden z-50"
         >
           <Link
-          to="/user/mypage"   // 변경된 경로
+          to={getMyPagePath(user.role)}   // 변경된 경로
           role="menuitem"
           onClick={() => setOpen(false)}
           className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 text-center"

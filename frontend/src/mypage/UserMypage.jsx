@@ -21,7 +21,8 @@ const UserMypage = () => {
     id: "",
     phone: "",
     email: "",
-    imageUrl: ""
+    imageUrl: "",
+    role: "" // 🔥 role 추가
   });
 
   // ✅ 로그인 사용자 정보 가져오기
@@ -34,7 +35,8 @@ const UserMypage = () => {
           id: user?.name || data.name || data.username || data.id || "",
           phone: data.phone || "",
           email: data.email || "",
-          imageUrl: data.imageUrl || ""
+          imageUrl: data.imageUrl || "",
+          role: data.role || "" // 🔥 role 저장
         });
         if (data.imageUrl) setImageUrl(data.imageUrl);
       } catch (err) {
@@ -56,19 +58,27 @@ const UserMypage = () => {
   const handleUploadClick = () => fileInputRef.current?.click();
 
   const handleWithdrawConfirm = async () => {
-  try {
-    await deactivateAccount(); // api 연결
-    setIsWithdrawModalOpen(false);
-    localStorage.removeItem("accessToken"); // 로그인 상태 초기화
-    navigate("/"); // 탈퇴 후 홈으로
-  } catch (err) {
-    console.error("회원 탈퇴 실패:", err);
-  }
-};
+    try {
+      await deactivateAccount(); // api 연결
+      setIsWithdrawModalOpen(false);
+      localStorage.removeItem("accessToken"); // 로그인 상태 초기화
+      navigate("/"); // 탈퇴 후 홈으로
+    } catch (err) {
+      console.error("회원 탈퇴 실패:", err);
+    }
+  };
 
   const handlePasswordResultModalClose = () => {
     setIsPasswordResultModalOpen(false);
     navigate("/user-mypage", { replace: true, state: {} });
+  };
+
+  // ✅ role 문구 매핑
+  const roleLabel = {
+    CUSTOMER: "고객사",
+    ADMIN: "관리자",
+    USER: "일반 사용자",
+    ENGINEER: "엔지니어"
   };
 
   return (
@@ -79,7 +89,7 @@ const UserMypage = () => {
           {/* 뒤로가기 버튼 */}
           <button
             type="button"
-            onClick={() => navigate("/")} // 원하면 -1로 이전 페이지로도 가능: navigate(-1)
+            onClick={() => navigate("/")} 
             className="mb-4 text-sm text-gray-500 hover:underline"
           >
             &larr; 뒤로가기
@@ -99,8 +109,10 @@ const UserMypage = () => {
               )}
             </div>
 
+            {/* 🔥 role에 따라 다른 문구 */}
             <p className="text-gray-700 text-sm">
-              <strong>{userInfo.id || "사용자"}</strong>님, 현재 일반 사용자 입니다.
+              <strong>{userInfo.id || "사용자"}</strong>님, 현재{" "}
+              {roleLabel[userInfo.role] || "일반 사용자"} 입니다.
             </p>
 
             <button
@@ -176,7 +188,7 @@ const UserMypage = () => {
       {isWithdrawModalOpen && (
         <WithdrawUserModal
           onClose={() => setIsWithdrawModalOpen(false)}
-          onConfirm={handleWithdrawConfirm} // 여기서 API 호출
+          onConfirm={handleWithdrawConfirm} 
         /> 
       )}
 

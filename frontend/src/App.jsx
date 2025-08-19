@@ -41,6 +41,7 @@ function App() {
       {/* ✅ 관리자 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
         <Route path="/admin/main" element={<AdminMainPage />} />
+        <Route path="/admin/mypage" element={<UserMypage />} />
         <Route path="/admin/dash" element={<DashboardLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="account" element={<AdminAccountManager />} />
@@ -64,6 +65,7 @@ function App() {
       {/* ✅ ENGINEER 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["ENGINEER"]} />}>
         <Route path="/engineer/main" element={<EngineerMainPage />} />
+        <Route path="/engineer/mypage" element={<UserMypage />} />
         <Route path="/engineer/dash" element={<DashboardLayout />}>
           <Route index element={<EngineerDashboard />} />
         </Route>
@@ -72,6 +74,7 @@ function App() {
       {/* ✅ CUSTOMER 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
         <Route path="/customer/main" element={<CustomerMainPage />} />
+        <Route path="/customer/mypage" element={<UserMypage />} />
         <Route path="/agreementPage" element={<AgreementPage />} /> {/* 약관동의 추가 */}
         <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
         <Route path="/MysuriMainPage" element={<MysuriMainPage />} /> {/* MY수리센터대쉬보드 추가 */}
