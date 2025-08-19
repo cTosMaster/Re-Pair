@@ -37,9 +37,16 @@ public class Payments {
     private String paymentKey;
     private String method;
     private int amount;
+    private String customerEmail;
+    private String bankCode;
+    private String successUrl;
+    private String failUrl;
+    private Long requestId;
     
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
+    
+    
     
     private LocalDateTime requestedAt = LocalDateTime.now();
     private LocalDateTime approvedAt;

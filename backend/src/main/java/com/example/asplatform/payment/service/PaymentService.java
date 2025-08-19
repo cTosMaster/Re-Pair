@@ -14,9 +14,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.asplatform.auth.service.CustomUserDetails;
 import com.example.asplatform.common.enums.PaymentStatus;
+import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.payment.domain.Payments;
 import com.example.asplatform.payment.dto.requestDTO.PaymentRequestDto;
 import com.example.asplatform.payment.dto.responseDTO.PaymentResponseDto;
@@ -25,7 +27,14 @@ import com.example.asplatform.payment.dto.responseDTO.TossResponse;
 import com.example.asplatform.payment.dto.responseDTO.WebhookEventData;
 import com.example.asplatform.payment.repository.PaymentsRepository;
 import com.example.asplatform.preset.domain.Preset;
+import com.example.asplatform.repair.domain.Repair;
+import com.example.asplatform.repair.repository.RepairRepository;
+import com.example.asplatform.repairHistory.domain.RepairHistory;
+import com.example.asplatform.repairHistory.repository.RepairHistoryRepository;
+import com.example.asplatform.repairRequest.domain.RepairRequest;
+import com.example.asplatform.repairRequest.repository.RepairRequestRepository;
 import com.example.asplatform.user.domain.User;
+import com.example.asplatform.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +44,10 @@ public class PaymentService {
 
     private final PaymentsRepository paymentRepository;
     private final TossApiClient tossApiClient;
+    private final RepairRequestRepository repairRequestRepository;
+    private final RepairHistoryRepository repairHistoryRepository;
+    private final RepairRepository repairRepository;
+    private final UserRepository userRepository;
 
     
     /**
@@ -42,20 +55,41 @@ public class PaymentService {
      * @param dto
      * @return
      */
+    @Transactional
     public PaymentResponseDto requestVirtualAccount(PaymentRequestDto dto, String username) {
-    	 // 유효성 검증
-        if (dto.getAmount() == null || dto.getAmount() <= 0)
-            throw new IllegalArgumentException("금액이 올바르지 않습니다.");
-        if (dto.getBankCode() == null || dto.getBankCode().isEmpty())
-            throw new IllegalArgumentException("은행 코드가 필요합니다.");
+    	
+    	 // 1️⃣ 필수 DTO 값 체크
+        if (dto.getRepairId() == null)
+            throw new IllegalArgumentException("repairId가 필요합니다.");
+        
+        // 2️⃣ Repair + RepairRequest + User 조회
+        Repair repair = repairRepository.findById(dto.getRepairId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 수리가 존재하지 않습니다."));
+        
+        RepairRequest request = repair.getRequest();
+        
+        // user 최소 정보 추출하기 (id , 이름 , 이메일 ) 
+        Long customerId = request.getRepairableItem().getCustomer().getId();
+        String customerName = request.getUser().getName();   
+        String customerEmail = request.getUser().getEmail();  
+
+
+        // 3️⃣ amount / orderName 세팅
+        int amount = repair.getFinalPrice();
+        String orderName = request.getTitle(); 
+        
+        // 4️⃣ Toss DTO 세팅
+        dto.setAmount(amount);             
+        dto.setOrderName(orderName);            
+        dto.setCustomerName(customerName);            
+        dto.setCustomerEmail(customerEmail);          
+        dto.setCustomerId(customerId);  
         
         
+        // 5️⃣ Toss API 호출
         String orderId = generateOrderId();
-
-        // 🔴 toss api 로 가상계좌 발급 요청하기
         TossResponse tossResponse = tossApiClient.requestVirtualAccount(dto, orderId);
-
-        
+        dto.setOrderId(orderId);
         if (tossResponse == null || tossResponse.getVirtualAccount() == null) {
             throw new IllegalStateException("Toss API 호출 실패: 가상계좌 정보가 없습니다.");
         }
@@ -66,18 +100,22 @@ public class PaymentService {
         
         //🔴 db 저장하기
         Payments payment = Payments.builder()
-        		.repairId(dto.getRepairId())
-                .customerId(dto.getCustomerId())
+        		.requestId(request.getRequestId())
+        		.repairId(dto.getRepairId())    		
+                .customerId(customerId)
                 .orderId(orderId)
-                .orderName(dto.getOrderName())
-                .amount(dto.getAmount())
+                .orderName(orderName)
+                .amount(amount)
                 .status(PaymentStatus.READY)
-                .customerName(tossResponse.getCustomerName())
+                .customerName(customerName)
+                .customerEmail(customerEmail)             
+                .bankCode(dto.getBankCode())     
                 .virtualAccountNumber(tossResponse.getVirtualAccount().getAccountNumber())
-                //.virtualAccountExpiredAt(tossResponse.getAccount().getExpiredAt().toLocalDateTime())
                 .virtualAccountExpiredAt(localExpiredAt)
                 .requestedAt(LocalDateTime.now())
                 .createdAt(LocalDateTime.now())
+                .successUrl(dto.getSuccessUrl())               
+                .failUrl(dto.getFailUrl()) 
                 .paymentKey(tossResponse.getPaymentKey()) 
                 .method(tossResponse.getMethod())         
                 .build();
@@ -94,6 +132,7 @@ public class PaymentService {
      * - Toss -> 서버로 보내는 입금 완료 알림
      * @param dto
      */
+    @Transactional
     public void processCallback(TossCallbackDto dto) {
       
 
@@ -145,6 +184,9 @@ public class PaymentService {
             case "DONE" -> {
                 payment.setStatus(PaymentStatus.DONE);
                 payment.setApprovedAt(LocalDateTime.now());
+
+                // 결제 완료 시 RepairRequest 상태 변경하기
+                updateRepairStatusAfterPayment(payment);
             }
             case "CANCELED" -> {
             	 System.out.println("취소 상태 처리중");
@@ -238,6 +280,67 @@ public class PaymentService {
         );
     }
     
+    @Transactional
+    private void updateRepairStatusAfterPayment(Payments payment) {
+        Long repairId = payment.getRepairId();
+        System.out.println("💡 Payment 저장 시 repairId=" + repairId);
+        if (repairId == null) {
+            System.out.println("❌ repairId 없음");
+            return;
+        }
+
+        // 1️⃣ Repair 조회
+        Repair repair = repairRepository.findById(repairId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 수리가 존재하지 않습니다."));
+
+        // 2️⃣ RepairRequest 가져오기
+        RepairRequest repairRequest = repair.getRequest();
+        if (repairRequest == null) {
+            throw new IllegalStateException("해당 Repair에 연결된 RepairRequest가 없습니다.");
+        }
+
+        RepairStatus previousStatus = repairRequest.getStatus();
+        System.out.println("현재 RepairRequest 상태: " + previousStatus);
+
+        // 3️⃣ 상태 변경 조건 확인
+        if (!RepairStatus.WAITING_FOR_PAYMENT.equals(previousStatus)) {
+            System.out.println("⚠️ 상태 변경 조건 미충족, 현재 상태: " + previousStatus);
+            return;
+        }
+
+        // 4️⃣ 상태 업데이트
+        repairRequest.setStatus(RepairStatus.WAITING_FOR_DELIVERY);
+        repairRequestRepository.save(repairRequest);
+        
+        System.out.println("✅ RepairRequest 상태 변경됨 → WAITING_FOR_DELIVERY");
+
+        // 5️⃣ 시스템 유저 (ex. 1번) 조회
+        User systemUser = userRepository.findById(1L)
+                .orElseThrow(() -> new IllegalStateException("시스템 유저가 존재하지 않습니다."));
+
+        // 6️⃣ RepairHistory 기록 남기기
+        RepairHistory history = RepairHistory.builder()
+                .repairRequest(repairRequest)
+                .previousStatus(previousStatus)
+                .newStatus(RepairStatus.WAITING_FOR_DELIVERY)
+                .changedBy(systemUser)
+                .memo("결제 완료로 상태 변경")
+                .build();
+
+        repairHistoryRepository.save(history);
+
+        System.out.println("✅ 상태 변경 + 히스토리 기록 완료");
+    }
+
+
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getUser(); // CustomUserDetails에 User 엔티티 반환 메서드 필요
+        }
+        throw new IllegalStateException("로그인된 사용자 정보를 가져올 수 없습니다.");
+    }
+    
     private Long getCurrentCustomerId() {
     	Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     	if(auth == null || !(auth.getPrincipal() instanceof CustomUserDetails userDetails)) {
@@ -271,6 +374,7 @@ public class PaymentService {
             case "DONE" -> {
                 payment.setStatus(PaymentStatus.DONE);
                 payment.setApprovedAt(LocalDateTime.now());
+                updateRepairStatusAfterPayment(payment);
             }
             case "CANCELED" -> {
                 payment.setStatus(PaymentStatus.CANCELED);

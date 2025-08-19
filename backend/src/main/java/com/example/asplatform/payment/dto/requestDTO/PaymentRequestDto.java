@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class PaymentRequestDto {
-	
+	private Long requestId;
     private String orderName;
     private Integer amount;
+    private String orderId;
     private String customerName;
     private String bankCode;
     private String customerEmail;
