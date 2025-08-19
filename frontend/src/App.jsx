@@ -30,6 +30,7 @@ import CompleteList from "./components/dashboard/user/CompleteList.jsx";
 import AuthDebugPage from "./context/AuthDebugPage.jsx";
 import EngineerDashboard from "./pages/engineer/EngineerDashboard.jsx";
 import UserMypage from "./mypage/UserMypage.jsx";
+import CompanyListPage from "./pages/companylist/CompanyListPage.jsx";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
       {/* ✅ 비로그인/로그인 전체 기본 공개 페이지 */}
       {/* ✅ 공개: 고객사 세일즈 상세 */}
       <Route path="/customers/:customerId" element={<CustomerSalesPage />} />
+      <Route path="/partners" element={<CompanyListPage />} />
 
       {/* ✅ 관리자 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
