@@ -71,7 +71,8 @@ public class RepairRequest {
     
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
-    @Column(name = "delete_at", nullable = false)
+    
+    @Column(name = "deleted_at", nullable = false)
     private LocalDateTime deletedAt;
 
     private Long deletedBy;
