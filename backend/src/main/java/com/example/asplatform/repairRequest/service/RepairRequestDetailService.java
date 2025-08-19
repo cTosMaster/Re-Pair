@@ -24,12 +24,17 @@ import com.example.asplatform.estimate.repository.EstimatePresetUsageRepository;
 import com.example.asplatform.estimate.repository.EstimateRepository;
 import com.example.asplatform.preset.domain.Preset;
 import com.example.asplatform.preset.repository.PresetRepository;
+import com.example.asplatform.repair.domain.Repair;
+import com.example.asplatform.repair.domain.RepairImage;
+import com.example.asplatform.repair.dto.responseDTO.FinalEstimateResponseDto;
+import com.example.asplatform.repair.repository.RepairImageRepository;
+import com.example.asplatform.repair.repository.RepairPresetUsageRepository;
+import com.example.asplatform.repair.repository.RepairRepository;
 import com.example.asplatform.repairHistory.domain.RepairHistory;
 import com.example.asplatform.repairHistory.repository.RepairHistoryRepository;
 import com.example.asplatform.repairRequest.domain.RepairRequest;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestDetailResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestDetailResponseDto.Actions;
-import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestDetailResponseDto.FinalEstimateInfo;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestDetailResponseDto.HistoryRow;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestDetailResponseDto.RequestInfo;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestDetailResponseDto.SimpleRef;
@@ -51,7 +56,10 @@ public class RepairRequestDetailService {
 	private final EstimateRepository estimateRepository;
 	private final EstimatePresetUsageRepository usageRepository;
 	private final PresetRepository presetRepository;
-
+    private final RepairRepository repairRepository;
+    private final RepairImageRepository repairImageRepository;
+    private final RepairPresetUsageRepository repairPresetUsageRepository;
+	
 	/**
 	 * 상세 조회(읽기 전용)
 	 */
@@ -78,7 +86,7 @@ public class RepairRequestDetailService {
 		EstimateReadResponseDto estimateDto = mapEstimate(estOpt, requestId);
 
 		// 6) 최종 견적 -미완 (exists=false)
-		FinalEstimateInfo finalEstimate = FinalEstimateInfo.builder().exists(false).build();
+		FinalEstimateResponseDto finalEstimateDto = mapFinalEstimate(requestId);
 
 		// 7) 단계 클릭 가능 여부(현재 단계까지만 가능)
 		List<StageInfo> stages = buildStages(rr.getStatus());
@@ -91,7 +99,7 @@ public class RepairRequestDetailService {
 
 		// 10) 응답
 		return RepairRequestDetailResponseDto.builder().request(req).status(status).estimate(estimateDto)
-				.finalEstimate(finalEstimate).stages(stages).actions(actions).notice(notice).build();
+				.finalEstimate(finalEstimateDto).stages(stages).actions(actions).notice(notice).build();
 	}
 
 	// ---------- 권한/정책 ----------
@@ -254,6 +262,7 @@ public class RepairRequestDetailService {
 		return h.getChangedBy().getName() != null ? h.getChangedBy().getName() : "UNKNOWN";
 	}
 
+	/** 1차 견적서 (프리셋+가격) 로딩: 없으면 null */
 	private EstimateReadResponseDto mapEstimate(Optional<Estimate> estOpt, Long requestIdForFetchJoin) {
 		if (estOpt.isEmpty())
 			return null;
@@ -302,6 +311,48 @@ public class RepairRequestDetailService {
 				est.getPrice(), // totalPrice: 저장된 값 그대로
 				est.getDescription(), est.getCreatedAt(), usedPresetCount, presetBriefs);
 	}
+	
+
+
+    /** 최종견적(이미지+프리셋[이름/가격]) 로딩: 없으면 null */
+    private FinalEstimateResponseDto mapFinalEstimate(Long requestId) {
+        Optional<Repair> repOpt = repairRepository.findByRequest_requestId(requestId);
+        if (repOpt.isEmpty()) return null;                  // 아직 최종견적 없음
+        Repair repair = repOpt.get();
+
+        // 이미지 URL
+        List<String> imageUrls = repairImageRepository.findByRepair_Id(repair.getId())
+                .stream().map(RepairImage::getImageUrl).toList();
+
+        // 사용 프리셋(이름+가격) - fetch join으로 N+1 방지
+        List<FinalEstimateResponseDto.PresetInfo> presetInfo =
+                repairPresetUsageRepository.findByRepair_IdWithPreset(repair.getId())
+                .stream()
+                .map(u -> {
+                    Preset p = u.getPreset(); // 삭제되었거나 구버전일 경우 null일 수 있음
+                    if (p == null) {
+                        return FinalEstimateResponseDto.PresetInfo.builder()
+                                .name("(삭제됨/구버전)") // 표시용
+                                .price(0)
+                                .build();
+                    }
+                    return FinalEstimateResponseDto.PresetInfo.builder()
+                            .name(p.getName())
+                            .price(p.getPrice())
+                            .build();
+                })
+                .toList();
+
+        return FinalEstimateResponseDto.builder()
+                .repairId(repair.getId())
+                .requestId(repair.getRequest().getRequestId())
+                .description(repair.getDescription())
+                .finalPrice(repair.getFinalPrice())
+                .imageUrl(imageUrls)
+                .presetInfo(presetInfo)
+                .build();
+    }
+	
 
 	/**
 	 * 최근 사유 요약 계산 사유 - cancel: 최근 취소 사유 - COMPLETED: 최근 배송 완료 사유

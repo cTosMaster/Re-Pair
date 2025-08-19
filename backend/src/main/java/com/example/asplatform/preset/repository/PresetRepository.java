@@ -30,7 +30,7 @@ public interface PresetRepository extends JpaRepository<Preset, Long> {
     long countByPresetIdInAndCustomerIdAndDeletedFalse(List<Long> ids, Long customerId);
   
     
-    // 합계 계산 및 사용내역 저장을 위한 조회도 고객사 한정
+    // 합계 계산 및 사용내역 저장을 위한 조회 고객사 한정
     List<Preset> findByPresetIdInAndCustomerIdAndDeletedFalse(List<Long> ids, Long customerId);
     
 
