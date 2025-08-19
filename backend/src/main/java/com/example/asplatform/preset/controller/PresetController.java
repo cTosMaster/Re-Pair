@@ -112,41 +112,6 @@ public class PresetController {
 		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 	}
 	
-	/**
-	 * ✅ 8. 하드 딜리트 하기 
-	 * @param presetId
-	 * @param user
-	 * @return
-	 */
-	@DeleteMapping("/hard/{presetId}")
-	public ResponseEntity<Void> hardDeletePreset(@PathVariable Long presetId , @AuthenticationPrincipal CustomUserDetails user) {
-		presetService.hardDeletePreset(presetId);
-		return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-	}
-	
-	/**
-	 * ✅ 9. 소프트 딜리트 목록 보기
-	 * @param userDetails
-	 * @param page
-	 * @return
-	 */
-	@GetMapping("/deleted") 
-	public ResponseEntity<Page<PresetResponseDto>> getDeletedPresets(@AuthenticationPrincipal CustomUserDetails user , @RequestParam ( value = "page" , defaultValue="0") int page) {
-		Page<PresetResponseDto> deletedPresets = presetService.getDeletePresets(page);
-		return new ResponseEntity<>(deletedPresets, HttpStatus.OK);
-	}
-	
-	/**
-	 * ✅ 10. 소프트 딜리트 복원하기
-	 * @param presetId
-	 * @param userDetails
-	 * @return
-	 */
-	@PostMapping("/restore/{presetId}")
-	public ResponseEntity<Void> restoredPreset(@PathVariable Long presetId , @AuthenticationPrincipal CustomUserDetails user) {
-	    presetService.restorePreset(presetId);
-	    return new ResponseEntity<>(HttpStatus.OK);
-	}
 	
 
 }
