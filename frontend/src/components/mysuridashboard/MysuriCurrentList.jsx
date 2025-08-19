@@ -18,15 +18,15 @@ const STATUS_FILTERS = [
 
 /** UI 코드 → 한국어 표기 (요구사항: 취소=수리취소) */
 const toKr = (ui) =>
-  ({
-    PENDING_APPROVAL: "접수대기",
-    WAITING_FOR_REPAIR: "수리대기",
-    IN_PROGRESS: "수리중",
-    WAITING_FOR_PAYMENT: "결제대기",
-    WAITING_FOR_DELIVERY: "배송대기",
-    COMPLETED: "배송완료",
-    CANCELLED: "수리취소", // ← 여기!
-  }[ui] ?? ui);
+({
+  PENDING_APPROVAL: "접수대기",
+  WAITING_FOR_REPAIR: "수리대기",
+  IN_PROGRESS: "수리중",
+  WAITING_FOR_PAYMENT: "결제대기",
+  WAITING_FOR_DELIVERY: "배송대기",
+  COMPLETED: "배송완료",
+  CANCELLED: "수리취소", // ← 여기!
+}[ui] ?? ui);
 
 /** 상태 배지 스타일 (UI 코드 기준) */
 const statusPillByUi = (ui) => {
@@ -96,6 +96,8 @@ export default function MysuriCurrentList() {
       userName: r.userName ?? r.user_name ?? r.name ?? "",
       userPhone: r.userPhone ?? r.contact_phone ?? r.phone ?? "",
       roadAddress: r.roadAddress ?? r.address ?? "",
+      engineerId: r.engineerId ?? r.engineerid ?? null,
+      engineerName: r.engineerName ?? "",
     };
   }, []);
 
@@ -133,9 +135,15 @@ export default function MysuriCurrentList() {
   const goDetail = (row) => {
     const id = row?.id;
     if (!id) return;
-    // statusRoute의 세그먼트 유틸만 사용
+
     const seg = segmentForStatus(row.statusUi);
-    navigate(`/repair-requests/${encodeURIComponent(id)}/${seg}`);
+    const eid = row?.engineerId ?? null;
+
+    const url = `/repair-requests/${encodeURIComponent(id)}/${seg}${eid ? `?eid=${encodeURIComponent(eid)}` : ""
+      }`;
+
+    const navState = eid ? { state: { engineerId: eid } } : undefined;
+    navigate(url, navState);
   };
 
   const toggleAll = (e) => {
@@ -200,21 +208,22 @@ export default function MysuriCurrentList() {
         <div className="col-span-1">
           <input type="checkbox" onChange={toggleAll} aria-label="전체 선택" />
         </div>
-        <div className="col-span-4">고객명</div>
-        <div className="col-span-3">제목</div>
+        <div className="col-span-3">고객명</div>
+        <div className="col-span-2">제목</div>
+        <div className="col-span-2">배정기사</div>
         <div className="col-span-2">수리 상태</div>
-        <div className="col-span-2 text-right">요청일자</div>
+        <div className="col-span-2">요청일자</div>
       </div>
 
       {/* 목록 */}
       <div className="space-y-3">
         {loading && rows.length === 0
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl shadow-sm p-4 animate-pulse">
-                <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
-                <div className="h-4 w-2/3 bg-gray-200 rounded" />
-              </div>
-            ))
+            <div key={i} className="bg-white rounded-2xl shadow-sm p-4 animate-pulse">
+              <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
+              <div className="h-4 w-2/3 bg-gray-200 rounded" />
+            </div>
+          ))
           : rows.length === 0
             ? (
               <div className="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400">
@@ -236,7 +245,7 @@ export default function MysuriCurrentList() {
                   </div>
 
                   {/* 고객명/연락처 */}
-                  <div className="col-span-4 flex items-center gap-3">
+                  <div className="col-span-3 flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
                       <UserRound size={18} className="text-gray-500" />
                     </div>
@@ -247,9 +256,16 @@ export default function MysuriCurrentList() {
                   </div>
 
                   {/* 제목/카테고리 */}
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <div className="font-medium text-gray-900">{r.title}</div>
                     {r.category && <span className="ml-1 text-xs text-gray-500">{r.category}</span>}
+                  </div>
+
+                  {/* ✅ 배정기사 */}
+                  <div className="col-span-2">
+                    <div className="text-sm font-medium text-gray-900 truncate" title={r.engineerName || "-"}>
+                      {r.engineerName || "-"} 기사
+                    </div>
                   </div>
 
                   {/* 상태 배지 */}
@@ -260,7 +276,7 @@ export default function MysuriCurrentList() {
                   </div>
 
                   {/* 날짜 + 상세보기 */}
-                  <div className="col-span-2 flex items-center justify-end gap-3">
+                  <div className="col-span-2 items-end gap-2">
                     <div className="text-sm text-gray-600">{fmtDate(r.createdAt)}</div>
                     <button
                       onClick={() => goDetail(r)}

@@ -98,7 +98,6 @@ function FirstEstimateForm({ requestId, presetList = [], itemId, onCreated }) {
       requestId: Number(requestId),
       presetIds: selected.map((p) => p.id),
       description: note,
-      extraAmount: extra,
       totalPrice: total,
     };
 

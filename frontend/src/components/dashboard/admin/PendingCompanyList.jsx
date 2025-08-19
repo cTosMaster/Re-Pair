@@ -19,6 +19,20 @@ export default function PendingCompanyList() {
   const [hasPrev, setHasPrev] = useState(false);
   const [totalPages, setTotalPages] = useState(null);
 
+  const formatAddress = useCallback((c) => {
+    if (!c) return '-';
+
+    // 흔한 필드명들 폭넓게 대응
+    const postal = c.postalCode ?? c.zipCode ?? c.zip ?? c.address?.postalCode ?? null;
+    const road = c.roadAddress ?? c.addressRoad ?? c.address?.roadAddress ?? c.address ?? null;
+    const detail = c.detailAddress ?? c.addressDetail ?? c.address?.detailAddress ?? null;
+
+    const line = [road, detail].filter(Boolean).join(' ');
+    if (!postal && !line) return '-';
+
+    return [postal ? `(${postal})` : null, line || null].filter(Boolean).join(' ');
+  }, []);
+
   const fmtDate = useCallback((v) => {
     if (!v) return '-';
     const dt = new Date(v);
@@ -204,7 +218,7 @@ export default function PendingCompanyList() {
               <dd className="col-span-2">{selected.contactPhone ?? '-'}</dd>
 
               <dt className="text-gray-500">주소</dt>
-              <dd className="col-span-2">{selected.address ?? '-'}</dd>
+              <dd className="col-span-2">{formatAddress(selected)}</dd>
 
               <dt className="text-gray-500">요청일</dt>
               <dd className="col-span-2">{fmtDate(selected.createdAt ?? selected.requestedAt)}</dd>

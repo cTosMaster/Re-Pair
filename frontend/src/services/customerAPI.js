@@ -115,15 +115,74 @@ export const getFirstEstimate = (requestId, options = {}) =>
     signal: options.signal,
   });
 
-/** 최종 견적서 등록/수정/조회 (수리건 단위) */
-export const createFinalEstimate = (repairId, data) =>
-  api.post(`/repairs/${encodeURIComponent(repairId)}/final-estimate`, data);
+/**
+ * 최종견적서 제출/수정 페이로드 빌더 (영구 URL 사용)
+ * - selectedPresets: [{ id, ... }]         // 폼에서 선택된 프리셋들(중복→수량)
+ * - note: string                            // 비고
+ * - extraCost: string|number                // ± 금액
+ * - beforeImgs/afterImgs: [{ remoteUrl?, url?, id? }] // ImageUploadGrid 결과
+ */
+// 간단 URL 체크
+const isHttp = (u) => typeof u === "string" && /^https?:\/\//i.test(u);
 
-export const getFinalEstimate = (repairId, options = {}) =>
-  api.get(`/repairs/${encodeURIComponent(repairId)}/final-estimate`, {
-    signal: options.signal,
-  });
+/**
+ * 최종견적 제출용 페이로드 빌더 (백엔드 요구 스키마 맞춤)
+ * - selectedPresets: [{ id }]
+ * - note: string
+ * - extraCost: string|number (± 금액)
+ * - beforeImgs/afterImgs: [{ remoteUrl? , url? }]  // ImageUploadGrid 결과
+ * - basePrice: number (프리셋 합계)
+ */
+export const buildFinalEstimatePayloadV2 = ({
+  selectedPresets = [],
+  note = "",
+  extraCost = 0,
+  beforeImgs = [],
+  afterImgs = [],
+  basePrice = 0,
+} = {}) => {
+  const extra =
+    typeof extraCost === "string"
+      ? parseInt(extraCost.replace(/,/g, ""), 10) || 0
+      : Number(extraCost) || 0;
 
+  const presetIds = Array.from(
+    new Set((selectedPresets || []).map((p) => (isNaN(Number(p.id)) ? p.id : Number(p.id))))
+  );
+
+  const toUrls = (arr) =>
+    (Array.isArray(arr) ? arr : [])
+      .map((x) => x?.remoteUrl || x?.url) // complete에서 받은 영구 URL 우선
+      .filter(isHttp);
+
+  const images = [
+    ...toUrls(beforeImgs).map((url) => ({ url, imageType: "BEFORE" })),
+    ...toUrls(afterImgs).map((url) => ({ url, imageType: "AFTER" })),
+  ];
+
+  return {
+    description: note,
+    finalPrice: Number(basePrice) + extra,
+    presetIds,
+    images,
+  };
+};
+
+/** 최종견적 생성(제출) */
+export const createFinalEstimate = (requestId, body, options = {}) =>
+  api.post(
+    `/repair/${encodeURIComponent(requestId)}/final-estimate`,
+    body,
+    options
+  );
+
+// 필요 시 수정 API
+export const updateFinalEstimate = (requestId, body, options = {}) =>
+  api.put(
+    `/repair/${encodeURIComponent(requestId)}/final-estimate`,
+    body,
+    options
+  );
 
 /*****************************************/
 /**************** 프리셋 관리 *************/
