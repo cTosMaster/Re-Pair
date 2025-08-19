@@ -165,13 +165,14 @@ const UserMypage = () => {
 
             <div className="flex items-center gap-4 justify-end mt-6">
               <button
-                type="button"
-                onClick={() => navigate("/reset-password", { state: { from: "/user-mypage" } })}
-                className="bg-[#9fc87b] hover:bg-[#73a647] text-white font-semibold py-2 px-6 rounded rounded-[10px]"
-                style={{ width: "174px", height: "46px" }}
-              >
-                비밀번호 변경
-              </button>
+              onClick={() =>
+                navigate(`/${userInfo.role.toLowerCase()}/reset-password`, {
+                  state: { from: `/${userInfo.role.toLowerCase()}/mypage`, skipEmailVerification: true, email: userInfo.email }
+                })
+              }
+            >
+              비밀번호 변경
+            </button>
               <button
                 type="button"
                 onClick={() => setIsWithdrawModalOpen(true)}

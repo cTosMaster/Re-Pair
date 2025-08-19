@@ -26,6 +26,11 @@ export const sendPassCode = (email) => api.post('/auth/send-reset-code', { email
 // ✅ 이메일 인증 코드 발송
 export const sendCode = (email) => api.post('/users/send-signup-code', { email });
 
+// ✅ 인증 코드 확인
+export const verifyResetCode = (data) => {
+  return api.post("/auth/verify-reset-code", data);
+}
+
 // ✅ 비밀번호 재설정
 export const resetPassword = (data) => api.post('/auth/reset-password', data);
 
