@@ -24,7 +24,7 @@ public class Repair {
     @Column(name = "repair_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "request_id", nullable = false)
     private RepairRequest request;
 
