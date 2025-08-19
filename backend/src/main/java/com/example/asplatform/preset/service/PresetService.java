@@ -252,56 +252,7 @@ public class PresetService {
 		presetRepository.save(preset);
 	}
 	
-	/**
-	 * ✅ 8. 하드 딜리트하기 - 고객사 관리자만
-	 * @param presetId
-	 */
-	public void hardDeletePreset(Long presetId) {
-		Preset preset = presetRepository.findById(presetId)
-				.orElseThrow(()-> new IllegalArgumentException("프리셋을 찾을 수 없습니다."));
-		
-		if(!preset.getCustomer().getId().equals(getCurrentCustomerId())) {
-			throw new AccessDeniedException("본인 고객사의 프리셋만 삭제할 수 있습니다.");
-		}
-		
-		presetRepository.delete(preset);
-	}
 	
-	/**
-	 * ✅ 9. 소프트 딜리트 목록 조회하기 (10단위 페이징 처리) - 고객사 관리자만
-	 * @param page
-	 * @return
-	 */
-	public Page<PresetResponseDto> getDeletePresets(int page) {
-		
-		// 권한 확인하기 - 고객사 관리자만 접근 
-	    if (!isCustomer()) {
-	        throw new AccessDeniedException("고객사 관리자만 삭제된 프리셋 목록을 조회할 수 있습니다.");
-	    }
-	    
-		Pageable pageable = PageRequest.of(page,  10);
-		
-		Long customerId = getCurrentCustomerId(); 
-	    Page<Preset> presetPage = presetRepository.findByCustomer_IdAndDeletedTrue(customerId, pageable);
-		
-		return presetPage.map(this::convertToResponseDto);
-	}
-	
-	/**
-	 * ✅ 10. 소프트 딜리트 복원하기 - 고객사 관리자만 
-	 * @param presetId
-	 */
-	public void restorePreset(Long presetId) {
-		Preset preset = presetRepository.findById(presetId) 
-				.orElseThrow(()-> new IllegalArgumentException("프리셋을 찾을 수 없습니다."));
-		
-	    if (!preset.getCustomer().getId().equals(getCurrentCustomerId())) {
-	        throw new AccessDeniedException("본인 고객사의 프리셋만 복원할 수 있습니다.");
-	    }
-
-	    preset.setDeleted(false);
-	    presetRepository.save(preset);
-	}
 	
 	/**
 	 * convertToResponseDto 메소드
@@ -309,6 +260,7 @@ public class PresetService {
 	private PresetResponseDto convertToResponseDto(Preset preset) {
         PresetResponseDto responseDTO = new PresetResponseDto();
         responseDTO.setPresetId(preset.getPresetId());
+        responseDTO.setCustomerId(preset.getCustomer().getId());
         responseDTO.setCategoryId(preset.getCategory().getId());
         responseDTO.setItemId(preset.getItem().getItemId());
         responseDTO.setName(preset.getName());

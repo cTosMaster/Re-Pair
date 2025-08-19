@@ -25,6 +25,8 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "presets")
+@SQLDelete(sql = "UPDATE presets SET is_deleted = true WHERE category_id = ?")
+@Where(clause = "is_deleted = false")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
