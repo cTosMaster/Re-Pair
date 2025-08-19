@@ -2,15 +2,16 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login as apiLogin } from "../../services/authAPI";
 import { useAuth } from "../../hooks/useAuth";
+import { useResultModal } from "../../hooks/useResultModal";
 
 export const Login = () => {
   const navigate = useNavigate();
   const { login: applyLogin } = useAuth();
+  const { Modal, openError } = useResultModal(); // ✅ 에러 모달 훅
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState(null);
 
   const roleRedirectMap = {
     USER: "/user/main",
@@ -23,9 +24,7 @@ export const Login = () => {
     e.preventDefault();
     if (loading) return;
 
-    setErr(null);
     setLoading(true);
-
     try {
       // 1) 로그인 요청
       const { data } = await apiLogin({ email: email.trim(), password });
@@ -34,28 +33,25 @@ export const Login = () => {
       const accessToken = data?.accessToken || data?.token || data?.access_token;
       if (!accessToken) throw new Error("로그인 응답에 토큰이 없습니다.");
 
-      // 3) 컨텍스트에 토큰/핵심값 적용 (AuthProvider가 저장/정규화)
+      // 3) 컨텍스트에 토큰/핵심값 적용
       const roleFromResp = data?.role ? String(data.role).replace(/^ROLE_/, "") : null;
       const roleFromToken = await applyLogin({
         accessToken,
-        refreshToken: data?.refreshToken,          // AuthProvider에서 저장
+        refreshToken: data?.refreshToken,
         email: data?.email,
         role: roleFromResp || undefined,
         userId: data?.userId ?? data?.id,
-        customerId: data?.customerId ?? data?.customer_id,  // CUSTOMER만 올 수 있음
+        customerId: data?.customerId ?? data?.customer_id,
       });
 
       const finalRole = roleFromResp || roleFromToken;
 
       // 4) 리다이렉트
       navigate(roleRedirectMap[finalRole] || "/", { replace: true });
-    } catch (error) {
+    } catch {
       const msg =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
         "로그인에 실패했습니다. 이메일/비밀번호를 확인해주세요.";
-      setErr(msg);
+      openError(msg); // ✅ 실패 시 에러 모달
     } finally {
       setLoading(false);
     }
@@ -63,32 +59,32 @@ export const Login = () => {
 
   return (
     <div className="flex items-center justify-center w-full min-h-screen bg-white">
+      {/* 공통 모달 렌더 */}
+      {Modal}
+
       <div className="relative w-full max-w-[900px] bg-white px-6 mx-auto">
-        <h2
-          className="fixed top-4 left-16 text-[#9fc87b] font-bold text-xl md:text-2xl"
-          style={{
-            fontFamily: "Inter, Helvetica",
-            WebkitTextStrokeWidth: "1px",
-            WebkitTextStrokeColor: "#9fc87b",
-            margin: 0,
-            backgroundColor: "transparent",
-            zIndex: 9999,
-          }}
-        >
-          Re:pair
-        </h2>
+        <Link to="/">
+          <h2
+            className="fixed top-4 left-16 text-[#9fc87b] font-bold text-xl md:text-2xl"
+            style={{
+              fontFamily: "Inter, Helvetica",
+              WebkitTextStrokeWidth: "1px",
+              WebkitTextStrokeColor: "#9fc87b",
+              margin: 0,
+              backgroundColor: "transparent",
+              zIndex: 9999,
+            }}
+          >
+            Re:pair
+          </h2>
+        </Link>
 
         <form onSubmit={handleSubmit} className="mx-auto flex flex-col items-center" style={{ width: "492px" }}>
           <h1 className="text-black font-normal text-3xl mb-16 mt-16 self-start" style={{ fontFamily: "Inter, Helvetica" }}>
             로그인 정보를 입력하세요
           </h1>
 
-          {err && (
-            <div className="w-full mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {err}
-            </div>
-          )}
-
+          {/* 이메일 */}
           <label className="block w-full text-black font-normal text-lg mb-2" htmlFor="userid">
             아이디
           </label>
@@ -103,6 +99,7 @@ export const Login = () => {
             required
           />
 
+          {/* 비밀번호 */}
           <label className="block w-full text-black font-normal text-lg mb-2" htmlFor="password">
             비밀번호
           </label>

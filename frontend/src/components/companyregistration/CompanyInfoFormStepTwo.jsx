@@ -1,37 +1,52 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { getCategories } from "../../services/adminAPI";
+import { uploadFile } from "../../services/fileAPI";
+import { useResultModal } from "../../hooks/useResultModal";
 import {
-  Mail, Clock, Link as LinkIcon, // 라벨용
-  Plus, X,                       // 칩/태그용
-  Sparkles, Layers,               // 섹션 타이틀/기본 아이콘
+  Mail,
+  Clock,
+  Link as LinkIcon,
+  Plus,
+  X,
+  Sparkles,
+  Layers,
+  UploadCloud,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting }) {
+  const { Modal, openError, openWarn } = useResultModal();
+
   const [form, setForm] = useState({
     contactEmail: "",
     openingHours: "",
     businessDocUrl: "",
     termsAgreed: false,
-    categoryIds: [], // 서버로 보낼 ID 배열
+    categoryIds: [],
+  });
+
+  // 업로드 상태
+  const [docUpload, setDocUpload] = useState({
+    uploading: false,
+    progress: 0,
+    fileName: "",
+    error: null,
   });
 
   const [categories, setCategories] = useState([]);
   const [loadingCats, setLoadingCats] = useState(true);
-  const [expanded, setExpanded] = useState({}); // 그룹별 더보기 상태
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        // 새 API(Page<PlatformCategoryDto>) 대응
-        // adminAPI.getCategories는 내가 앞서 만든 래퍼(페이지 size 크게)라고 가정
         const res = await getCategories({ page: 0, size: 1000, sortBy: "categoryId", sortDir: "asc" });
         if (!mounted) return;
         const data = res?.data ?? {};
-        const list = Array.isArray(data?.content) ? data.content
-          : Array.isArray(data) ? data
-            : [];
+        const list = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : [];
         const mapped = list
           .map((c) => {
             const id = Number(c.categoryId ?? c.id);
@@ -47,8 +62,8 @@ export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting })
           .filter((c) => c.id != null)
           .sort((a, b) => (a.group + a.name).localeCompare(b.group + b.name, "ko"));
         setCategories(mapped);
-      } catch (e) {
-        console.warn("카테고리 조회 실패:", e?.response?.status, e?.message);
+      } catch (err) {
+        openWarn("카테고리 조회 실패:" + (err?.message || "알 수 없는 오류"));
       } finally {
         if (mounted) setLoadingCats(false);
       }
@@ -56,7 +71,6 @@ export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting })
     return () => { mounted = false; };
   }, []);
 
-  // 그룹핑
   const grouped = useMemo(() => {
     return categories.reduce((acc, c) => {
       (acc[c.group] = acc[c.group] || []).push(c);
@@ -88,15 +102,52 @@ export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting })
 
   const toggleExpand = (group) => setExpanded((prev) => ({ ...prev, [group]: !prev[group] }));
 
-  const handleSubmit = (e) => {
+  // ✅ 증빙서류 업로드 → complete로 받은 영구 URL을 자동 채움
+  const handleDocPick = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setDocUpload({ uploading: true, progress: 0, fileName: file.name, error: null });
+
+    try {
+      const { url } = await uploadFile(file, {
+        onProgress: (pct) =>
+          setDocUpload((s) => ({ ...s, progress: typeof pct === "number" ? pct : s.progress })),
+      });
+      setForm((prev) => ({ ...prev, businessDocUrl: url || "" }));
+      setDocUpload((s) => ({ ...s, uploading: false, progress: 100 }));
+    } catch (err) {
+      console.error(err);
+      setDocUpload({ uploading: false, progress: 0, fileName: "", error: "업로드에 실패했습니다. 다시 시도해주세요." });
+    } finally {
+      // 같은 파일 재선택 가능하도록 초기화
+      e.target.value = "";
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit?.({
+    if (docUpload.uploading) return; // 업로드 중엔 제출 방지
+
+    const payload = {
       contactEmail: form.contactEmail.trim(),
       openingHours: form.openingHours.trim(),
       businessDocUrl: form.businessDocUrl.trim(),
       termsAgreed: !!form.termsAgreed,
       categoryIds: form.categoryIds,
-    });
+    };
+
+    try {
+      // onSubmit이 프로미스를 반환한다고 가정(동기여도 Promise.resolve로 안전 처리)
+      const result = await Promise.resolve(onSubmit?.(payload));
+      // 부모가 false 또는 {ok:false}로 실패 신호를 줄 수도 있으니 방어
+      if (result === false || result?.ok === false) {
+        throw new Error("submit failed");
+      }
+    } catch (err) {
+      console.error(err);
+      openError("업체 등록에 실패했습니다."); 
+    }
   };
 
   return (
@@ -140,47 +191,102 @@ export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting })
           />
         </div>
 
-        {/* 증빙 서류 URL */}
+        {/* ✅ 증빙 서류 업로드 (파일 → 업로드 → 영구URL 자동 입력) */}
         <div>
           <label className="flex items-center gap-2 mb-2">
             <LinkIcon className="w-4 h-4 text-gray-500" />
-            <span>증빙 서류 URL <span className="text-red-500">*</span></span>
+            <span>
+              증빙 서류 <span className="text-red-500">*</span>
+            </span>
           </label>
-          <input
-            type="url"
-            name="businessDocUrl"
-            value={form.businessDocUrl}
-            onChange={onChange}
-            placeholder="https://... (사업자등록증 등)"
-            className="w-full border border-gray-300 rounded-md px-4 py-2"
-            style={{ width: "492px", height: "48px" }}
-          />
+
+          {/* 영구 URL 표시 (읽기전용) */}
+          <div className="flex items-center gap-2 mb-2" style={{ width: "492px" }}>
+            <input
+              type="text"
+              name="businessDocUrl"
+              value={form.businessDocUrl}
+              onChange={onChange}
+              placeholder="업로드 완료 시 영구 URL이 자동 입력됩니다"
+              className="w-full border border-gray-300 rounded-md px-4 py-2"
+              readOnly
+            />
+          </div>
+
+          {/* ▶ 파일 선택 + 상태(세로 배치) */}
+          <div className="flex flex-col gap-2" style={{ width: "492px" }}>
+            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-50 cursor-pointer">
+              <UploadCloud className="w-4 h-4 text-gray-600" />
+              <span className="text-sm text-gray-700">파일 선택 (PDF, JPG/PNG)</span>
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                className="hidden"
+                onChange={handleDocPick}
+              />
+            </label>
+
+            {/* 상태 라인: 업로드 완료 / 진행중 / 에러 */}
+            {docUpload.fileName && !docUpload.uploading && !docUpload.error && (
+              <div className="text-xs text-emerald-700 inline-flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{docUpload.fileName} 업로드 완료</span>
+              </div>
+            )}
+            {docUpload.uploading && (
+              <div className="text-xs text-gray-600 inline-flex items-center gap-1">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>업로드 중... {Math.round(docUpload.progress)}%</span>
+              </div>
+            )}
+            {docUpload.error && (
+              <div className="text-xs text-rose-600">{docUpload.error}</div>
+            )}
+          </div>
+
+          {/* 진행바 */}
+          {docUpload.uploading && (
+            <div
+              className="mt-2 w-full bg-gray-100 rounded h-2 overflow-hidden"
+              style={{ width: "492px" }}
+            >
+              <div
+                className="h-2 bg-[#a3cd7f] transition-all"
+                style={{ width: `${Math.round(docUpload.progress)}%` }}
+              />
+            </div>
+          )}
+
+          {/* 영구 URL 프리뷰 링크 */}
+          {form.businessDocUrl && (
+            <div className="mt-2">
+              <a
+                href={form.businessDocUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-blue-600 hover:underline"
+              >
+                영구 URL 열기
+              </a>
+            </div>
+          )}
         </div>
 
-        {/* 플랫폼 카테고리 (칩 + 그룹형, 아이콘 리치) */}
+        {/* 플랫폼 카테고리 */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#a3cd7f]" />
               <span>카테고리 선택 <span className="text-red-500">*</span></span>
             </label>
-            <div className="text-xs text-gray-500">
-              선택됨: <span className="font-medium">{form.categoryIds.length}</span>개
-            </div>
           </div>
 
           {loadingCats ? (
-            <div
-              className="border border-gray-200 rounded-lg p-4 text-sm text-gray-500 bg-white"
-              style={{ width: "492px" }}
-            >
+            <div className="border border-gray-200 rounded-lg p-4 text-sm text-gray-500 bg-white" style={{ width: "492px" }}>
               카테고리를 불러오는 중...
             </div>
           ) : Object.keys(grouped).length === 0 ? (
-            <div
-              className="border border-gray-200 rounded-lg p-4 text-sm text-gray-500 bg-white"
-              style={{ width: "492px" }}
-            >
+            <div className="border border-gray-200 rounded-lg p-4 text-sm text-gray-500 bg-white" style={{ width: "492px" }}>
               등록된 카테고리가 없습니다.
             </div>
           ) : (
@@ -193,10 +299,6 @@ export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting })
               return (
                 <section key={group} className="mb-3" aria-label={`${group} 카테고리`}>
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                      <Layers className="w-4 h-4 text-gray-500" />
-                      {group}
-                    </h4>
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
@@ -217,7 +319,6 @@ export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting })
                     </div>
                   </div>
 
-                  {/* 옵션 그리드 (아이콘 없는 버전) */}
                   <div
                     role="listbox"
                     aria-multiselectable="true"
@@ -270,35 +371,12 @@ export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting })
                       </button>
                     )}
                   </div>
+                  <div className="text-xs text-gray-500">
+                    선택됨: <span className="font-medium">{form.categoryIds.length}</span>개
+                  </div>
                 </section>
               );
             })
-          )}
-
-          {/* 선택된 카테고리 프리뷰 */}
-          {form.categoryIds.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2" style={{ width: "492px" }}>
-              {form.categoryIds
-                .map((id) => categories.find((c) => c.id === id))
-                .filter(Boolean)
-                .map((c) => (
-                  <span
-                    key={c.id}
-                    className="inline-flex items-center gap-2 text-xs rounded-full border px-3 py-1 bg-emerald-50 text-emerald-700 border-emerald-200"
-                  >
-                    {c.name}
-                    <button
-                      type="button"
-                      onClick={() => toggleCategory(c.id)}
-                      className="-mr-1 px-1 leading-none hover:text-emerald-900"
-                      aria-label={`${c.name} 제거`}
-                      title="제거"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-            </div>
           )}
         </div>
 
@@ -315,11 +393,11 @@ export default function CompanyInfoFormStepTwo({ onBack, onSubmit, submitting })
 
         <button
           type="submit"
-          disabled={submitting}
-          className="w-full bg-[#a3cd7f] text-white font-bold py-2 rounded mt-2 rounded-lg disabled:opacity-60 "
+          disabled={submitting || docUpload.uploading}
+          className="w-full bg-[#a3cd7f] text-white font-bold py-2 rounded mt-2 rounded-lg disabled:opacity-60"
           style={{ width: "492px", height: "48px" }}
         >
-          {submitting ? "등록 중..." : "등록하기"}
+          {submitting ? "등록 중..." : docUpload.uploading ? "증빙서류 업로드 중..." : "등록하기"}
         </button>
 
         <button

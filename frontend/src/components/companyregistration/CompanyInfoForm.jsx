@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useResultModal } from "../../hooks/useResultModal";
 
 /* ===== 스크립트 로더 유틸 (SignUp.jsx와 동일 로직) ===== */
 const loadScriptOnce = (src, id) =>
@@ -24,14 +25,10 @@ const ensureDaumPostcode = () =>
 /* Kakao Maps services 로더 (지오코딩용) */
 const loadKakaoIfNeeded = () =>
   new Promise((resolve, reject) => {
-    // 이미 services까지 준비됨
     if (window.kakao?.maps?.services) return resolve(true);
-
-    // 스크립트가 있고 autoload=false라면 load만 호출
     if (window.kakao?.maps?.load) {
       return window.kakao.maps.load(() => resolve(true));
     }
-
     const id = "kakao-maps-sdk";
     let s = document.getElementById(id);
     const onReady = () => {
@@ -41,7 +38,6 @@ const loadKakaoIfNeeded = () =>
         reject(new Error("kakao.maps.load not available"));
       }
     };
-
     if (!s) {
       s = document.createElement("script");
       s.id = id;
@@ -53,11 +49,21 @@ const loadKakaoIfNeeded = () =>
     s.addEventListener("load", onReady, { once: true });
   });
 
+/* ===== 전화번호 마스킹 (000-0000-0000) ===== */
+const maskPhone = (raw) => {
+  const digits = String(raw || "").replace(/\D/g, "").slice(0, 11); // 최대 11자리
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+};
+
 const CompanyInfoForm = ({ onNext }) => {
-  // 1단계 폼 상태 (DTO 매핑은 컨테이너에서 해도 되고 여기서 해도 됨)
+  const { Modal, openError } = useResultModal(); // ✅ 공용 모달
+
+  // 1단계 폼 상태
   const [form, setForm] = useState({
     companyName: "",
-    registrationNumber: "", // => DTO companyNumber로 매핑
+    registrationNumber: "", // => DTO companyNumber
     ceoName: "",            // => DTO contactName
     phone: "",              // => DTO contactPhone
     postalCode: "",
@@ -70,19 +76,23 @@ const CompanyInfoForm = ({ onNext }) => {
   const [geoStatus, setGeoStatus] = useState("idle"); // idle | ok | fail
 
   useEffect(() => {
-    // 사용자 체감 줄이기: 미리 로드
     ensureDaumPostcode().catch(() => {});
     loadKakaoIfNeeded().catch(() => {});
   }, []);
 
   const onChange = (e) => {
     const { name, value } = e.target;
+    // ✅ 대표 전화번호 마스킹 적용
+    if (name === "phone") {
+      setForm((prev) => ({ ...prev, phone: maskPhone(value) }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const openPostcode = async () => {
     if (!window.daum || !window.daum.Postcode) {
-      alert("주소검색 로딩중입니다. 잠시 후 다시 시도해주세요.");
+      openError("주소검색 로딩 중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
@@ -103,17 +113,15 @@ const CompanyInfoForm = ({ onNext }) => {
 
         try {
           await loadKakaoIfNeeded();
-
           const geocoder = new window.kakao.maps.services.Geocoder();
 
-          // 1차: 전체 주소 지오코딩
           geocoder.addressSearch(address, (results, status) => {
             if (status === window.kakao.maps.services.Status.OK && results?.[0]) {
               const { x, y } = results[0]; // x=lng, y=lat
               setForm((prev) => ({ ...prev, lat: +y, lng: +x }));
               setGeoStatus("ok");
             } else {
-              // 2차: 시/군/구 단위로 폴백
+              // 시/군/구 폴백
               const fallback = `${data.sido || ""} ${data.sigungu || ""}`.trim();
               if (!fallback) {
                 setGeoStatus("fail");
@@ -141,13 +149,23 @@ const CompanyInfoForm = ({ onNext }) => {
   const handleNext = (e) => {
     e.preventDefault();
 
-    // 필수값 체크(1단계 기준)
-    if (!form.companyName || !form.registrationNumber || !form.ceoName || !form.phone) {
-      alert("회사명/사업자등록번호/대표자명/대표전화는 필수입니다.");
+    // 필수값 체크
+    const missing = [];
+    if (!form.companyName) missing.push("회사명");
+    if (!form.registrationNumber) missing.push("사업자등록번호");
+    if (!form.ceoName) missing.push("대표자명");
+    if (!form.phone) missing.push("대표 전화번호");
+    if (!form.postalCode || !form.roadAddress) missing.push("업체 주소");
+
+    if (missing.length) {
+      openError(`다음 항목은 필수입니다.\n- ${missing.join("\n- ")}`);
       return;
     }
-    if (!form.postalCode || !form.roadAddress) {
-      alert("주소를 입력(검색)해주세요.");
+
+    // 전화번호 11자리 검사 (마스킹 제거 후)
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (phoneDigits.length !== 11) {
+      openError("대표 전화번호는 11자리(예: 010-1234-5678)로 입력해주세요.");
       return;
     }
 
@@ -156,6 +174,9 @@ const CompanyInfoForm = ({ onNext }) => {
 
   return (
     <div className="mt-32">
+      {/* 공용 모달 렌더 */}
+      {Modal}
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl">회사 정보를 입력해 주세요</h1>
         <span className="text-[#6b8b4e] text-sm">1/2</span>
@@ -192,7 +213,7 @@ const CompanyInfoForm = ({ onNext }) => {
           />
         </div>
 
-        {/* 주소(우편번호 + 도로명 + 상세 + 좌표표시) */}
+        {/* 주소 */}
         <div>
           <label className="block mb-1">
             업체 주소 <span className="text-red-500">*</span>
@@ -252,7 +273,6 @@ const CompanyInfoForm = ({ onNext }) => {
             style={{ width: "492px", height: "48px" }}
           />
 
-          {/* 확인용: 숨기고 싶으면 감춰도 됨 */}
           <div className="mt-1 text-xs text-gray-500">
             lat: {form.lat ?? "-"} / lng: {form.lng ?? "-"}
           </div>
@@ -273,7 +293,7 @@ const CompanyInfoForm = ({ onNext }) => {
           />
         </div>
 
-        {/* 대표 전화번호 */}
+        {/* 대표 전화번호 (마스킹) */}
         <div>
           <label className="block mb-1">
             대표 전화번호 <span className="text-red-500">*</span>
@@ -283,6 +303,9 @@ const CompanyInfoForm = ({ onNext }) => {
             name="phone"
             value={form.phone}
             onChange={onChange}
+            inputMode="numeric"
+            maxLength={13}                // 000-0000-0000
+            placeholder="010-1234-5678"
             className="w-full border border-gray-300 rounded-md px-4 py-2"
             style={{ width: "492px", height: "48px" }}
           />

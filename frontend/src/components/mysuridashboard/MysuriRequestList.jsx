@@ -77,8 +77,8 @@ export default function MysuriRequestList() {
         typeof totalsFromData === "number"
           ? totalsFromData
           : totalPages
-          ? totalPages * PAGE_SIZE
-          : 0
+            ? totalPages * PAGE_SIZE
+            : 0
       );
 
       setChecked({});
@@ -147,11 +147,11 @@ export default function MysuriRequestList() {
       <div className="space-y-3">
         {loading && rows.length === 0
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl shadow-sm p-4 animate-pulse">
-                <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
-                <div className="h-4 w-2/3 bg-gray-200 rounded" />
-              </div>
-            ))
+            <div key={i} className="bg-white rounded-2xl shadow-sm p-4 animate-pulse">
+              <div className="h-4 w-1/3 bg-gray-200 rounded mb-2" />
+              <div className="h-4 w-2/3 bg-gray-200 rounded" />
+            </div>
+          ))
           : rows.length === 0
             ? (
               <div className="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400">
@@ -197,7 +197,7 @@ export default function MysuriRequestList() {
                   </div>
 
                   {/* 날짜 + 상세보기 */}
-                  <div className="col-span-2 flex items-center justify-end gap-3">
+                  <div className="col-span-2 flex flex-col items-end gap-2">
                     <div className="text-sm text-gray-600">{fmtDate(r.createdAt)}</div>
                     <button
                       onClick={() => goDetail(r)}

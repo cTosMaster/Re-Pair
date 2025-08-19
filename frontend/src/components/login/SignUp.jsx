@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { sendCode, registerUser } from "../../services/authAPI";
+import { useResultModal } from "../../hooks/useResultModal";
 
 /* ===== 스크립트 로더 유틸 ===== */
 const loadScriptOnce = (src, id) =>
@@ -44,9 +45,18 @@ const loadKakaoMaps = () =>
     document.head.appendChild(s);
   });
 
+/* ===== 전화번호 마스킹 유틸 (000-0000-0000) ===== */
+const maskPhone = (raw) => {
+  const digits = String(raw || "").replace(/\D/g, "").slice(0, 11); // 최대 11자리
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+};
+
 /* ===== 페이지 컴포넌트 ===== */
 export default function SignUpPage() {
   const navigate = useNavigate();
+  const { Modal, openSuccess, openError } = useResultModal();
 
   const [form, setForm] = useState({
     email: "",
@@ -64,6 +74,12 @@ export default function SignUpPage() {
     role: "CUSTOMER",
   });
 
+  const [confirmTouched, setConfirmTouched] = useState(false);
+  const pwMismatch =
+    form.password.length > 0 &&
+    form.passwordConfirm.length > 0 &&
+    form.password !== form.passwordConfirm;
+  
   const [emailTimer, setEmailTimer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [geoStatus, setGeoStatus] = useState("idle"); // idle | ok | fail
@@ -76,19 +92,24 @@ export default function SignUpPage() {
 
   const onChange = (e) => {
     const { name, value } = e.target;
+    // ✅ 전화번호만 마스킹 적용(숫자만 허용 + 자동 하이픈)
+    if (name === "phone") {
+      setForm((prev) => ({ ...prev, phone: maskPhone(value) }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSendCode = async () => {
     if (!/\S+@\S+\.\S+/.test(form.email)) {
-      alert("올바른 이메일을 입력하세요.");
+      openError("올바른 이메일을 입력하세요.");
       return;
     }
     try {
       await sendCode(form.email);
       setEmailTimer(600);
     } catch {
-      alert("인증코드 발송 실패 : 재발송 시도해주세요.");
+      openError("인증코드 발송에 실패했어요. 잠시 후 다시 시도해주세요.");
     }
   };
 
@@ -99,113 +120,111 @@ export default function SignUpPage() {
   }, [emailTimer]);
 
   const openPostcode = async () => {
-  if (!window.daum || !window.daum.Postcode) {
-    alert("주소검색 로딩중입니다. 잠시 후 다시 시도해주세요.");
-    return;
-  }
+    if (!window.daum || !window.daum.Postcode) {
+      openError("주소검색 로딩중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
 
-  // Kakao SDK 로더 (함수 내부에 캡슐화)
-  const loadKakaoIfNeeded = () =>
-    new Promise((resolve, reject) => {
-      // 이미 services까지 준비됨
-      if (window.kakao?.maps?.services) return resolve(true);
-
-      // 스크립트가 로드되어 있고 autoload=false인 상태면 load만 호출
-      if (window.kakao?.maps?.load) {
-        return window.kakao.maps.load(() => resolve(true));
-      }
-
-      const id = "kakao-maps-sdk";
-      let s = document.getElementById(id);
-      const onReady = () => {
-        // 스크립트 onload 직후에 load 호출
+    const loadKakaoIfNeeded = () =>
+      new Promise((resolve, reject) => {
+        if (window.kakao?.maps?.services) return resolve(true);
         if (window.kakao?.maps?.load) {
-          window.kakao.maps.load(() => resolve(true));
-        } else {
-          reject(new Error("kakao.maps.load not available"));
+          return window.kakao.maps.load(() => resolve(true));
         }
-      };
-
-      if (!s) {
-        s = document.createElement("script");
-        s.id = id;
-        s.async = true;
-        s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_JS_KEY}&autoload=false&libraries=services`;
-        s.onerror = reject;
-        document.head.appendChild(s);
-      }
-      s.addEventListener("load", onReady, { once: true });
-    });
-
-  new window.daum.Postcode({
-    oncomplete: async (data) => {
-      const address =
-        data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
-
-      // 주소 먼저 반영
-      setForm((prev) => ({
-        ...prev,
-        postalCode: data.zonecode,
-        roadAddress: address,
-      }));
-      setForm((prev) => ({ ...prev, lat: null, lng: null }));
-      setGeoStatus?.("idle");
-
-      try {
-        await loadKakaoIfNeeded(); // ✅ 여기서 SDK 완전 준비
-
-        const geocoder = new window.kakao.maps.services.Geocoder();
-
-        // 1차: 전체 주소
-        geocoder.addressSearch(address, (results, status) => {
-          if (status === window.kakao.maps.services.Status.OK && results?.[0]) {
-            const { x, y } = results[0]; // x=lng, y=lat
-            setForm((prev) => ({ ...prev, lat: +y, lng: +x }));
-            setGeoStatus?.("ok");
+        const id = "kakao-maps-sdk";
+        let s = document.getElementById(id);
+        const onReady = () => {
+          if (window.kakao?.maps?.load) {
+            window.kakao.maps.load(() => resolve(true));
           } else {
-            // 2차: 시/군/구만 재시도
-            const fallback = `${data.sido || ""} ${data.sigungu || ""}`.trim();
-            if (!fallback) return setGeoStatus?.("fail");
-
-            geocoder.addressSearch(fallback, (res2, st2) => {
-              if (st2 === window.kakao.maps.services.Status.OK && res2?.[0]) {
-                const { x, y } = res2[0];
-                setForm((prev) => ({ ...prev, lat: +y, lng: +x }));
-                setGeoStatus?.("ok");
-              } else {
-                setGeoStatus?.("fail");
-              }
-            });
+            reject(new Error("kakao.maps.load not available"));
           }
-        });
-      } catch (e) {
-        console.warn("Kakao maps load/geocode error:", e);
-        setGeoStatus?.("fail");
-      }
-    },
-  }).open();
-};
+        };
+        if (!s) {
+          s = document.createElement("script");
+          s.id = id;
+          s.async = true;
+          s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_JS_KEY}&autoload=false&libraries=services`;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        }
+        s.addEventListener("load", onReady, { once: true });
+      });
+
+    new window.daum.Postcode({
+      oncomplete: async (data) => {
+        const address = data.userSelectedType === "R" ? data.roadAddress : data.jibunAddress;
+
+        setForm((prev) => ({
+          ...prev,
+          postalCode: data.zonecode,
+          roadAddress: address,
+        }));
+        setForm((prev) => ({ ...prev, lat: null, lng: null }));
+        setGeoStatus?.("idle");
+
+        try {
+          await loadKakaoIfNeeded();
+          const geocoder = new window.kakao.maps.services.Geocoder();
+
+          geocoder.addressSearch(address, (results, status) => {
+            if (status === window.kakao.maps.services.Status.OK && results?.[0]) {
+              const { x, y } = results[0]; // x=lng, y=lat
+              setForm((prev) => ({ ...prev, lat: +y, lng: +x }));
+              setGeoStatus?.("ok");
+            } else {
+              const fallback = `${data.sido || ""} ${data.sigungu || ""}`.trim();
+              if (!fallback) return setGeoStatus?.("fail");
+
+              geocoder.addressSearch(fallback, (res2, st2) => {
+                if (st2 === window.kakao.maps.services.Status.OK && res2?.[0]) {
+                  const { x, y } = res2[0];
+                  setForm((prev) => ({ ...prev, lat: +y, lng: +x }));
+                  setGeoStatus?.("ok");
+                } else {
+                  setGeoStatus?.("fail");
+                }
+              });
+            }
+          });
+        } catch (e) {
+          console.warn("Kakao maps load/geocode error:", e);
+          setGeoStatus?.("fail");
+        }
+      },
+    }).open();
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.passwordConfirm) {
-      alert("비밀번호가 일치하지 않습니다.");
+
+    // 비번 불일치 시 인라인 에러만 표시하고 중단
+    if (pwMismatch) {
+      setConfirmTouched(true);
       return;
     }
-    // 좌표 필수화 하고 싶으면 아래 주석 해제
-    // if (form.lat == null || form.lng == null) {
-    //   alert("주소 좌표를 확인해주세요. 주소검색 후 다시 시도해주세요.");
-    //   return;
-    // }
+
+    // 전화번호 11자리 검사 (기존 유지)
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (phoneDigits.length !== 11) {
+      openError("전화번호는 11자리(예: 010-1234-5678)로 입력해주세요.");
+      return;
+    }
 
     try {
       setLoading(true);
-      await registerUser(form); // 기본값 좌표 제거: 실제 좌표만 전송
-      alert("회원가입이 완료되었습니다. 로그인 해주세요.");
-      navigate("/login", { replace: true, state: { email: form.email } });
+      await registerUser(form);
+      openSuccess("회원가입을 축하합니다! 🎉\n로그인 페이지로 이동합니다.", {
+        onConfirm: () =>
+          navigate("/login", { replace: true, state: { email: form.email } }),
+      });
     } catch (err) {
       console.error(err);
-      alert("회원가입 실패");
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.";
+      openError(msg);
     } finally {
       setLoading(false);
     }
@@ -213,28 +232,19 @@ export default function SignUpPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* 공통 모달 */}
+      {Modal}
+
       {/* 헤더 로고 라인 */}
       <header className="h-16 flex items-center px-6">
-        <h2
-          className="fixed top-4 left-16 text-[#9fc87b] font-bold text-xl md:text-2xl"
-          style={{
-            fontFamily: "Inter, Helvetica",
-            WebkitTextStrokeWidth: "1px",
-            WebkitTextStrokeColor: "#9fc87b",
-            margin: 0,
-            backgroundColor: "transparent",
-            zIndex: 9999,
-          }}
-        >
+        <Link to="/" className="text-[20px] font-bold tracking-tight text-green-600">
           Re:pair
-        </h2>
+        </Link>
       </header>
 
       {/* 메인 섹션 */}
       <main className="mx-auto max-w-lg px-6 pt-10">
-        <h1 className="text-3xl font-semibold text-gray-900 mb-8">
-          회원 정보를 입력하세요
-        </h1>
+        <h1 className="text-3xl font-semibold text-gray-900 mb-8">회원 정보를 입력하세요</h1>
 
         <form onSubmit={onSubmit} className="space-y-5">
           {/* 이메일 + 코드발송 */}
@@ -284,23 +294,37 @@ export default function SignUpPage() {
               value={form.password}
               onChange={onChange}
               placeholder="비밀번호를 입력하세요"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500"
+              className={`w-full rounded-lg px-3 py-2 outline-none border ${pwMismatch
+                ? "border-red-500 focus:ring-2 focus:ring-red-500"
+                : "border-gray-300 focus:ring-2 focus:ring-emerald-500"
+                }`}
               required
             />
           </div>
-          <div className="flex items-center justify-between">
-            <div className="w-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호 확인</label>
-              <input
-                type="password"
-                name="passwordConfirm"
-                value={form.passwordConfirm}
-                onChange={onChange}
-                placeholder="비밀번호를 다시 입력하세요"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500"
-                required
-              />
-            </div>
+
+          {/* 비밀번호 확인 */}
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호 확인</label>
+            <input
+              type="password"
+              name="passwordConfirm"
+              value={form.passwordConfirm}
+              onChange={(e) => {
+                setConfirmTouched(true);
+                onChange(e);
+              }}
+              onBlur={() => setConfirmTouched(true)}
+              placeholder="비밀번호를 다시 입력하세요"
+              className={`w-full rounded-lg px-3 py-2 outline-none border ${pwMismatch && confirmTouched
+                ? "border-red-500 focus:ring-2 focus:ring-red-500"
+                : "border-gray-300 focus:ring-2 focus:ring-emerald-500"
+                }`}
+              required
+            />
+            {/* 🔴 불일치 안내 문구 */}
+            {pwMismatch && confirmTouched && (
+              <p className="mt-1 text-xs text-red-600">비밀번호를 확인해주세요.</p>
+            )}
           </div>
 
           {/* 이름 / 전화번호 */}
@@ -323,7 +347,9 @@ export default function SignUpPage() {
               name="phone"
               value={form.phone}
               onChange={onChange}
-              placeholder="(예시: 010-1234-5678)"
+              inputMode="numeric"
+              maxLength={13} // 000-0000-0000
+              placeholder="010-1234-5678"
               className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500"
               required
             />
@@ -396,7 +422,6 @@ export default function SignUpPage() {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500"
             />
 
-            {/* 디버그/확인용(원하면 숨겨도 됨) */}
             <div className="mt-2 text-xs text-gray-500">
               lat: {form.lat ?? "-"} / lng: {form.lng ?? "-"}
             </div>
@@ -414,7 +439,9 @@ export default function SignUpPage() {
           {/* 하단 링크 */}
           <p className="text-center text-sm text-gray-500">
             이미 계정이 있으신가요?{" "}
-            <Link to="/login" className="text-emerald-600 hover:underline">로그인</Link>
+            <Link to="/login" className="text-emerald-600 hover:underline">
+              로그인
+            </Link>
           </p>
         </form>
       </main>
