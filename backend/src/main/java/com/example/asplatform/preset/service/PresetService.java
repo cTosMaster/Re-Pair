@@ -261,8 +261,10 @@ public class PresetService {
         PresetResponseDto responseDTO = new PresetResponseDto();
         responseDTO.setPresetId(preset.getPresetId());
         responseDTO.setCustomerId(preset.getCustomer().getId());
+        responseDTO.setCategoryName(preset.getCategory().getName());
         responseDTO.setCategoryId(preset.getCategory().getId());
         responseDTO.setItemId(preset.getItem().getItemId());
+        responseDTO.setItemName(preset.getItem().getName());
         responseDTO.setName(preset.getName());
         responseDTO.setDescription(preset.getDescription());
         responseDTO.setPrice(preset.getPrice());
