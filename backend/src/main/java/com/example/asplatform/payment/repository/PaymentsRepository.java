@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.example.asplatform.common.enums.PaymentStatus;
 import com.example.asplatform.payment.domain.Payments;
+import com.example.asplatform.preset.domain.Preset;
 
 @Repository
 public interface PaymentsRepository extends JpaRepository<Payments, Long> {
@@ -24,4 +25,6 @@ public interface PaymentsRepository extends JpaRepository<Payments, Long> {
 
     // payment id + 고객사 아이디로 조회
     Optional<Payments> findByPaymentIdAndCustomerId(Long paymentId, Long cusotmerId);
+    
+    
 }
