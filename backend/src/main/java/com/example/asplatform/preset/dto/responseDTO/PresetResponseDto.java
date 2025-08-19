@@ -11,7 +11,9 @@ public class PresetResponseDto {
     private Long presetId;
     private Long customerId;
     private Long categoryId;
+    private String categoryName;
     private Long itemId;
+    private String itemName; 
     private String name;
     private String description;
     private Integer price;
