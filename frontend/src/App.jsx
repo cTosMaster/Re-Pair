@@ -42,6 +42,7 @@ function App() {
       <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
         <Route path="/admin/main" element={<AdminMainPage />} />
         <Route path="/admin/mypage" element={<UserMypage />} />
+        <Route path="/admin/reset-password" element={<ResetPasswordPage />} />
         <Route path="/admin/dash" element={<DashboardLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="account" element={<AdminAccountManager />} />
@@ -54,7 +55,7 @@ function App() {
       <Route element={<ProtectedRoute allowedRoles={["USER"]} />}>
         <Route path="/user/main" element={<UserMainPage />} />
         <Route path="/user/mypage" element={<UserMypage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/user/reset-password" element={<ResetPasswordPage />} />
         <Route path="/user/dash" element={<DashboardLayout />}>
           <Route index element={<UserDashboard />} />
           <Route path="completed" element={<CompleteList />} />
@@ -65,6 +66,7 @@ function App() {
       {/* ✅ ENGINEER 전용 */}
       <Route element={<ProtectedRoute allowedRoles={["ENGINEER"]} />}>
         <Route path="/engineer/main" element={<EngineerMainPage />} />
+        <Route path="/engineer/reset-password" element={<ResetPasswordPage />} />
         <Route path="/engineer/mypage" element={<UserMypage />} />
         <Route path="/engineer/dash" element={<DashboardLayout />}>
           <Route index element={<EngineerDashboard />} />
@@ -75,6 +77,7 @@ function App() {
       <Route element={<ProtectedRoute allowedRoles={["CUSTOMER"]} />}>
         <Route path="/customer/main" element={<CustomerMainPage />} />
         <Route path="/customer/mypage" element={<UserMypage />} />
+        <Route path="/customer/reset-password" element={<ResetPasswordPage />} />
         <Route path="/agreementPage" element={<AgreementPage />} /> {/* 약관동의 추가 */}
         <Route path="/companyFormContainer" element={<CompanyFormContainer />} /> {/* 업체등록 폼 추가 */}
         <Route path="/MysuriMainPage" element={<MysuriMainPage />} /> {/* MY수리센터대쉬보드 추가 */}
