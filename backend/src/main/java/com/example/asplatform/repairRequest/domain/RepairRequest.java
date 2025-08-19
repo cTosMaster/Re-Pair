@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.Where;
 
 import com.example.asplatform.common.enums.RepairStatus;
+import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.item.domain.RepairableItem;
 import com.example.asplatform.user.domain.User;
 import jakarta.persistence.Column;
@@ -36,7 +37,7 @@ public class RepairRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "request_id")
     private Long requestId;
-
+    
     // 요청 고객
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -70,7 +71,7 @@ public class RepairRequest {
     
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
-    
+    @Column(name = "delete_at", nullable = false)
     private LocalDateTime deletedAt;
 
     private Long deletedBy;
