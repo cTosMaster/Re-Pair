@@ -50,14 +50,21 @@ public class FinalEstimateService {
      */
     @Transactional
     public FinalEstimateResponseDto createFinalEstimate(Long requestId, FinalEstimateRequestDto dto,  CustomUserDetails currentUser) {
+        RepairRequest repairRequest = repairRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("수리 요청을 찾을 수 없습니다."));
+
+        
+        if (!Objects.equals(repairRequest.getEngineer().getId(), currentUser.getId())) {
+            throw new AccessDeniedException("배정된 수리기사만 최종 견적서를 등록할 수 있습니다.");
+        }
+
         Repair repair = Repair.builder()
-                .request(repairRequestRepository.findById(requestId)
-                        .orElseThrow(() -> new IllegalArgumentException("수리 요청을 찾을 수 없습니다.")))
+                .request(repairRequest) 
                 .description(dto.getDescription())
                 .finalPrice(dto.getFinalPrice())
                 .build();
         repairRepository.save(repair);
-
+        
         savePresetsAndImages(repair, dto, currentUser);
 
         return buildResponseDto(repair);
@@ -73,6 +80,11 @@ public class FinalEstimateService {
     public FinalEstimateResponseDto updateFinalEstimate(Long repairId, FinalEstimateRequestDto dto,  CustomUserDetails currentUser) {
         Repair repair = repairRepository.findById(repairId)
                 .orElseThrow(() -> new IllegalArgumentException("최종 견적서를 찾을 수 없습니다."));
+
+        RepairRequest repairRequest = repair.getRequest();
+        if (repairRequest.getEngineer() == null || !Objects.equals(repairRequest.getEngineer().getId(), currentUser.getId())) {
+            throw new AccessDeniedException("배정된 수리기사만 최종 견적서를 수정할 수 있습니다.");
+        }
 
         // Repair 엔티티 업데이트
         repair.setDescription(dto.getDescription());
