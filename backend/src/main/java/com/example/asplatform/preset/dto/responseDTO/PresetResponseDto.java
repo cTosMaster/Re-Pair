@@ -9,6 +9,7 @@ import lombok.Setter;
 @Setter
 public class PresetResponseDto {
     private Long presetId;
+    private Long customerId;
     private Long categoryId;
     private Long itemId;
     private String name;
