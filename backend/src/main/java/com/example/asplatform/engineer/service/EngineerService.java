@@ -61,6 +61,7 @@ public class EngineerService {
                 .name(req.getName())
                 .phone(req.getPhone())
                 .role(Role.ENGINEER)
+                .customer(customer) // customerid user테이블에도 저장되게 변경
                 .isActive(true)
                 .build();
         userRepository.save(user); // user.id 확정
