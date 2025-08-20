@@ -8,7 +8,6 @@ const CompanyListPage = () => {
       <PublicHeader />
 
       {/* 중단 */}
-      {/* 고정 마진 제거: mt-20 ❌  → 섹션이 늘어나면 그대로 따라 내려감 */}
       <main className="flex-1 px-6 pt-6">
         <CompanyListSection />
       </main>
