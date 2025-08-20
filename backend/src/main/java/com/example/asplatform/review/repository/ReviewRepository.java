@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -85,5 +86,79 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     )
     Page<ReviewResponse> findByCustomerReviews(@Param("customerId") Long customerId, Pageable pageable);
 
+    /** 현재 페이지 ID 평균 계산 */
+    @Query("""
+       select i.customer.id as customerId,
+              avg(r.rating)   as avgRating
+       from Review r
+         join r.repair rp
+         join rp.request rq
+         join rq.repairableItem i
+       where i.customer.id in :customerIds
+       group by i.customer.id
+    """)
+    List<ReviewAvg> avgByCustomerIds(@Param("customerIds") Collection<Long> customerIds);
+
+    /** 지역/카테고리/키워드 필터 + 리뷰없는 업체 0점 포함 + 평균별점 내림차순 + 페이징 **/
+    @Query(
+            value = """
+    SELECT
+      c.customer_id                 AS customerId,
+      IFNULL(AVG(rv.rating), 0)     AS avgRating
+    FROM customers c
+    LEFT JOIN customer_addresses ca ON ca.customer_id = c.customer_id
+    LEFT JOIN repairable_items i    ON i.customer_id = c.customer_id
+    LEFT JOIN repair_requests rq    ON rq.item_id = i.item_id
+    LEFT JOIN repairs rp            ON rp.request_id = rq.request_id     -- ⬅️ 여기 수정
+    LEFT JOIN reviews rv            ON rv.repair_id = rp.repair_id
+    WHERE (:si IS NULL OR ca.road_address LIKE CONCAT(:si, '%'))
+      AND (:gu IS NULL OR ca.road_address LIKE CONCAT(:si, ' ', :gu, '%'))
+      AND (:keyword IS NULL OR c.company_name LIKE CONCAT('%', :keyword, '%'))
+      AND (
+        :platformCategoryId IS NULL
+        OR EXISTS (
+          SELECT 1
+          FROM customer_categories cc
+          JOIN platform_categories pc
+            ON LOWER(pc.name) = LOWER(cc.name)
+          WHERE cc.customer_id = c.customer_id
+            AND cc.is_deleted = FALSE
+            AND pc.category_id = :platformCategoryId
+        )
+      )
+      AND c.status = 'APPROVED'
+    GROUP BY c.customer_id
+    ORDER BY avgRating DESC
+  """,
+            countQuery = """
+    SELECT COUNT(DISTINCT c.customer_id)
+    FROM customers c
+    LEFT JOIN customer_addresses ca ON ca.customer_id = c.customer_id
+    WHERE (:si IS NULL OR ca.road_address LIKE CONCAT(:si, '%'))
+      AND (:gu IS NULL OR ca.road_address LIKE CONCAT(:si, ' ', :gu, '%'))
+      AND (:keyword IS NULL OR c.company_name LIKE CONCAT('%', :keyword, '%'))
+      AND (
+        :platformCategoryId IS NULL
+        OR EXISTS (
+          SELECT 1
+          FROM customer_categories cc
+          JOIN platform_categories pc
+            ON LOWER(pc.name) = LOWER(cc.name)
+          WHERE cc.customer_id = c.customer_id
+            AND cc.is_deleted = FALSE
+            AND pc.category_id = :platformCategoryId
+        )
+      )
+      AND c.status = 'APPROVED'
+  """,
+            nativeQuery = true
+    )
+    Page<ReviewAvg> findAvgPageDesc(
+            @Param("si") String si,
+            @Param("gu") String gu,
+            @Param("platformCategoryId") Long platformCategoryId,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 }
 

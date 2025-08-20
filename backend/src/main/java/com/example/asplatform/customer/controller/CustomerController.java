@@ -1,10 +1,13 @@
 package com.example.asplatform.customer.controller;
 
+import com.example.asplatform.customer.dto.responseDTO.CustomerCardResponse;
 import com.example.asplatform.customer.dto.responseDTO.CustomerResponse;
+import com.example.asplatform.customer.service.CustomerCardService;
 import com.example.asplatform.customer.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final CustomerCardService customerCardService;
 
     /** 전체 고객사 목록 조회 (페이징/정렬 지원) */
     @GetMapping
@@ -52,4 +56,17 @@ public class CustomerController {
         int size = in.getPageSize() > 0 ? in.getPageSize() : 20;
         return org.springframework.data.domain.PageRequest.of(page, size, sort);
     }
+
+    @GetMapping("/cards")
+    public Page<CustomerCardResponse> cards(
+            @RequestParam(required = false) String regionSi,
+            @RequestParam(required = false) String regionGu,
+            @RequestParam(required = false) Long platformCategoryId,
+            @RequestParam(required = false) String keyword,
+            @ParameterObject Pageable pageable
+    ) {
+        return customerCardService.listByFilters(regionSi, regionGu, platformCategoryId, keyword, pageable);
+    }
+
+
 }
