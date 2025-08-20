@@ -84,6 +84,12 @@ public class UserService {
             lng = addr.getLocation().getX();
             lat = addr.getLocation().getY();
         }
+        
+        Long customerId = null;
+        if (user.getCustomer() != null) {
+                    customerId = user.getCustomer().getId();        
+        }
+        
         return MyProfileResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -95,6 +101,7 @@ public class UserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .lastLogin(user.getLastLogin())
+                .customerId(customerId)
                 .postalCode(addr != null ? addr.getPostalCode() : null)
                 .roadAddress(addr != null ? addr.getRoadAddress() : null)
                 .detailAddress(addr != null ? addr.getDetailAddress() : null)
@@ -107,7 +114,7 @@ public class UserService {
     @Transactional
     public MyProfileResponse getMyProfile() {
         String email = currentEmail();
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findWithCustomerByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         UserAddress addr = userAddressRepository.findById(user.getId()).orElse(null);
         return toMyProfileResponse(user, addr);

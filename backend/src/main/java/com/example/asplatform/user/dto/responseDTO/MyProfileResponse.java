@@ -20,7 +20,7 @@ public class MyProfileResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;
-
+    private Long customerId; // null 값 가능 
     // 주소
     private String postalCode;
     private String roadAddress;
