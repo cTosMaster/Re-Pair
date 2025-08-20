@@ -42,7 +42,9 @@ const loadKakaoIfNeeded = () =>
       s = document.createElement("script");
       s.id = id;
       s.async = true;
-      s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_JS_KEY}&autoload=false&libraries=services`;
+      s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${
+        import.meta.env.VITE_KAKAO_JS_KEY
+      }&autoload=false&libraries=services`;
       s.onerror = reject;
       document.head.appendChild(s);
     }
@@ -64,8 +66,8 @@ const CompanyInfoForm = ({ onNext }) => {
   const [form, setForm] = useState({
     companyName: "",
     registrationNumber: "", // => DTO companyNumber
-    ceoName: "",            // => DTO contactName
-    phone: "",              // => DTO contactPhone
+    ceoName: "", // => DTO contactName
+    phone: "", // => DTO contactPhone
     postalCode: "",
     roadAddress: "",
     detailAddress: "",
@@ -116,7 +118,10 @@ const CompanyInfoForm = ({ onNext }) => {
           const geocoder = new window.kakao.maps.services.Geocoder();
 
           geocoder.addressSearch(address, (results, status) => {
-            if (status === window.kakao.maps.services.Status.OK && results?.[0]) {
+            if (
+              status === window.kakao.maps.services.Status.OK &&
+              results?.[0]
+            ) {
               const { x, y } = results[0]; // x=lng, y=lat
               setForm((prev) => ({ ...prev, lat: +y, lng: +x }));
               setGeoStatus("ok");
@@ -128,7 +133,10 @@ const CompanyInfoForm = ({ onNext }) => {
                 return;
               }
               geocoder.addressSearch(fallback, (res2, st2) => {
-                if (st2 === window.kakao.maps.services.Status.OK && res2?.[0]) {
+                if (
+                  st2 === window.kakao.maps.services.Status.OK &&
+                  res2?.[0]
+                ) {
                   const { x, y } = res2[0];
                   setForm((prev) => ({ ...prev, lat: +y, lng: +x }));
                   setGeoStatus("ok");
@@ -173,7 +181,7 @@ const CompanyInfoForm = ({ onNext }) => {
   };
 
   return (
-    <div className="mt-32">
+    <div className="mt-8">
       {/* 공용 모달 렌더 */}
       {Modal}
 
@@ -182,7 +190,8 @@ const CompanyInfoForm = ({ onNext }) => {
         <span className="text-[#6b8b4e] text-sm">1/2</span>
       </div>
 
-      <form className="space-y-5" onSubmit={handleNext}>
+      {/* ✅ 버튼이 화면 맨 밑에 딱 붙지 않도록 pb 추가 */}
+      <form className="space-y-5 pb-16" onSubmit={handleNext}>
         {/* 회사명 */}
         <div>
           <label className="block mb-1">
@@ -304,16 +313,17 @@ const CompanyInfoForm = ({ onNext }) => {
             value={form.phone}
             onChange={onChange}
             inputMode="numeric"
-            maxLength={13}                // 000-0000-0000
+            maxLength={13} // 000-0000-0000
             placeholder="010-1234-5678"
             className="w-full border border-gray-300 rounded-md px-4 py-2"
             style={{ width: "492px", height: "48px" }}
           />
         </div>
 
+        {/* ✅ hover 효과 추가된 다음 버튼 */}
         <button
           type="submit"
-          className="w-full bg-[#a3cd7f] text-white font-bold py-2 rounded mt-6 rounded-lg"
+          className="w-full bg-[#a3cd7f] hover:bg-[#8fbf6d] text-white font-bold py-2 rounded mt-6 rounded-lg transition-colors"
           style={{ width: "492px", height: "48px" }}
         >
           다음
