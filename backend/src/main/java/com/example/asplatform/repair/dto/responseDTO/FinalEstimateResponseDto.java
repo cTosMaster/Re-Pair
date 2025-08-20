@@ -20,7 +20,14 @@ public class FinalEstimateResponseDto {
 	private String description;
 	private Integer finalPrice;
 	private List<String> imageUrl; // s3에 업로드 수 url 
-	private List<String> presets; 
+	private List<PresetInfo> presetInfo; 
+	
+	@Builder
+	@Getter
+	public static class PresetInfo{
+		private String name;
+		private Integer price;
+	}
 	
 
 }
