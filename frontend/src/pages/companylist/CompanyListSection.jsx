@@ -1,18 +1,28 @@
+import { useState } from "react";
 import CompanyCard from "./CompanyCard";
 import { companyDummy } from "./dummy/companyDummy";
+import RegionSelectModal from "./RegionSelectModal";
 
 const CompanyListSection = () => {
-  const handleOpenCategory = () => {};
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 지역 + 카테고리 선택 상태
+  const [selectedRegion, setSelectedRegion] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
 
   return (
     <section className="max-w-5xl mx-auto w-full flex flex-col gap-8 p-6 rounded-lg">
       {/* 상단 */}
       <div className="rounded-lg p-7">
-        {/* 검색행 */}
+        {/* 검색 */}
         <div className="flex justify-end items-center gap-2">
           <input
             type="text"
-            placeholder="업체명이나 키워드를 입력하세요"
+            placeholder="업체명을 입력하세요"
             className="h-10 w-56 border border-gray-300 rounded-lg px-3"
           />
           <button
@@ -25,8 +35,9 @@ const CompanyListSection = () => {
 
         {/* 중앙 타이틀 */}
         <div className="mt-5 flex flex-col items-center text-center">
+          {/* 지역 */}
           <span className="font-semibold leading-tight text-[#9fc87b] text-[22px]">
-            서울 강남구
+            {selectedRegion || ""}
           </span>
 
           <div className="mt-1.5 flex items-center gap-2">
@@ -34,18 +45,16 @@ const CompanyListSection = () => {
               업체 목록
             </span>
 
-            {/* (시계) + 화살표 */}
-            <button
-              type="button"
-              onClick={handleOpenCategory}
-              aria-label="카테고리 선택"
-              className="inline-flex items-center gap-1 text-gray-700 hover:text-gray-900"
-            >
-              <span className="border border-gray-300 bg-gray-50 text-gray-600 rounded px-2 py-[1px] text-[14px]">
-                (시계)
+            {/* 카테고리 표시 */}
+            <span className="inline-flex items-center gap-1 font-bold leading-tight text-[20px] text-gray-500">
+              ({selectedCategory || "선택"})
+              <span
+                onClick={handleOpenModal}
+                className="leading-none text-[18px] cursor-pointer hover:text-gray-900"
+              >
+                ▾
               </span>
-              <span className="leading-none text-[14px]">▾</span>
-            </button>
+            </span>
           </div>
 
           {/* 밑줄 */}
@@ -61,14 +70,14 @@ const CompanyListSection = () => {
         </div>
       </div>
 
-      {/* 중단 — 1열/2열 전체를 더 오른쪽으로 이동 */}
+      {/* 업체 카드 리스트 */}
       <div className="grid grid-cols-2 gap-x-14 gap-y-10 p-6">
         {companyDummy.content.map((company, i) => (
           <div
             key={company.customerId}
             className={
               i % 2 === 0
-                ? "justify-self-end translate-x-8" // ⬅️ 기존 4 → 8
+                ? "justify-self-end translate-x-8"
                 : "justify-self-start translate-x-8"
             }
           >
@@ -103,10 +112,27 @@ const CompanyListSection = () => {
         <button className="px-3 h-9 rounded border hover:bg-gray-100" title="다음">
           ›
         </button>
-        <button className="px-3 h-9 rounded border hover:bg-gray-100" title="마지막 페이지">
+        <button
+          className="px-3 h-9 rounded border hover:bg-gray-100"
+          title="마지막 페이지"
+        >
           »
         </button>
       </div>
+
+      {/* 지역/카테고리 선택 모달 */}
+      {isModalOpen && (
+        <RegionSelectModal
+          defaultRegion={selectedRegion}
+          defaultCategory={selectedCategory}
+          onClose={() => setIsModalOpen(false)}
+          onSelect={({ region, category }) => {
+            setSelectedRegion(region);
+            setSelectedCategory(category);
+            setIsModalOpen(false);
+          }}
+        />
+      )}
     </section>
   );
 };
