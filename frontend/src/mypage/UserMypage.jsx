@@ -6,7 +6,7 @@ import PasswordResultModal from "../components/modal/PasswordResultModal";
 import { getMyInfo, deactivateAccount } from "../../src/services/authAPI"; // api 모듈 사용
 
 const UserMypage = () => {
-  const { user } = useAuth();
+  const { user, setUser  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -50,7 +50,12 @@ const UserMypage = () => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => setImageUrl(reader.result);
+      reader.onload = () => {
+        setImageUrl(reader.result);
+
+        // ✅ 전역 상태도 업데이트해서 UserProfileMenu에 반영
+        setUser((prev) => ({ ...prev, imageUrl: reader.result }));
+      };
       reader.readAsDataURL(file);
     }
   };
