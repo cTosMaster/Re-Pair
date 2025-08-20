@@ -7,8 +7,8 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
   const [selectedSi, setSelectedSi] = useState(KR_REGIONS[0].si);
   const [categories, setCategories] = useState([]);
 
-  const [selectedRegion, setSelectedRegion] = useState(defaultRegion || null);
-  const [selectedCategory, setSelectedCategory] = useState(defaultCategory || null);
+  const [selectedRegion, setSelectedRegion] = useState(defaultRegion || null); // "서울특별시 강남구"
+  const [selectedCategory, setSelectedCategory] = useState(defaultCategory || null); // { id, name }
 
   const currentRegion = KR_REGIONS.find((r) => r.si === selectedSi);
 
@@ -31,7 +31,9 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
   };
 
   const handleSelectCategory = (category) => {
-    setSelectedCategory((prev) => (prev === category ? null : category));
+    setSelectedCategory((prev) =>
+      prev?.id === category.categoryId ? null : { id: category.categoryId, name: category.name }
+    );
   };
 
   const handleReset = () => {
@@ -41,8 +43,8 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
 
   const handleConfirm = () => {
     onSelect({
-      region: selectedRegion,
-      category: selectedCategory,
+      region: selectedRegion,     // "서울특별시 강남구"
+      category: selectedCategory, // { id, name }
     });
     onClose();
   };
@@ -53,10 +55,7 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
         {/* 헤더 */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-lg font-bold text-gray-800">지역 / 카테고리 선택</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 text-xl"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">
             ✕
           </button>
         </div>
@@ -74,7 +73,7 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
           <span>
             카테고리:{" "}
             {selectedCategory ? (
-              <span className="font-semibold text-[#9fc87b]">{selectedCategory}</span>
+              <span className="font-semibold text-[#9fc87b]">{selectedCategory.name}</span>
             ) : (
               <span className="text-gray-400">(선택 안됨)</span>
             )}
@@ -159,11 +158,11 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   {categories.map((cat) => {
-                    const isSelected = selectedCategory === cat.name;
+                    const isSelected = selectedCategory?.id === cat.categoryId;
                     return (
                       <div
                         key={cat.categoryId}
-                        onClick={() => handleSelectCategory(cat.name)}
+                        onClick={() => handleSelectCategory(cat)}
                         className={`px-4 py-2 cursor-pointer border rounded transition-colors ${
                           isSelected
                             ? "bg-[#9fc87b] text-white font-semibold"
