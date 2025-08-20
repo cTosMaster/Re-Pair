@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.asplatform.auth.service.CustomUserDetails;
+import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.common.enums.Role;
 import com.example.asplatform.customer.domain.Customer;
 import com.example.asplatform.preset.domain.Preset;
@@ -21,10 +22,13 @@ import com.example.asplatform.repair.domain.Repair;
 import com.example.asplatform.repair.domain.RepairImage;
 import com.example.asplatform.repair.domain.RepairPresetUsage;
 import com.example.asplatform.repair.dto.responseDTO.FinalEstimateResponseDto;
+import com.example.asplatform.repair.dto.responseDTO.FinalEstimateResponseDto.PresetInfo;
 import com.example.asplatform.repair.repository.RepairImageRepository;
 import com.example.asplatform.repair.repository.RepairPresetUsageRepository;
 import com.example.asplatform.repair.repository.RepairRepository;
 import com.example.asplatform.repair.requestDto.FinalEstimateRequestDto;
+import com.example.asplatform.repairHistory.domain.RepairHistory;
+import com.example.asplatform.repairHistory.repository.RepairHistoryRepository;
 import com.example.asplatform.repairRequest.domain.RepairRequest;
 import com.example.asplatform.repairRequest.repository.RepairRequestRepository;
 import com.example.asplatform.user.domain.User;
@@ -40,6 +44,7 @@ public class FinalEstimateService {
     private final RepairImageRepository repairImageRepository;
     private final RepairPresetUsageRepository repairPresetUsageRepository;
     private final PresetRepository presetRepository;
+    private final RepairHistoryRepository repairHistoryRepository;
     
 
     /**
@@ -66,6 +71,7 @@ public class FinalEstimateService {
         repairRepository.save(repair);
         
         savePresetsAndImages(repair, dto, currentUser);
+        changeRequestStatus(repairRequest, RepairStatus.WAITING_FOR_PAYMENT, currentUser.getId(), "최종 견적서 등록 완료");
 
         return buildResponseDto(repair);
     }
@@ -223,9 +229,12 @@ public class FinalEstimateService {
                 .map(RepairImage::getImageUrl)
                 .collect(Collectors.toList());
 
-        List<String> presetNames = repairPresetUsageRepository.findByRepair_Id(repair.getId())
+        List<PresetInfo> presetInfos = repairPresetUsageRepository.findByRepair_Id(repair.getId())
                 .stream()
-                .map(u -> u.getPreset().getName())
+                .map(u -> PresetInfo.builder()
+                        .name(u.getPreset().getName())
+                        .price(u.getPreset().getPrice())
+                        .build())
                 .collect(Collectors.toList());
 
         return FinalEstimateResponseDto.builder()
@@ -234,7 +243,23 @@ public class FinalEstimateService {
                 .description(repair.getDescription())
                 .finalPrice(repair.getFinalPrice())
                 .imageUrl(imageUrls)
-                .presets(presetNames)
+                .presetInfo(presetInfos)
                 .build();
+    }
+    
+    private void changeRequestStatus(RepairRequest request, RepairStatus newStatus, Long userId, String memo) {
+        RepairStatus prevStatus = request.getStatus();
+        request.setStatus(newStatus);
+        repairRequestRepository.save(request);
+
+        RepairHistory history = RepairHistory.builder()
+                .repairRequest(request)
+                .changedBy(userId != null ? User.builder().id(userId).build() : null)
+                .previousStatus(prevStatus)
+                .newStatus(newStatus)
+                .memo(memo != null ? memo : "")
+                .build();
+
+        repairHistoryRepository.save(history);
     }
 }

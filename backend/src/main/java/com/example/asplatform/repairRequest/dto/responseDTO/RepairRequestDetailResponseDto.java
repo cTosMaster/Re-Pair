@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.example.asplatform.estimate.dto.responseDTO.EstimateReadResponseDto;
+import com.example.asplatform.repair.dto.responseDTO.FinalEstimateResponseDto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
@@ -18,8 +19,8 @@ public class RepairRequestDetailResponseDto {
 	private StatusInfo status; // 현재 상태 + 히스토리 + 최근 사유 요약
 	private List<StageInfo> stages; // 단계별 클릭 가능 여부
 	private RequestInfo request; // 기본 정보(작성자/고객사/품목 등)
-	private EstimateReadResponseDto estimate;
-	private FinalEstimateInfo finalEstimate; // 최종 견적(지금은 자리만)
+	private EstimateReadResponseDto estimate; // 1차 견적
+	private FinalEstimateResponseDto finalEstimate; //최종 견적
 	private Actions actions; // 현재 사용자에게 허용된 액션 플래그
 	private String notice; // 상황 안내문(선택)
 	
@@ -55,21 +56,6 @@ public class RepairRequestDetailResponseDto {
 		private int stepIndex; // 단계 인덱스(프론트 하이라이트용)
 		private List<HistoryRow> history; // 상태 이력(사유는 memo에)
 		private Map<String, String> lastReasons; // {rejection, hold, cancel}
-	}
-
-
-	/** 최종 견적(지금은 placeholder) */
-	@Getter
-	@Builder
-	@AllArgsConstructor
-	@NoArgsConstructor
-	public static class FinalEstimateInfo {
-		private boolean exists; // 지금은 항상 false
-		private Long id; // 구현 후 채움
-		private Integer total; // 구현 후 채움
-	    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-		private LocalDateTime createdAt;
-		private SimpleUser createdBy;
 	}
 
 	/** 단계별 클릭 가능 여부 */
