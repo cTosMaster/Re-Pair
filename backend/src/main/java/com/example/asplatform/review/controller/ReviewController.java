@@ -49,7 +49,7 @@ public class ReviewController {
     }
 
     // 고객사별 리뷰 찾기
-    @GetMapping("/customers/{customerId}/reviews")
+    @GetMapping("/customers/{customerId}")
     public ResponseEntity<Page<ReviewResponse>> getCustomerReviews(
             @PathVariable Long customerId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
