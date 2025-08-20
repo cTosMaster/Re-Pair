@@ -7,7 +7,7 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
   const [selectedSi, setSelectedSi] = useState(KR_REGIONS[0].si);
   const [categories, setCategories] = useState([]);
 
-  const [selectedRegion, setSelectedRegion] = useState(defaultRegion || null); // "서울특별시 강남구"
+  const [selectedRegion, setSelectedRegion] = useState(defaultRegion || null);
   const [selectedCategory, setSelectedCategory] = useState(defaultCategory || null); // { id, name }
 
   const currentRegion = KR_REGIONS.find((r) => r.si === selectedSi);
@@ -26,8 +26,13 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
     }
   }, [activeTab]);
 
-  const handleSelectRegion = (region) => {
-    setSelectedRegion((prev) => (prev === region ? null : region));
+  const handleSelectSi = (si) => {
+    setSelectedSi(si);
+    setSelectedRegion(si);
+  };
+
+  const handleSelectRegion = (fullRegion) => {
+    setSelectedRegion((prev) => (prev === fullRegion ? null : fullRegion));
   };
 
   const handleSelectCategory = (category) => {
@@ -43,8 +48,8 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
 
   const handleConfirm = () => {
     onSelect({
-      region: selectedRegion,     // "서울특별시 강남구"
-      category: selectedCategory, // { id, name }
+      region: selectedRegion,
+      category: selectedCategory,
     });
     onClose();
   };
@@ -108,29 +113,24 @@ const RegionSelectModal = ({ onClose, onSelect, defaultRegion, defaultCategory }
         <div className="flex-1 overflow-y-auto">
           {activeTab === "region" ? (
             <div className="flex">
-              {/* 좌측 시·도 */}
+              {/* 시·도 */}
               <div className="w-1/3 border-r overflow-y-auto bg-gray-50 max-h-[60vh]">
                 {KR_REGIONS.map((region) => (
                   <div
                     key={region.si}
-                    onClick={() => setSelectedSi(region.si)}
+                    onClick={() => handleSelectSi(region.si)}
                     className={`px-4 py-2 cursor-pointer transition-colors ${
                       selectedSi === region.si
                         ? "text-[#9fc87b] font-semibold bg-white border-l-4 border-[#9fc87b]"
                         : "text-gray-700 hover:bg-green-50"
                     }`}
                   >
-                    {region.si
-                      .replace("특별시", "")
-                      .replace("광역시", "")
-                      .replace("특별자치도", "")
-                      .replace("특별자치시", "")
-                      .replace("도", "")}
+                    {region.si}
                   </div>
                 ))}
               </div>
 
-              {/* 우측 구/군 */}
+              {/* 구/군 */}
               <div className="flex-1 overflow-y-auto bg-white max-h-[60vh]">
                 {currentRegion?.gu.map((g) => {
                   const fullRegion = `${selectedSi} ${g}`;
