@@ -6,15 +6,12 @@ import { listCustomerCards } from "../../services/customerAPI";
 const CompanyListSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 지역 + 카테고리 선택 상태
-  const [selectedRegion, setSelectedRegion] = useState(null);   // "서울특별시 강남구"
-  const [selectedCategory, setSelectedCategory] = useState(null); // { id, name }
+  const [selectedRegion, setSelectedRegion] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // 검색 상태
   const [keyword, setKeyword] = useState("");
-  const [searchInput, setSearchInput] = useState(""); // input 값과 실제 검색어 분리
+  const [searchInput, setSearchInput] = useState("");
 
-  // 업체 데이터 & 페이징
   const [companies, setCompanies] = useState([]);
   const [pageInfo, setPageInfo] = useState({
     page: 0,
@@ -22,7 +19,7 @@ const CompanyListSection = () => {
     size: 8,
   });
 
-  /** ✅ API 호출 함수 */
+  /** API 호출 */
   const fetchCompanies = useCallback(
     async (region, category, pageNo = 0, keywordValue = "") => {
       let regionSi = null;
@@ -61,24 +58,19 @@ const CompanyListSection = () => {
     [pageInfo.size]
   );
 
-  /** ✅ 자동 호출 */
   useEffect(() => {
     fetchCompanies(selectedRegion, selectedCategory, pageInfo.page, keyword);
   }, [fetchCompanies, selectedRegion, selectedCategory, pageInfo.page, keyword]);
 
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
+  const handleSearch = () => {
+    setPageInfo((prev) => ({ ...prev, page: 0 }));
+    setKeyword(searchInput.trim());
   };
 
   const goToPage = (pageNo) => {
     if (pageNo >= 0 && (pageInfo.totalPages === 0 || pageNo < pageInfo.totalPages)) {
       setPageInfo((prev) => ({ ...prev, page: pageNo }));
     }
-  };
-
-  const handleSearch = () => {
-    setPageInfo((prev) => ({ ...prev, page: 0 })); // 새 검색은 1페이지부터
-    setKeyword(searchInput.trim());
   };
 
   return (
@@ -118,7 +110,7 @@ const CompanyListSection = () => {
             <span className="inline-flex items-center gap-1 font-bold leading-tight text-[20px] text-gray-500">
               ({selectedCategory?.name || "선택"})
               <span
-                onClick={handleOpenModal}
+                onClick={() => setIsModalOpen(true)}
                 className="leading-none text-[18px] cursor-pointer hover:text-gray-900"
               >
                 ▾
@@ -151,7 +143,7 @@ const CompanyListSection = () => {
         )}
       </div>
 
-      {/* 하단 — 페이지네이션 (항상 표시, 결과 없을 때도 1페이지 active) */}
+      {/* 페이지네이션 */}
       <div className="flex justify-center space-x-2 text-gray-700 rounded-lg p-6">
         <button
           className="px-3 h-9 rounded border hover:bg-gray-100 disabled:text-gray-300 disabled:border-gray-200"
@@ -224,7 +216,7 @@ const CompanyListSection = () => {
           onSelect={({ region, category }) => {
             setSelectedRegion(region);
             setSelectedCategory(category);
-            setPageInfo((prev) => ({ ...prev, page: 0 })); // 새 검색 시 첫 페이지부터
+            setPageInfo((prev) => ({ ...prev, page: 0 }));
           }}
         />
       )}
