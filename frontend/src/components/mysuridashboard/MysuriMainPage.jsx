@@ -10,7 +10,7 @@ import MysuriCurrentList from './MysuriCurrentList';
 
 
 const MysuriMainPage = () => {
-  const [selectedMenu, setSelectedMenu] = useState("수리 요청 목록");
+  const [selectedMenu, setSelectedMenu] = useState("수리 요청 관리");
 
   // 콘텐츠 변경 로직
   const renderContent = () => {

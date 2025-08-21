@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { logout as apiLogout } from "../services/authAPI";
 import NotificationButton from "../components/button/NotificationButton";
 import UserProfileMenu from "../components/main/UserProfileMenu";
+import { getMyInfo } from "../services/authAPI";
 
 export default function Header() {
   const location = useLocation();
@@ -33,7 +34,7 @@ export default function Header() {
       { label: "My 플랫폼 관리", path: "/admin/dash" },
     ],
   };
-
+  getMyInfo();
   const navItems = role ? navByRole[role] || [] : [];
 
   const handleLogout = async () => {
