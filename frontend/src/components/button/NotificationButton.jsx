@@ -8,41 +8,30 @@ export default function NotificationButton() {
   const [unread, setUnread] = useState(0);
   const ref = useRef(null);
 
-  // 드롭다운 토글
   const toggleDropdown = async () => {
     setOpen(prev => !prev);
     if (!open) {
-      const notis = await getNotifications();
-      setNotifications(notis);
-      const count = await getUnreadCount();
-      setUnread(count);
+      setNotifications(await getNotifications());
+      setUnread(await getUnreadCount());
     }
   };
 
-  // 모두 읽음
   const handleMarkAllRead = async () => {
     await markAllRead();
     setUnread(0);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
-  // 주기적으로 미읽음 개수 업데이트
   useEffect(() => {
-    const fetchUnread = async () => {
-      const count = await getUnreadCount();
-      setUnread(count);
-    };
+    const fetchUnread = async () => setUnread(await getUnreadCount());
     fetchUnread();
-    const interval = setInterval(fetchUnread, 10000); // 10초마다
+    const interval = setInterval(fetchUnread, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // 바깥 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = e => {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -54,21 +43,21 @@ export default function NotificationButton() {
     <div className="relative" ref={ref}>
       <button
         onClick={toggleDropdown}
-        className="relative p-2 rounded-full hover:bg-gray-100"
+        className="relative p-2 rounded-full hover:bg-gray-100 transition"
         aria-label="알림"
       >
         <Bell size={20} />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 text-[10px] leading-4 text-white text-center rounded-full bg-red-500">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 text-[10px] font-bold text-white text-center rounded-full bg-red-500">
             {badge}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white border rounded-xl shadow-lg z-50">
-          <div className="flex justify-between items-center p-2 border-b">
-            <span className="font-medium">알림</span>
+        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white rounded-xl shadow-lg z-50">
+          <div className="flex justify-between items-center p-3 border-b border-gray-100">
+            <span className="font-semibold text-gray-700">알림</span>
             <button
               onClick={handleMarkAllRead}
               className="text-sm text-blue-600 hover:underline"
@@ -85,15 +74,12 @@ export default function NotificationButton() {
             notifications.map(n => (
               <div
                 key={n.id}
-                className={`p-3 text-sm border-b last:border-0 ${
-                  n.read ? "bg-white" : "bg-gray-50 font-semibold"
+                className={`p-3 last:rounded-b-xl ${
+                  n.read ? "" : "font-semibold bg-gray-50"
                 }`}
               >
                 <div className="text-gray-800">{n.title}</div>
-                <div className="text-gray-500 text-xs">{n.message}</div>
-                <div className="text-gray-400 text-[10px] mt-1">
-                  {new Date(n.createdAt).toLocaleString()}
-                </div>
+                <div className="text-gray-500 text-sm mt-0.5">{n.message}</div>
               </div>
             ))
           )}
