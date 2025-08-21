@@ -229,10 +229,10 @@ public class RepairRequestDetailService {
 				.item(new SimpleRef(rr.getRepairableItem().getItemId(), rr.getRepairableItem().getName()))
 				.customer(new SimpleRef(rr.getRepairableItem().getCustomer().getId(),
 						rr.getRepairableItem().getCustomer().getCompanyName()))
-				.writer(new SimpleUser(rr.getUser().getId(), rr.getUser().getName(), rr.getUser().getEmail()))
+				.writer(new SimpleUser(rr.getUser().getId(), rr.getUser().getName(), rr.getUser().getEmail(), formatPhone(rr.getUser().getPhone())))
 				.engineer(rr.getEngineer() == null ? null
 						: new SimpleUser(rr.getEngineer().getId(), rr.getEngineer().getName(),
-								rr.getEngineer().getEmail()))
+								rr.getEngineer().getEmail(), formatPhone(rr.getUser().getPhone())))
 				.build();
 	}
 
