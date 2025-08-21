@@ -33,6 +33,7 @@ import com.example.asplatform.repairHistory.repository.RepairHistoryRepository;
 import com.example.asplatform.repairRequest.domain.RepairRequest;
 import com.example.asplatform.repairRequest.dto.requestDTO.DeleteRepairRequestsRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.RepairRequestCreateDto;
+import com.example.asplatform.repairRequest.dto.requestDTO.RepairStatusChangeRequest;
 import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.DeleteRepairRequestsResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestListDto;
@@ -398,6 +399,20 @@ public class RepairRequestService {
 				.engineerId(currentUser.getId())
 				.build();
 	}
+	
+	/**
+	 * 상태 변경 
+	 * @param request
+	 */
+	@Transactional
+    public void changeRepairStatus(RepairStatusChangeRequest request) {
+        RepairRequest repairRequest = repairRequestRepository.findById(request.getRequestId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 수리 요청을 찾을 수 없습니다."));
+
+        RepairStatus newStatus = RepairStatus.valueOf(request.getStatusCode());
+        repairRequest.setStatus(newStatus);
+
+    } 
 
 	// RepairRequestService.java
 	@Transactional
@@ -453,4 +468,6 @@ public class RepairRequestService {
 						RepairStatus.WAITING_FOR_DELIVERY));
 		engineerRepository.findById(engineerId).ifPresent(e -> e.setAssigned(hasActive));
 	}
+	
+	
 }

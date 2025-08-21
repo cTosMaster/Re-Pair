@@ -24,6 +24,7 @@ import com.example.asplatform.common.service.RepairStatusManager;
 import com.example.asplatform.repairRequest.dto.requestDTO.DeleteRepairRequestsRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.ManualStatusChangeRequestDto;
 import com.example.asplatform.repairRequest.dto.requestDTO.RepairRequestCreateDto;
+import com.example.asplatform.repairRequest.dto.requestDTO.RepairStatusChangeRequest;
 import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.DeleteRepairRequestsResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestDetailResponseDto;
@@ -248,5 +249,16 @@ public class RepairRequestController {
         repairRequestService.completeForTest(requestId, me.getUser(), memo)
     );
 }
+	/**
+	 * 수리 상태 변경
+	 * @param userDetail
+	 * @param request
+	 * @return
+	 */
+	@PatchMapping("/change")
+    public ResponseEntity<String> changeStatus(@AuthenticationPrincipal CustomUserDetails userDetail, @RequestBody RepairStatusChangeRequest request) {
+        repairRequestService.changeRepairStatus(request);
+        return ResponseEntity.ok("수리 요청 상태가 변경되었습니다.");
+    }
 }
 

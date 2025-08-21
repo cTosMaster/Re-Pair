@@ -78,6 +78,11 @@ public class SecurityConfig {
 							"/api/payments/detail/**",
 							"/api/payments/status/id/**"
 						).hasRole("CUSTOMER")
+						
+						// 수리 요청
+						.requestMatchers(
+						    "/api/repair-requests/change"
+						).hasAnyRole("ENGINEER", "CUSTOMER", "ADMIN")
 
 						// 파일 업로드
 						.requestMatchers("/api/files/initiate", "/api/files/complete").permitAll()
