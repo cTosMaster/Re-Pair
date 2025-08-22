@@ -9,10 +9,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.example.asplatform.engineer.repository.EngineerRepository;
-import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestSimpleResponse;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -21,11 +18,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.context.ApplicationEventPublisher;
 
 import com.example.asplatform.common.enums.RepairStatus;
 import com.example.asplatform.common.enums.Role;
 import com.example.asplatform.common.enums.StatusGroup;
+import com.example.asplatform.engineer.repository.EngineerRepository;
 import com.example.asplatform.item.domain.RepairableItem;
 import com.example.asplatform.item.repository.RepairableItemRepository;
 import com.example.asplatform.repairHistory.domain.RepairHistory;
@@ -37,11 +34,14 @@ import com.example.asplatform.repairRequest.dto.requestDTO.RepairStatusChangeReq
 import com.example.asplatform.repairRequest.dto.responseDTO.CustomerRepairRequestListDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.DeleteRepairRequestsResponseDto;
 import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestListDto;
+import com.example.asplatform.repairRequest.dto.responseDTO.RepairRequestSimpleResponse;
 import com.example.asplatform.repairRequest.repository.RepairRequestRepository;
 import com.example.asplatform.user.domain.User;
 import com.example.asplatform.user.domain.UserAddress;
 import com.example.asplatform.user.repository.UserAddressRepository;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -92,8 +92,8 @@ public class RepairRequestService {
 		publisher.publishEvent(new com.example.asplatform.notify.event.RepairRequestCreatedEvent(
 				repairRequest.getRequestId(),
 				user.getId(),
-				"수리 요청이 접수되었습니다",
-				String.format("요청 #%d이(가) 접수되었습니다. 담당자 배정까지 잠시만 기다려주세요.", repairRequest.getRequestId())));
+				repairRequest.getTitle(),
+				String.format("%s이(가) 접수되었습니다. 담당자 배정까지 잠시만 기다려주세요.", repairRequest.getTitle())));
 
 		return repairRequest.getRequestId();
 	}
@@ -282,8 +282,8 @@ public class RepairRequestService {
 				rr.getUser().getId(),
 				prev.name(),
 				RepairStatus.WAITING_FOR_REPAIR.name(),
-				"담당자가 배정되었습니다",
-				String.format("요청 #%d이 기사(%s)에게 배정되었습니다.", rr.getRequestId(), engName)));
+				rr.getTitle(),
+				String.format("%s이 기사(%s)에게 배정되었습니다.", rr.getTitle(), engName)));
 
 		// 🔔 배정 기사에게
 		publisher.publishEvent(new com.example.asplatform.notify.event.StatusChangedEvent(
@@ -291,8 +291,8 @@ public class RepairRequestService {
 				rr.getEngineer().getId(),
 				prev.name(),
 				RepairStatus.WAITING_FOR_REPAIR.name(),
-				"새 작업이 배정되었습니다",
-				String.format("요청 #%d이 배정되었습니다. 작업을 시작해주세요.", rr.getRequestId())));
+				rr.getTitle(),
+				String.format("요청 %s이 배정되었습니다. 작업을 시작해주세요.", rr.getTitle())));
 
 		Long newEngineerId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
 		if (newEngineerId != null)
@@ -344,8 +344,8 @@ public class RepairRequestService {
 				rr.getUser().getId(),
 				prev.name(),
 				RepairStatus.CANCELED.name(),
-				"수리 요청이 반려되었습니다",
-				String.format("요청 #%d이(가) 반려되었습니다. 사유: %s", rr.getRequestId(), reason)));
+				rr.getTitle(),
+				String.format("%s이(가) 반려되었습니다. 사유: %s",rr.getTitle(), reason)));
 
 		if (prevEngineerId != null)
 			refreshEngineerAssignedFlag(prevEngineerId);
@@ -388,8 +388,8 @@ public class RepairRequestService {
 				rr.getUser().getId(),
 				prev.name(),
 				RepairStatus.IN_PROGRESS.name(),
-				"1차 견적/작업이 시작되었습니다",
-				String.format("요청 #%d 작업을 시작했습니다.", rr.getRequestId())));
+				rr.getTitle(),
+				String.format("요청 %s 작업을 시작했습니다.", rr.getTitle())));
 		refreshEngineerAssignedFlag(currentUser.getId());
 
 		return RepairRequestSimpleResponse.builder()
@@ -441,8 +441,8 @@ public class RepairRequestService {
 				rr.getUser().getId(),
 				prev.name(),
 				RepairStatus.COMPLETED.name(),
-				"수리가 완료되었습니다",
-				String.format("요청 #%d 처리가 완료되었습니다. 이용해 주셔서 감사합니다.", rr.getRequestId())));
+				rr.getTitle(),
+				String.format("%s 처리가 완료되었습니다. 이용해 주셔서 감사합니다.", rr.getTitle())));
 
 		// 기사 배정 캐시 갱신 (활성 건 없으면 is_assigned=0)
 		Long engId = rr.getEngineer() != null ? rr.getEngineer().getId() : null;
