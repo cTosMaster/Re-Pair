@@ -286,3 +286,6 @@ export const submitCustomerRegistration = (data, options = {}) => {
 /** 지역/카테고리/키워드 필터 + 페이징 조회 */
 export const listCustomerCards = (params = { page: 0, size: 8 }) =>
   api.get("/customers/cards", { params });
+
+export const changeRepairStatus = (data) =>
+  api.post("/repair-requests/change", data);

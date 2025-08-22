@@ -5,12 +5,14 @@ import { AuthContext } from './AuthContext';
 import { getMyInfo, refreshToken } from '../services/authAPI';
 
 // CUSTOMER/ADMIN만 customerId 필요
-const roleNeedsCustomer = (r) => ['CUSTOMER', 'ADMIN'].includes(String(r || '').toUpperCase());
+const roleNeedsCustomer = (r) => ['CUSTOMER', 'ADMIN', 'ENGINEER'].includes(String(r || '').toUpperCase());
 
 // ---- helpers
 const getMinimalUserFromToken = (token) => {
   try {
     const d = jwtDecode(token);
+    console.log("🔑 JWT payload:", d);   // ✅ 토큰에 들어있는 전체 데이터 확인용
+
     const {
       sub, email, role, roles, authorities, exp,
       customerId, customer_id, cid,
