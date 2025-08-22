@@ -7,6 +7,7 @@ const PAGE_SIZE = 10;
 
 /** 상태 드롭다운 (value는 API에 그대로 전달되는 백엔드 enum 값) */
 const STATUS_FILTERS = [
+  { label: "전체", value: "" },
   { label: "수리대기", value: "WAITING_FOR_REPAIR" },
   { label: "수리중", value: "IN_PROGRESS" },
   { label: "결제대기", value: "WAITING_FOR_PAYMENT" },   // ✅ 추가
@@ -110,7 +111,7 @@ export default function EngineerDashboard() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [keyword, setKeyword] = useState("");
-  const [status, setStatus] = useState("WAITING_FOR_REPAIR"); // ← API로 그대로 보낼 값(백엔드 코드)
+  const [status, setStatus] = useState(""); // ← API로 그대로 보낼 값(백엔드 코드)
 
   // 체크 상태
   const [checked, setChecked] = useState({});
@@ -148,7 +149,7 @@ export default function EngineerDashboard() {
     setLoading(true);
     try {
       const res = await getMyAssignedRequests({
-        status,              // ⚠️ API에 전달: 백엔드 코드(CANCELED 등)
+        status: status || undefined,              // ⚠️ API에 전달: 백엔드 코드(CANCELED 등)
         page,
         size: PAGE_SIZE,
         keyword: keyword || undefined,
