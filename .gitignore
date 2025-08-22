@@ -60,6 +60,15 @@ node_modules/
 ### Config / Secret ###
 .env
 .env.*
+<<<<<<< HEAD
 
 # Maven build folder
 /target/
+=======
+application.yml
+application.properties
+application-*.yml
+application-*.properties
+src/main/resources/application.yml
+src/main/resources/application.properties
+>>>>>>> frontend-dev

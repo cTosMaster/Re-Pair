@@ -1,0 +1,27 @@
+# ----- VCS / IDE -----
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# ----- 빌드 산출물 / 캐시 -----
+node_modules
+dist
+target
+build
+coverage
+*.log
+logs
+npm-debug.log*
+yarn-error.log*
+.pnpm-store
+.tmp
+.cache
+
+# ----- 환경 파일(레포에 없어야 하지만 안전망) -----
+.env
+.env.*
+*.local
